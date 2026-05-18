@@ -23,21 +23,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem('theme') as Theme | null
     if (saved) {
       setTheme(saved)
-      document.documentElement.classList.toggle('dark', saved === 'dark')
-    } else {
-      document.documentElement.classList.add('dark')
     }
   }, [])
 
-  function toggleTheme() {
-    const newTheme = theme === 'dark' ? 'light' : 'dark'
-    setTheme(newTheme)
-    localStorage.setItem('theme', newTheme)
-    document.documentElement.classList.toggle('dark', newTheme === 'dark')
-  }
+  useEffect(() => {
+    if (mounted) {
+      document.documentElement.classList.toggle('dark', theme === 'dark')
+      localStorage.setItem('theme', theme)
+    }
+  }, [theme, mounted])
 
-  if (!mounted) {
-    return <>{children}</>
+  function toggleTheme() {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
   }
 
   return (
