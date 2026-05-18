@@ -1,23 +1,40 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-async function doSetup() {
+export async function GET() {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
+      auth: { autoRefreshToken: false, persistSession: false },
     }
   )
 
-  const results = {
-    admin: null as any,
-    jugador: null as any,
+  const results: any = {
+    cleanup: { success: false },
+    admin: null,
+    jugador: null,
   }
 
+  // Paso 1: Borrar usuarios existentes
+  try {
+    // Buscar usuarios existentes
+    const { data: existingAdmin } = await supabase.auth.admin.getUserByEmail('admin@prode.com')
+    if (existingAdmin.user) {
+      await supabase.auth.admin.deleteUser(existingAdmin.user.id)
+    }
+  } catch (e) { /* user not found is ok */ }
+
+  try {
+    const { data: existingJugador } = await supabase.auth.admin.getUserByEmail('jugador@prode.com')
+    if (existingJugador.user) {
+      await supabase.auth.admin.deleteUser(existingJugador.user.id)
+    }
+  } catch (e) { /* user not found is ok */ }
+
+  results.cleanup = { success: true }
+
+  // Paso 2: Crear admin
   try {
     const { data: admin, error: adminError } = await supabase.auth.admin.createUser({
       email: 'admin@prode.com',
@@ -36,6 +53,7 @@ async function doSetup() {
     results.admin = { error: e.message }
   }
 
+  // Paso 3: Crear jugador
   try {
     const { data: jugador, error: jugadorError } = await supabase.auth.admin.createUser({
       email: 'jugador@prode.com',
@@ -53,17 +71,6 @@ async function doSetup() {
     results.jugador = { error: e.message }
   }
 
-  return results
-}
-
-export async function POST() {
-  const results = await doSetup()
-  return NextResponse.json(results)
-}
-
-export async function GET() {
-  const results = await doSetup()
-  
   const html = `
 <!DOCTYPE html>
 <html>
@@ -85,6 +92,10 @@ export async function GET() {
 <body>
   <div class="card">
     <h1>Setup Prode 2026</h1>
+    
+    <div class="success">
+      <strong>Limpieza:</strong> Usuarios anteriores borrados
+    </div>
     
     ${results.admin?.success ? `
     <div class="success">
