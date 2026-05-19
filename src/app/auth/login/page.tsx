@@ -1,11 +1,39 @@
 'use client'
 
+import { useState } from 'react'
+import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 
 export default function LoginPage() {
-  const searchParams = useSearchParams()
-  const errorMsg = searchParams.get('error')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    setLoading(false)
+
+    if (authError) {
+      setError(authError.message)
+      return
+    }
+
+    if (data.session) {
+      window.location.replace('/dashboard/grupos')
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
@@ -25,13 +53,13 @@ export default function LoginPage() {
         <div className="bg-[#111] border border-white/8 rounded-xl p-8">
           <h1 className="text-white text-xl font-semibold mb-6">Ingresar</h1>
 
-          {errorMsg && (
+          {error && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 mb-5 text-red-400 text-sm">
-              {errorMsg}
+              {error}
             </div>
           )}
 
-          <form action="/api/auth/login" method="POST" className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">
                 Email
@@ -41,7 +69,7 @@ export default function LoginPage() {
                 type="email"
                 required
                 autoComplete="email"
-                placeholder="tu@email.com"
+                defaultValue="admin@prode.com"
                 className="w-full bg-[#1A1A1A] border border-white/8 rounded-md px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8102E]/50 transition-colors"
               />
             </div>
@@ -53,17 +81,17 @@ export default function LoginPage() {
                 name="password"
                 type="password"
                 required
-                autoComplete="current-password"
-                placeholder="••••••••"
+                defaultValue="admin123"
                 className="w-full bg-[#1A1A1A] border border-white/8 rounded-md px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8102E]/50 transition-colors"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full bg-[#C8102E] hover:bg-[#e01230] text-white font-bold text-sm uppercase tracking-widest py-3 rounded-md transition-all hover:-translate-y-px"
+              disabled={loading}
+              className="w-full bg-[#C8102E] hover:bg-[#e01230] text-white font-bold text-sm uppercase tracking-widest py-3 rounded-md transition-all hover:-translate-y-px disabled:opacity-50"
             >
-              Ingresar al prode
+              {loading ? 'Ingresando...' : 'Ingresar al prode'}
             </button>
           </form>
 
