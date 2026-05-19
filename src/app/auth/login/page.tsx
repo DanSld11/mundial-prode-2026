@@ -1,37 +1,38 @@
 'use client'
 
 import { useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const router = useRouter()
-
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    
+
     const formData = new FormData(e.currentTarget)
     const email = formData.get('email') as string
     const password = formData.get('password') as string
 
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    
-    setLoading(false)
-    if (error) {
-      setError(error.message.includes('Invalid login') ? 'Email o contraseña incorrectos.' : error.message)
-    } else {
-      router.push('/dashboard/grupos')
-      router.refresh()
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await res.json()
+
+      if (!res.ok || data.error) {
+        setError(data.error || 'Error al iniciar sesión')
+      } else {
+        window.location.href = '/dashboard/grupos'
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error de conexión')
+    } finally {
+      setLoading(false)
     }
   }
 

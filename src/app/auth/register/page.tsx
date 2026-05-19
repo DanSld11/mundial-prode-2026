@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { registerAction } from '../actions'
 import Link from 'next/link'
 
 export default function RegisterPage() {
@@ -12,15 +11,30 @@ export default function RegisterPage() {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    
+
     const formData = new FormData(e.currentTarget)
-    const result = await registerAction(formData)
-    
-    setLoading(false)
-    if (result?.error) {
-      setError(result.error)
-    } else if (result?.success) {
-      window.location.href = '/dashboard/grupos'
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const username = formData.get('username') as string
+    const favoriteTeam = formData.get('favorite_team') as string
+
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, username, favoriteTeam }),
+      })
+      const data = await res.json()
+
+      if (!res.ok || data.error) {
+        setError(data.error || 'Error al registrarse')
+      } else {
+        window.location.href = '/dashboard/grupos'
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error de conexión')
+    } finally {
+      setLoading(false)
     }
   }
 
