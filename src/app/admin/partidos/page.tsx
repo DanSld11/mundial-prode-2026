@@ -4,10 +4,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 import type { Match, Player, Team } from '@/types'
 import { TeamFlag } from '@/components/team-flag'
+import { formatPeruShortDateTime } from '@/lib/peru-time'
 
 interface MatchWithTeams extends Omit<Match, 'home_team' | 'away_team'> {
   home_team: Pick<Team, 'name_es' | 'flag_emoji' | 'code'> | null
@@ -47,7 +46,7 @@ export default async function AdminPartidosPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold">Gestión de Partidos</h2>
-        <p className="text-muted-foreground">Carga resultados para calcular puntos automáticamente.</p>
+        <p className="text-muted-foreground">Carga resultados para calcular puntos automáticamente. Horarios en Hora Perú.</p>
       </div>
 
       <Card>
@@ -72,7 +71,7 @@ export default async function AdminPartidosPage() {
                   <TableRow key={match.id}>
                     <TableCell className="text-xs text-muted-foreground">{match.match_number}</TableCell>
                     <TableCell className="text-xs whitespace-nowrap">
-                      {format(new Date(match.match_date), 'dd/MM HH:mm', { locale: es })}
+                      {formatPeruShortDateTime(match.match_date)}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{match.group_name}</Badge>

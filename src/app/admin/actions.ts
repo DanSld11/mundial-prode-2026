@@ -158,3 +158,43 @@ export async function updateMatchResultAction(formData: FormData) {
   revalidatePath('/dashboard')
   return { success: true }
 }
+
+export async function recalculateAllPointsAction() {
+  const supabase = await createServerSupabaseClient()
+
+  const { data: matches, error } = await supabase
+    .from('matches')
+    .select('id, home_score, away_score')
+    .eq('status', 'finished')
+    .not('home_score', 'is', null)
+    .not('away_score', 'is', null)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  let recalculated = 0
+
+  for (const match of matches ?? []) {
+    const { error: rpcError } = await supabase.rpc('update_match_predictions', {
+      p_match_id: match.id,
+      p_home_score: match.home_score,
+      p_away_score: match.away_score,
+    })
+
+    if (rpcError) {
+      return { error: rpcError.message }
+    }
+
+    recalculated += 1
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/partidos')
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/fixture')
+  revalidatePath('/dashboard/predicciones')
+  revalidatePath('/dashboard/tabla')
+
+  return { success: true, count: recalculated }
+}

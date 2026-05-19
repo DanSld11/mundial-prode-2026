@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   Shield,
+  UserRound,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -74,7 +75,7 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
               <Trophy className="h-4 w-4" />
             </div>
             <span className="hidden font-bold text-base tracking-tight min-[380px]:inline">
-              Prode <span className="text-brand-red">2026</span>
+              Mundial Perú <span className="text-brand-red">2026</span>
             </span>
           </Link>
 
@@ -114,15 +115,23 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
+            <Link href="/dashboard/perfil">
+              <Button variant="ghost" size="sm" className="hidden gap-1.5 text-muted-foreground sm:inline-flex">
+                <UserRound className="h-3.5 w-3.5" />
+                <span>Perfil</span>
+              </Button>
+            </Link>
             <form action="/auth/logout" method="post">
               <Button type="submit" variant="ghost" size="sm" className="hidden gap-1.5 text-muted-foreground sm:inline-flex">
                 <LogOut className="h-3.5 w-3.5" />
                 <span>Salir</span>
               </Button>
             </form>
-            <Avatar className="h-7 w-7">
-              <AvatarFallback className="bg-brand-red text-white text-xs font-bold">A</AvatarFallback>
-            </Avatar>
+            <Link href="/dashboard/perfil" aria-label="Perfil">
+              <Avatar className="h-7 w-7">
+                <AvatarFallback className="bg-brand-red text-white text-xs font-bold">P</AvatarFallback>
+              </Avatar>
+            </Link>
           </div>
 
           <Button
@@ -158,6 +167,14 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
               })}
               </div>
               <Separator className="my-3" />
+              <Link
+                href="/dashboard/perfil"
+                onClick={() => setMobileOpen(false)}
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary"
+              >
+                <UserRound className="h-4 w-4" />
+                Perfil
+              </Link>
               <form action="/auth/logout" method="post">
                 <button className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary">
                   <LogOut className="h-4 w-4" />

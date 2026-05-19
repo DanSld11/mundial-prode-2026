@@ -3,12 +3,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 import { ArrowRight, CalendarDays, Medal, Shield, Target, Trophy, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TeamFlag } from '@/components/team-flag'
+import { formatPeruShortDateTime } from '@/lib/peru-time'
 
 const quickLinks = [
   { href: '/dashboard/grupos', title: 'Grupos', description: 'Ver las 48 selecciones', icon: Users },
@@ -107,7 +106,10 @@ export default function DashboardPage() {
             <div className="mt-4 rounded-xl border bg-card p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-sm font-semibold">Próximos partidos</h2>
-                <Link href="/dashboard/fixture" className="text-xs font-medium text-brand-red hover:underline">Ver todos</Link>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground">Hora Perú</span>
+                  <Link href="/dashboard/fixture" className="text-xs font-medium text-brand-red hover:underline">Ver todos</Link>
+                </div>
               </div>
               <div className="space-y-3">
                 {nextMatches.length === 0 ? (
@@ -120,7 +122,7 @@ export default function DashboardPage() {
                         <TeamFlag code={match.home_team?.flag_emoji} label={match.home_team?.name_es} />
                       </div>
                       <div className="text-center text-[11px] text-muted-foreground">
-                        {format(new Date(match.match_date), 'd MMM HH:mm', { locale: es })}
+                        {formatPeruShortDateTime(match.match_date)}
                       </div>
                       <div className="flex min-w-0 items-center gap-2">
                         <TeamFlag code={match.away_team?.flag_emoji} label={match.away_team?.name_es} />

@@ -4,14 +4,13 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
-import { ArrowLeft, CheckCircle2, Goal, Medal, Target } from 'lucide-react'
+import { ArrowLeft, AlertCircle, CheckCircle2, Goal, Medal, Target } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { TeamFlag } from '@/components/team-flag'
+import { formatPeruLongDateTime } from '@/lib/peru-time'
 
 function getAccessToken() {
   return document.cookie.split('; ').find((row) => row.startsWith('sb-access-token='))?.split('=')[1]
@@ -31,6 +30,8 @@ export default function MatchPredictionPage() {
   const [scorerId, setScorerId] = useState('')
   const [homeScore, setHomeScore] = useState('')
   const [awayScore, setAwayScore] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
 
   const supabase = useMemo(() => createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -106,7 +107,23 @@ export default function MatchPredictionPage() {
   const awayPlayers = players.filter((player) => player.team_id === match?.away_team_id)
 
   async function savePrediction(kind: 'outcome' | 'scorer' | 'score') {
-    if (!userId || !match || isLocked) return
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    if (!accessToken) {
+      setErrorMessage('No se pudo identificar tu sesión. Vuelve a iniciar sesión e inténtalo otra vez.')
+      return
+    }
+
+    if (!userId || !match) {
+      setErrorMessage('No se pudo cargar tu usuario o el partido.')
+      return
+    }
+
+    if (isLocked) {
+      setErrorMessage('Las predicciones para este encuentro ya están cerradas.')
+      return
+    }
 
     setSaving(kind)
 
@@ -137,8 +154,6 @@ export default function MatchPredictionPage() {
       nextPrediction.predicted_away_score = awayScore === '' ? null : parseInt(awayScore)
     }
 
-    if (!accessToken) return
-
     const authedSupabase = createAuthedClient(accessToken)
     const { data, error } = await authedSupabase
       .from('predictions')
@@ -146,13 +161,26 @@ export default function MatchPredictionPage() {
       .select()
       .single()
 
-    if (!error && data) setPrediction(data)
+    if (error) {
+      setErrorMessage(error.message)
+    } else if (data) {
+      setPrediction(data)
+      setSuccessMessage('Predicción guardada correctamente.')
+    }
     setSaving(null)
   }
 
   function pointsBadge(points: number | undefined) {
     if (!isFinished) return null
     return <Badge variant={points ? 'default' : 'secondary'}>{points ?? 0} pts</Badge>
+  }
+
+  function statusBadge(saved: boolean, points: number | undefined) {
+    if (!saved) return <span className="text-xs text-muted-foreground">Pendiente</span>
+    if (!isFinished) return <span className="text-xs text-muted-foreground">Guardado</span>
+    return points
+      ? <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Acertada</Badge>
+      : <Badge variant="secondary">Fallida</Badge>
   }
 
   if (loading) return <div className="py-20 text-center text-sm text-muted-foreground">Cargando encuentro...</div>
@@ -169,7 +197,7 @@ export default function MatchPredictionPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <Badge variant="secondary">Grupo {match.group_name}</Badge>
           <span className="text-sm text-muted-foreground">
-            {format(new Date(match.match_date), "EEEE d 'de' MMMM · HH:mm", { locale: es })}
+            {formatPeruLongDateTime(match.match_date)} · Hora Perú
           </span>
         </div>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
@@ -187,6 +215,15 @@ export default function MatchPredictionPage() {
         </div>
         {isLocked && <p className="mt-4 text-center text-sm text-muted-foreground">Las predicciones para este encuentro están cerradas.</p>}
       </section>
+
+      {(errorMessage || successMessage) && (
+        <div className={`flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${
+          errorMessage ? 'border-destructive/20 bg-destructive/10 text-destructive' : 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300'
+        }`}>
+          {errorMessage ? <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}
+          <span>{errorMessage || successMessage}</span>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="shadow-sm">
@@ -217,7 +254,7 @@ export default function MatchPredictionPage() {
               ))}
             </div>
             <div className="flex items-center justify-between gap-2">
-              {prediction?.predicted_outcome && <span className="text-xs text-muted-foreground">Guardado</span>}
+              {statusBadge(!!prediction?.predicted_outcome, prediction?.outcome_points)}
               {pointsBadge(prediction?.outcome_points)}
             </div>
             <Button disabled={isLocked || !outcome || saving === 'outcome'} onClick={() => savePrediction('outcome')} className="w-full bg-brand-red text-white hover:bg-red-700">
@@ -258,7 +295,7 @@ export default function MatchPredictionPage() {
             </select>
             {players.length === 0 && <p className="text-xs text-muted-foreground">El admin aún no cargó jugadores para estos equipos.</p>}
             <div className="flex items-center justify-between gap-2">
-              {prediction?.predicted_scorer_id && <span className="text-xs text-muted-foreground">Guardado</span>}
+              {statusBadge(!!prediction?.predicted_scorer_id, prediction?.scorer_points)}
               {pointsBadge(prediction?.scorer_points)}
             </div>
             <Button disabled={isLocked || !scorerId || saving === 'scorer'} onClick={() => savePrediction('scorer')} className="w-full bg-brand-red text-white hover:bg-red-700">
@@ -281,7 +318,7 @@ export default function MatchPredictionPage() {
               <Input disabled={isLocked} type="number" min={0} max={20} value={awayScore} onChange={(event) => setAwayScore(event.target.value)} className="h-10 text-center" />
             </div>
             <div className="flex items-center justify-between gap-2">
-              {prediction?.predicted_home_score !== null && prediction?.predicted_home_score !== undefined && <span className="text-xs text-muted-foreground">Guardado</span>}
+              {statusBadge(prediction?.predicted_home_score !== null && prediction?.predicted_home_score !== undefined, prediction?.exact_score_points)}
               {pointsBadge(prediction?.exact_score_points)}
             </div>
             <Button disabled={isLocked || homeScore === '' || awayScore === '' || saving === 'score'} onClick={() => savePrediction('score')} className="w-full bg-brand-red text-white hover:bg-red-700">

@@ -48,8 +48,8 @@ export default function LoginPage() {
               <Trophy className="h-5 w-5" />
             </div>
           </div>
-          <CardTitle className="text-2xl tracking-tight">Prode 2026</CardTitle>
-          <CardDescription>Ingresá para cargar tus predicciones</CardDescription>
+          <CardTitle className="text-2xl tracking-tight">Mundial Perú 2026</CardTitle>
+          <CardDescription>Ingresa para cargar tus predicciones</CardDescription>
         </CardHeader>
         <CardContent>
           {error && (

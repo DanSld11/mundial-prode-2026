@@ -3,8 +3,8 @@ import './globals.css'
 import { Toaster } from 'sonner'
 
 export const metadata: Metadata = {
-  title: 'Mundial Prode 2026',
-  description: 'Predecí los partidos del Mundial 2026 y competí con tus amigos',
+  title: 'Mundial Perú 2026',
+  description: 'Predice los partidos del Mundial 2026 y compite con tus amigos',
 }
 
 export default function RootLayout({

@@ -6,9 +6,8 @@ import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { CalendarDays, MapPin } from 'lucide-react'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 import { TeamFlag } from '@/components/team-flag'
+import { formatPeruDateLabel, formatPeruTime, peruDateKey } from '@/lib/peru-time'
 
 function getAccessToken() {
   return document.cookie.split('; ').find(r => r.startsWith('sb-access-token='))?.split('=')[1]
@@ -46,7 +45,7 @@ export default function FixturePage() {
   const predictionsMap = new Map(predictions.map((p: any) => [p.match_id, p]))
   const matchesByDate: Record<string, any[]> = {}
   matches.forEach((m: any) => {
-    const d = format(new Date(m.match_date), 'yyyy-MM-dd')
+    const d = peruDateKey(m.match_date)
     if (!matchesByDate[d]) matchesByDate[d] = []
     matchesByDate[d].push(m)
   })
@@ -60,7 +59,7 @@ export default function FixturePage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Fixture</h1>
-            <p className="text-sm text-muted-foreground">Fase de grupos oficial · 11-27 junio 2026</p>
+            <p className="text-sm text-muted-foreground">Fase de grupos oficial · 11-27 junio 2026 · Hora Perú</p>
           </div>
         </div>
       </div>
@@ -76,7 +75,7 @@ export default function FixturePage() {
           {Object.entries(matchesByDate).map(([dateKey, dayMatches]) => (
             <div key={dateKey}>
               <h2 className="mb-2 pl-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                {format(new Date(dateKey + 'T00:00:00'), "EEEE d 'de' MMMM", { locale: es })}
+                {formatPeruDateLabel(dayMatches[0].match_date)}
               </h2>
               <div className="grid gap-3">
                 {dayMatches.map((match: any) => {
@@ -93,7 +92,7 @@ export default function FixturePage() {
                           <div className="flex items-center justify-between gap-2 sm:w-28 sm:justify-start">
                             <Badge variant="secondary" className="w-12 shrink-0 justify-center font-mono text-xs">G{match.group_name}</Badge>
                             <span className="text-xs text-muted-foreground sm:hidden">
-                              {format(new Date(match.match_date), 'HH:mm')}
+                              {formatPeruTime(match.match_date)}
                             </span>
                           </div>
                           <div className="grid flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
@@ -106,7 +105,7 @@ export default function FixturePage() {
                                 <span className="text-lg font-bold tabular-nums">{match.home_score} - {match.away_score}</span>
                               ) : (
                                 <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
-                                  {format(new Date(match.match_date), 'HH:mm')}
+                                  {formatPeruTime(match.match_date)}
                                 </span>
                               )}
                             </div>

@@ -4,10 +4,12 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { recalculateAllPointsAction } from './actions'
 
 export default function AdminPage() {
   const [loadingTeams, setLoadingTeams] = useState(false)
   const [loadingMatches, setLoadingMatches] = useState(false)
+  const [loadingRecalc, setLoadingRecalc] = useState(false)
 
   async function seedTeams() {
     setLoadingTeams(true)
@@ -29,6 +31,14 @@ export default function AdminPage() {
       else toast.success(`Insertados: ${data.count}/72 partidos${data.errors ? ' (con errores)' : ''}`)
     } catch (e: any) { toast.error(e.message) }
     setLoadingMatches(false)
+  }
+
+  async function recalculatePoints() {
+    setLoadingRecalc(true)
+    const result = await recalculateAllPointsAction()
+    if (result.error) toast.error(result.error)
+    else toast.success(`Puntos recalculados en ${result.count ?? 0} partidos finalizados`)
+    setLoadingRecalc(false)
   }
 
   return (
@@ -87,6 +97,17 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent>
             <a href="/admin/puntuacion"><Button variant="outline" size="sm">Configurar</Button></a>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Recalcular puntos</CardTitle>
+            <CardDescription>Repara predicciones después de editar resultados o goleadores.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" size="sm" onClick={recalculatePoints} disabled={loadingRecalc}>
+              {loadingRecalc ? 'Recalculando...' : 'Recalcular ahora'}
+            </Button>
           </CardContent>
         </Card>
       </div>

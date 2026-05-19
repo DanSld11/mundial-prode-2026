@@ -1,5 +1,5 @@
 // =============================================
-// SUPABASE CLIENT — MUNDIAL PRODE 2026
+// SUPABASE CLIENT — MUNDIAL PERÚ 2026
 // =============================================
 // Instalación: npm install @supabase/supabase-js @supabase/ssr
 // Variables de entorno en .env.local:

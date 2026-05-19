@@ -1,5 +1,5 @@
 // =============================================
-// TIPOS TYPESCRIPT — MUNDIAL PRODE 2026
+// TIPOS TYPESCRIPT — MUNDIAL PERÚ 2026
 // =============================================
 
 export type Role = 'player' | 'admin'

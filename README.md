@@ -1,4 +1,4 @@
-# 🏆 Mundial Prode 2026
+# Mundial Perú 2026
 
 App de predicciones del Mundial 2026 para jugar entre amigos.
 
@@ -17,7 +17,7 @@ App de predicciones del Mundial 2026 para jugar entre amigos.
 
 ```bash
 git clone <tu-repo>
-cd mundial-prode-2026
+cd mundial2026
 npm install
 ```
 
