@@ -8,10 +8,14 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setError(null)
     setLoading(true)
+    
+    const formData = new FormData(e.currentTarget)
     const result = await registerAction(formData)
+    
     setLoading(false)
     if (result?.error) {
       setError(result.error)
@@ -44,7 +48,7 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <form action={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">
                 Nombre de usuario *
