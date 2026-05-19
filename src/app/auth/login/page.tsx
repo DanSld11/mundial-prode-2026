@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 
 export default function LoginPage() {
@@ -17,21 +16,32 @@ export default function LoginPage() {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
 
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    try {
+      const res = await fetch('https://anbfhgkaaaqvjeiwtojp.supabase.co/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: {
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuYmZoZ2thYWFxdmplaXd0b2pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjg1OTksImV4cCI6MjA5NDcwNDU5OX0.rsfIrfuYdpLxdR2OlfU0k4Ddf0h4sHmyM6Nj48IDSlc',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
 
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
-    setLoading(false)
+      const data = await res.json()
 
-    if (authError) {
-      setError(authError.message)
-      return
-    }
+      if (!res.ok || data.error) {
+        setError(data.error_description || data.error || 'Error al iniciar sesión')
+        setLoading(false)
+        return
+      }
 
-    if (data.session) {
+      // Guardar tokens en cookies manualmente
+      document.cookie = `sb-access-token=${data.access_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax; secure`
+      document.cookie = `sb-refresh-token=${data.refresh_token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax; secure`
+
       window.location.replace('/dashboard/grupos')
+    } catch (err: any) {
+      setError(err.message || 'Error de conexión')
+      setLoading(false)
     }
   }
 

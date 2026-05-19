@@ -1,18 +1,10 @@
 import { Navbar } from '@/components/layout/navbar'
-import { getCurrentUser } from '@/app/auth/actions'
-import { redirect } from 'next/navigation'
 
-export default async function AdminLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const user = await getCurrentUser()
-
-  if (!user || user.role !== 'admin') {
-    redirect('/dashboard/grupos')
-  }
-
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       <Navbar isAdmin={true} />
