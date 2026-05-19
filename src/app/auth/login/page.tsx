@@ -2,6 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Trophy } from 'lucide-react'
 
 export default function LoginPage() {
   const [error, setError] = useState('')
@@ -12,7 +16,7 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    const data = new FormData(e.currentTarget)
+    const fd = new FormData(e.currentTarget)
 
     try {
       const res = await fetch('https://anbfhgkaaaqvjeiwtojp.supabase.co/auth/v1/token?grant_type=password', {
@@ -21,24 +25,12 @@ export default function LoginPage() {
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuYmZoZ2thYWFxdmplaXd0b2pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjg1OTksImV4cCI6MjA5NDcwNDU5OX0.rsfIrfuYdpLxdR2OlfU0k4Ddf0h4sHmyM6Nj48IDSlc',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: data.get('email'),
-          password: data.get('password'),
-        }),
+        body: JSON.stringify({ email: fd.get('email'), password: fd.get('password') }),
       })
+      const data = await res.json()
+      if (!res.ok) { setError(data.msg || data.error_description || 'Email o contraseña incorrectos'); setLoading(false); return }
 
-      const json = await res.json()
-
-      if (!res.ok) {
-        setError(json.msg || json.error_description || 'Error al iniciar sesión')
-        setLoading(false)
-        return
-      }
-
-      // Guardar cookie con el token
-      document.cookie = 'sb-access-token=' + json.access_token + '; path=/; max-age=604800; SameSite=Lax'
-
-      // Redirect
+      document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=604800; SameSite=Lax'
       window.location.href = '/dashboard/grupos'
     } catch (err: any) {
       setError(err.message)
@@ -47,49 +39,38 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-[#C8102E] rounded flex items-center justify-center">
-              <span className="font-['Bebas_Neue'] text-white text-xl tracking-widest">26</span>
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+      <Card className="w-full max-w-sm border shadow-sm">
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-2">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-red text-white">
+              <Trophy className="h-5 w-5" />
             </div>
-            <span className="font-['Bebas_Neue'] text-3xl tracking-[4px] text-white">
-              MUNDIAL <span className="text-[#F4C300]">PRODE</span>
-            </span>
           </div>
-          <p className="text-white/40 text-sm">Ingresá a tu cuenta para predecir</p>
-        </div>
-
-        <div className="bg-[#111] border border-white/8 rounded-xl p-8">
-          <h1 className="text-white text-xl font-semibold mb-6">Ingresar</h1>
-
+          <CardTitle className="text-xl tracking-tight">Prode 2026</CardTitle>
+          <CardDescription>Ingresá a tu cuenta para jugar</CardDescription>
+        </CardHeader>
+        <CardContent>
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 mb-5 text-red-400 text-sm">
+            <div className="mb-4 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive">
               {error}
             </div>
           )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">Email</label>
-              <input name="email" type="email" required className="w-full bg-[#1A1A1A] border border-white/8 rounded-md px-4 py-3 text-white text-sm focus:outline-none focus:border-[#C8102E]/50" />
-            </div>
-            <div>
-              <label className="block text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">Contraseña</label>
-              <input name="password" type="password" required className="w-full bg-[#1A1A1A] border border-white/8 rounded-md px-4 py-3 text-white text-sm focus:outline-none focus:border-[#C8102E]/50" />
-            </div>
-            <button type="submit" disabled={loading} className="w-full bg-[#C8102E] hover:bg-[#e01230] text-white font-bold text-sm uppercase tracking-widest py-3 rounded-md disabled:opacity-50">
-              {loading ? 'Ingresando...' : 'Ingresar al prode'}
-            </button>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input name="email" type="email" placeholder="Email" required className="h-10" />
+            <Input name="password" type="password" placeholder="Contraseña" required className="h-10" />
+            <Button type="submit" disabled={loading} className="w-full h-10 bg-brand-red hover:bg-red-700 text-white">
+              {loading ? 'Ingresando...' : 'Ingresar'}
+            </Button>
           </form>
-
-          <div className="text-center mt-6 text-white/40 text-sm">
+          <div className="mt-4 text-center text-sm text-muted-foreground">
             ¿No tenés cuenta?{' '}
-            <Link href="/auth/register" className="text-[#F4C300] hover:underline font-medium">Registrarse</Link>
+            <Link href="/auth/register" className="text-brand-red hover:underline font-medium">
+              Registrarse
+            </Link>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

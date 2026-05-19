@@ -1,25 +1,22 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Trophy } from 'lucide-react'
 
-function RegisterForm() {
-  const searchParams = useSearchParams()
-  const errorMsg = searchParams.get('error')
-  const [error, setError] = useState<string | null>(errorMsg)
+export default function RegisterPage() {
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setError(null)
+    setError('')
     setLoading(true)
 
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const username = formData.get('username') as string
-    const favoriteTeam = formData.get('favorite_team') as string
+    const fd = new FormData(e.currentTarget)
 
     try {
       const res = await fetch('https://anbfhgkaaaqvjeiwtojp.supabase.co/auth/v1/signup', {
@@ -29,130 +26,62 @@ function RegisterForm() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email,
-          password,
-          data: { username, favorite_team: favoriteTeam || null },
+          email: fd.get('email'),
+          password: fd.get('password'),
+          data: { username: fd.get('username'), favorite_team: fd.get('favorite_team') || null },
         }),
       })
-
       const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.msg || data.error || 'Error al registrarse')
-        setLoading(false)
-        return
-      }
+      if (!res.ok) { setError(data.msg || 'Error al registrarse'); setLoading(false); return }
 
       if (data.access_token) {
-        document.cookie = `sb-access-token=${data.access_token}; path=/; max-age=${604800}; SameSite=Lax`
-        window.location.replace('/dashboard/grupos')
+        document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=604800; SameSite=Lax'
+        window.location.href = '/dashboard/grupos'
       } else {
         setError('Registro exitoso. Revisá tu email para confirmar.')
         setLoading(false)
       }
     } catch (err: any) {
-      setError(err.message || 'Error de conexión')
+      setError(err.message)
       setLoading(false)
     }
   }
 
   return (
-    <div className="bg-[#111] border border-white/8 rounded-xl p-8">
-      <h1 className="text-white text-xl font-semibold mb-6">Crear cuenta</h1>
-
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 mb-5 text-red-400 text-sm">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">
-            Nombre de usuario *
-          </label>
-          <input
-            name="username"
-            type="text"
-            required
-            minLength={3}
-            maxLength={20}
-            placeholder="el_crack_del_prode"
-            className="w-full bg-[#1A1A1A] border border-white/8 rounded-md px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8102E]/50"
-          />
-        </div>
-        <div>
-          <label className="block text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">
-            Email *
-          </label>
-          <input
-            name="email"
-            type="email"
-            required
-            className="w-full bg-[#1A1A1A] border border-white/8 rounded-md px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8102E]/50"
-          />
-        </div>
-        <div>
-          <label className="block text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">
-            Contraseña *
-          </label>
-          <input
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            placeholder="Mínimo 8 caracteres"
-            className="w-full bg-[#1A1A1A] border border-white/8 rounded-md px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8102E]/50"
-          />
-        </div>
-        <div>
-          <label className="block text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">
-            Equipo favorito 🌟
-          </label>
-          <input
-            name="favorite_team"
-            type="text"
-            placeholder="Argentina, Brasil, España..."
-            className="w-full bg-[#1A1A1A] border border-white/8 rounded-md px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8102E]/50"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-[#F4C300] hover:bg-[#e6b800] text-[#0A0A0A] font-bold text-sm uppercase tracking-widest py-3 rounded-md mt-2 disabled:opacity-50"
-        >
-          {loading ? 'Creando cuenta...' : 'Crear cuenta'}
-        </button>
-      </form>
-      <div className="text-center mt-6 text-white/40 text-sm">
-        ¿Ya tenés cuenta?{' '}
-        <Link href="/auth/login" className="text-[#F4C300] hover:underline font-medium">
-          Ingresar
-        </Link>
-      </div>
-    </div>
-  )
-}
-
-export default function RegisterPage() {
-  return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-[#C8102E] rounded flex items-center justify-center">
-              <span className="font-['Bebas_Neue'] text-white text-xl tracking-widest">26</span>
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+      <Card className="w-full max-w-sm border shadow-sm">
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-2">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-red text-white">
+              <Trophy className="h-5 w-5" />
             </div>
-            <span className="font-['Bebas_Neue'] text-3xl tracking-[4px] text-white">
-              MUNDIAL <span className="text-[#F4C300]">PRODE</span>
-            </span>
           </div>
-          <p className="text-white/40 text-sm">Creá tu cuenta y competí con tus amigos</p>
-        </div>
-        <Suspense fallback={<div className="text-white">Cargando...</div>}>
-          <RegisterForm />
-        </Suspense>
-      </div>
+          <CardTitle className="text-xl tracking-tight">Crear cuenta</CardTitle>
+          <CardDescription>Competí con tus amigos</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="mb-4 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <Input name="username" type="text" placeholder="Nombre de usuario" required minLength={3} maxLength={20} className="h-10" />
+            <Input name="email" type="email" placeholder="Email" required className="h-10" />
+            <Input name="password" type="password" placeholder="Contraseña (mín 8)" required minLength={8} className="h-10" />
+            <Input name="favorite_team" type="text" placeholder="Equipo favorito (opcional)" className="h-10" />
+            <Button type="submit" disabled={loading} className="w-full h-10 bg-brand-red hover:bg-red-700 text-white">
+              {loading ? 'Creando...' : 'Crear cuenta'}
+            </Button>
+          </form>
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            ¿Ya tenés cuenta?{' '}
+            <Link href="/auth/login" className="text-brand-red hover:underline font-medium">
+              Ingresar
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
