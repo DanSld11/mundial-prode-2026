@@ -22,14 +22,16 @@ export default function TablaPage() {
   if (loading) return <div className="py-20 text-center text-muted-foreground text-sm">Cargando tabla...</div>
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-brand-red/10">
-          <Table2 className="h-5 w-5 text-brand-red" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Tabla de Posiciones</h1>
-          <p className="text-sm text-muted-foreground">Ranking de jugadores</p>
+    <div className="space-y-5 sm:space-y-7">
+      <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-red text-white shadow-sm">
+            <Table2 className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Tabla de Posiciones</h1>
+            <p className="text-sm text-muted-foreground">Ranking de jugadores</p>
+          </div>
         </div>
       </div>
 
@@ -38,7 +40,7 @@ export default function TablaPage() {
           <h3 className="font-semibold text-muted-foreground">Aún no hay jugadores</h3>
         </div>
       ) : (
-        <Card>
+        <Card className="mx-auto max-w-4xl overflow-hidden shadow-sm">
           <CardContent className="p-0">
             <Table>
               <TableHeader>

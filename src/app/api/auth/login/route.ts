@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.redirect(new URL(`/auth/login?error=${msg}`, request.url))
   }
 
-  const response = NextResponse.redirect(new URL('/dashboard/grupos', request.url))
+  const response = NextResponse.redirect(new URL('/dashboard', request.url))
 
   // Setear cookies manualmente
   const { access_token, refresh_token, expires_at } = data.session

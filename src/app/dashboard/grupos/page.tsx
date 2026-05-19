@@ -26,21 +26,21 @@ export default function GruposPage() {
   const totalTeams = teams.length
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-xl border bg-card p-4 shadow-sm">
-        <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-red text-white shadow-sm">
-            <Users className="h-5 w-5" />
+    <div className="space-y-5 sm:space-y-7">
+      <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-red text-white shadow-sm">
+              <Users className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Grupos</h1>
+              <p className="text-sm text-muted-foreground">
+                {totalTeams > 0 ? '48 selecciones · 12 grupos · Copa Mundial FIFA 2026' : 'Sin equipos cargados'}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Grupos</h1>
-            <p className="text-sm text-muted-foreground">
-              {totalTeams > 0 ? '48 selecciones · 12 grupos · Copa Mundial FIFA 2026' : 'Sin equipos cargados'}
-            </p>
-          </div>
-        </div>
-        <Badge variant="outline" className="shrink-0 text-xs">{totalTeams}/48</Badge>
+          <Badge variant="outline" className="w-fit shrink-0 text-xs">{totalTeams}/48 cargados</Badge>
         </div>
       </div>
 
@@ -51,7 +51,7 @@ export default function GruposPage() {
           <p className="text-sm text-muted-foreground/60 mt-1">Ejecutá el seed desde el panel de admin.</p>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mx-auto grid max-w-6xl gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {groups.map((g) => {
             const groupTeams = teams.filter((t) => t.group_name === g)
             return (

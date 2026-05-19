@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       return NextResponse.redirect(new URL('/auth/register?error=Error+al+registrarse', request.url))
     }
 
-    return NextResponse.redirect(new URL('/dashboard/grupos', request.url))
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   } catch (err: any) {
     console.error('Register error:', err)
     return NextResponse.redirect(new URL('/auth/register?error=Error+del+servidor', request.url))

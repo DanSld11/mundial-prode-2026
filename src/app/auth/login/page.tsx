@@ -31,7 +31,7 @@ export default function LoginPage() {
       if (!res.ok) { setError(data.msg || data.error_description || 'Email o contraseña incorrectos'); setLoading(false); return }
 
       document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=604800; SameSite=Lax'
-      window.location.href = '/dashboard/grupos'
+      window.location.href = '/dashboard'
     } catch (err: any) {
       setError(err.message)
       setLoading(false)
@@ -39,16 +39,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-      <Card className="w-full max-w-sm border shadow-sm">
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-10">
+      <div className="absolute inset-x-0 top-0 h-40 border-b bg-card" />
+      <Card className="relative w-full max-w-sm border shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-2">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand-red text-white">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-red text-white shadow-sm">
               <Trophy className="h-5 w-5" />
             </div>
           </div>
-          <CardTitle className="text-xl tracking-tight">Prode 2026</CardTitle>
-          <CardDescription>Ingresá a tu cuenta para jugar</CardDescription>
+          <CardTitle className="text-2xl tracking-tight">Prode 2026</CardTitle>
+          <CardDescription>Ingresá para cargar tus predicciones</CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
