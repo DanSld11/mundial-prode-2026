@@ -1,23 +1,18 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 
-function LoginForm() {
-  const searchParams = useSearchParams()
-  const errorMsg = searchParams.get('error')
-  const [error, setError] = useState<string | null>(errorMsg)
+export default function LoginPage() {
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setError(null)
+    setError('')
     setLoading(true)
 
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
+    const data = new FormData(e.currentTarget)
 
     try {
       const res = await fetch('https://anbfhgkaaaqvjeiwtojp.supabase.co/auth/v1/token?grant_type=password', {
@@ -26,75 +21,31 @@ function LoginForm() {
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuYmZoZ2thYWFxdmplaXd0b2pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjg1OTksImV4cCI6MjA5NDcwNDU5OX0.rsfIrfuYdpLxdR2OlfU0k4Ddf0h4sHmyM6Nj48IDSlc',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email: data.get('email'),
+          password: data.get('password'),
+        }),
       })
 
-      const data = await res.json()
+      const json = await res.json()
 
-      if (!res.ok || data.error) {
-        setError(data.error_description || data.error || data.msg || 'Email o contraseña incorrectos')
+      if (!res.ok) {
+        setError(json.msg || json.error_description || 'Error al iniciar sesión')
         setLoading(false)
         return
       }
 
-      document.cookie = `sb-access-token=${data.access_token}; path=/; max-age=604800; SameSite=Lax`
-      document.cookie = `sb-refresh-token=${data.refresh_token}; path=/; max-age=604800; SameSite=Lax`
+      // Guardar cookie con el token
+      document.cookie = 'sb-access-token=' + json.access_token + '; path=/; max-age=604800; SameSite=Lax'
 
-      window.location.replace('/dashboard/grupos')
+      // Redirect
+      window.location.href = '/dashboard/grupos'
     } catch (err: any) {
-      setError(err.message || 'Error de conexión')
+      setError(err.message)
       setLoading(false)
     }
   }
 
-  return (
-    <div className="bg-[#111] border border-white/8 rounded-xl p-8">
-      <h1 className="text-white text-xl font-semibold mb-6">Ingresar</h1>
-
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 mb-5 text-red-400 text-sm">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className="block text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">Email</label>
-          <input
-            name="email"
-            type="email"
-            required
-            className="w-full bg-[#1A1A1A] border border-white/8 rounded-md px-4 py-3 text-white text-sm focus:outline-none focus:border-[#C8102E]/50"
-          />
-        </div>
-        <div>
-          <label className="block text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">Contraseña</label>
-          <input
-            name="password"
-            type="password"
-            required
-            className="w-full bg-[#1A1A1A] border border-white/8 rounded-md px-4 py-3 text-white text-sm focus:outline-none focus:border-[#C8102E]/50"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-[#C8102E] hover:bg-[#e01230] text-white font-bold text-sm uppercase tracking-widest py-3 rounded-md disabled:opacity-50"
-        >
-          {loading ? 'Ingresando...' : 'Ingresar al prode'}
-        </button>
-      </form>
-      <div className="text-center mt-6 text-white/40 text-sm">
-        ¿No tenés cuenta?{' '}
-        <Link href="/auth/register" className="text-[#F4C300] hover:underline font-medium">
-          Registrarse
-        </Link>
-      </div>
-    </div>
-  )
-}
-
-export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -109,9 +60,35 @@ export default function LoginPage() {
           </div>
           <p className="text-white/40 text-sm">Ingresá a tu cuenta para predecir</p>
         </div>
-        <Suspense fallback={<div className="text-white text-center">Cargando...</div>}>
-          <LoginForm />
-        </Suspense>
+
+        <div className="bg-[#111] border border-white/8 rounded-xl p-8">
+          <h1 className="text-white text-xl font-semibold mb-6">Ingresar</h1>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 mb-5 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">Email</label>
+              <input name="email" type="email" required className="w-full bg-[#1A1A1A] border border-white/8 rounded-md px-4 py-3 text-white text-sm focus:outline-none focus:border-[#C8102E]/50" />
+            </div>
+            <div>
+              <label className="block text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">Contraseña</label>
+              <input name="password" type="password" required className="w-full bg-[#1A1A1A] border border-white/8 rounded-md px-4 py-3 text-white text-sm focus:outline-none focus:border-[#C8102E]/50" />
+            </div>
+            <button type="submit" disabled={loading} className="w-full bg-[#C8102E] hover:bg-[#e01230] text-white font-bold text-sm uppercase tracking-widest py-3 rounded-md disabled:opacity-50">
+              {loading ? 'Ingresando...' : 'Ingresar al prode'}
+            </button>
+          </form>
+
+          <div className="text-center mt-6 text-white/40 text-sm">
+            ¿No tenés cuenta?{' '}
+            <Link href="/auth/register" className="text-[#F4C300] hover:underline font-medium">Registrarse</Link>
+          </div>
+        </div>
       </div>
     </div>
   )
