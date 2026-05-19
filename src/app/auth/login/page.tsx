@@ -6,12 +6,17 @@ import Link from 'next/link'
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   async function handleSubmit(formData: FormData) {
     setError(null)
+    setLoading(true)
     const result = await loginAction(formData)
+    setLoading(false)
     if (result?.error) {
       setError(result.error)
+    } else if (result?.success) {
+      window.location.href = '/dashboard/grupos'
     }
   }
 
@@ -69,9 +74,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full bg-[#C8102E] hover:bg-[#e01230] text-white font-bold text-sm uppercase tracking-widest py-3 rounded-md transition-all hover:-translate-y-px"
+              disabled={loading}
+              className="w-full bg-[#C8102E] hover:bg-[#e01230] text-white font-bold text-sm uppercase tracking-widest py-3 rounded-md transition-all hover:-translate-y-px disabled:opacity-50"
             >
-              Ingresar al prode
+              {loading ? 'Ingresando...' : 'Ingresar al prode'}
             </button>
           </form>
 

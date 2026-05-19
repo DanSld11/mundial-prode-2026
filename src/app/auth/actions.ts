@@ -28,7 +28,7 @@ export async function loginAction(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/dashboard/grupos')
+  return { success: true }
 }
 
 // ── REGISTER ──
@@ -82,7 +82,7 @@ export async function registerAction(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/dashboard/grupos')
+  return { success: true }
 }
 
 // ── LOGOUT ──

@@ -6,12 +6,17 @@ import Link from 'next/link'
 
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   async function handleSubmit(formData: FormData) {
     setError(null)
+    setLoading(true)
     const result = await registerAction(formData)
+    setLoading(false)
     if (result?.error) {
       setError(result.error)
+    } else if (result?.success) {
+      window.location.href = '/dashboard/grupos'
     }
   }
 
@@ -99,9 +104,10 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              className="w-full bg-[#F4C300] hover:bg-[#e6b800] text-[#0A0A0A] font-bold text-sm uppercase tracking-widest py-3 rounded-md transition-all hover:-translate-y-px mt-2"
+              disabled={loading}
+              className="w-full bg-[#F4C300] hover:bg-[#e6b800] text-[#0A0A0A] font-bold text-sm uppercase tracking-widest py-3 rounded-md transition-all hover:-translate-y-px mt-2 disabled:opacity-50"
             >
-              Crear cuenta
+              {loading ? 'Creando cuenta...' : 'Crear cuenta'}
             </button>
           </form>
 
