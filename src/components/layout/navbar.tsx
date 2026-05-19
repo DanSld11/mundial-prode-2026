@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
 import { cn } from '@/lib/utils'
 import {
   Trophy,
@@ -15,7 +16,7 @@ import {
   Menu,
   Shield,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
@@ -34,6 +35,35 @@ const bottomNavItems = navItems.filter((item) => item.href !== '/dashboard/brack
 export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [detectedAdmin, setDetectedAdmin] = useState(isAdmin)
+  const showAdmin = isAdmin || detectedAdmin
+
+  useEffect(() => {
+    if (isAdmin) return
+
+    const token = document.cookie.split('; ').find((row) => row.startsWith('sb-access-token='))?.split('=')[1]
+    if (!token) return
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+
+    supabase.auth.getUser(token).then(({ data }) => {
+      if (!data.user) return
+      supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single()
+        .then(({ data: profile }) => setDetectedAdmin(profile?.role === 'admin'))
+    })
+  }, [isAdmin])
+
+  const mobileNavItems = useMemo(() => {
+    return showAdmin ? [...navItems, { href: '/admin', label: 'Admin', icon: Shield }] : navItems
+  }, [showAdmin])
 
   return (
     <>
@@ -67,7 +97,7 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
                 </Link>
               )
             })}
-            {isAdmin && (
+            {showAdmin && (
               <Link
                 href="/admin"
                 className={cn(
@@ -109,7 +139,7 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
           <div className="border-t bg-card min-[920px]:hidden">
             <div className="mx-auto w-full max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {navItems.map((item) => {
+              {mobileNavItems.map((item) => {
                 const active = pathname === item.href
                 return (
                   <Link
@@ -126,16 +156,6 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
                   </Link>
                 )
               })}
-              {isAdmin && (
-                <Link
-                  href="/admin"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary"
-                >
-                  <Shield className="h-4 w-4" />
-                  Admin
-                </Link>
-              )}
               </div>
               <Separator className="my-3" />
               <form action="/auth/logout" method="post">

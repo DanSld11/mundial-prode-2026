@@ -60,6 +60,23 @@ create table public.teams (
 );
 
 -- =============================================
+-- TABLA: players (jugadores por equipo)
+-- =============================================
+create table public.players (
+  id uuid default uuid_generate_v4() primary key,
+  team_id uuid references public.teams(id) on delete cascade not null,
+  name text not null,
+  shirt_number integer,
+  position text,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index players_team_id_idx on public.players(team_id);
+create index players_active_idx on public.players(active);
+
+-- =============================================
 -- TABLA: matches (partidos)
 -- =============================================
 create table public.matches (
@@ -91,15 +108,44 @@ create table public.predictions (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
   match_id uuid references public.matches(id) on delete cascade not null,
-  predicted_home_score integer not null,
-  predicted_away_score integer not null,
+  predicted_outcome text check (predicted_outcome in ('home', 'away', 'draw')),
+  predicted_home_score integer,
+  predicted_away_score integer,
   predicted_winner_id uuid references public.teams(id),  -- null si predice empate
+  predicted_scorer_id uuid references public.players(id),
+  outcome_points integer not null default 0,
+  scorer_points integer not null default 0,
+  exact_score_points integer not null default 0,
   points_earned integer default 0,
   is_exact_score boolean default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, match_id)  -- una predicción por partido por usuario
 );
+
+-- =============================================
+-- TABLA: match_goal_scorers (goleadores reales)
+-- =============================================
+create table public.match_goal_scorers (
+  match_id uuid references public.matches(id) on delete cascade not null,
+  player_id uuid references public.players(id) on delete cascade not null,
+  created_at timestamptz not null default now(),
+  primary key (match_id, player_id)
+);
+
+create index match_goal_scorers_player_id_idx on public.match_goal_scorers(player_id);
+
+-- =============================================
+-- TABLA: scoring_settings (puntos configurables)
+-- =============================================
+create table public.scoring_settings (
+  prediction_type text primary key check (prediction_type in ('outcome', 'scorer', 'exact_score')),
+  points integer not null check (points >= 0),
+  updated_at timestamptz not null default now()
+);
+
+insert into public.scoring_settings (prediction_type, points)
+values ('outcome', 1), ('scorer', 2), ('exact_score', 3);
 
 -- RLS para predicciones
 alter table public.predictions enable row level security;
@@ -136,45 +182,16 @@ create policy "Usuario crea su bracket" on public.bracket_predictions
 create policy "Usuario edita su bracket" on public.bracket_predictions
   for update using (auth.uid() = user_id);
 
--- =============================================
--- FUNCIÓN: calcular puntos de una predicción
--- =============================================
-create or replace function public.calculate_prediction_points(
-  p_predicted_home integer,
-  p_predicted_away integer,
-  p_actual_home integer,
-  p_actual_away integer
-) returns integer as $$
-declare
-  v_points integer := 0;
-  v_predicted_winner text;
-  v_actual_winner text;
+create or replace function public.recalculate_profile_points(p_user_id uuid)
+returns void as $$
 begin
-  -- Determinar ganador predicho
-  if p_predicted_home > p_predicted_away then v_predicted_winner := 'home';
-  elsif p_predicted_away > p_predicted_home then v_predicted_winner := 'away';
-  else v_predicted_winner := 'draw';
-  end if;
-
-  -- Determinar ganador real
-  if p_actual_home > p_actual_away then v_actual_winner := 'home';
-  elsif p_actual_away > p_actual_home then v_actual_winner := 'away';
-  else v_actual_winner := 'draw';
-  end if;
-
-  -- Resultado exacto: 4 puntos
-  if p_predicted_home = p_actual_home and p_predicted_away = p_actual_away then
-    return 4;
-  end if;
-
-  -- Solo ganador correcto: 2 puntos
-  if v_predicted_winner = v_actual_winner then
-    return 2;
-  end if;
-
-  return 0;
+  update public.profiles
+  set
+    total_points = coalesce((select sum(points_earned) from public.predictions where user_id = p_user_id), 0),
+    updated_at = now()
+  where id = p_user_id;
 end;
-$$ language plpgsql;
+$$ language plpgsql security definer;
 
 -- =============================================
 -- FUNCIÓN: actualizar puntos al cargar resultado
@@ -186,32 +203,59 @@ create or replace function public.update_match_predictions(
 ) returns void as $$
 declare
   v_pred record;
-  v_points integer;
+  v_outcome text;
+  v_outcome_points integer := 1;
+  v_scorer_points integer := 2;
+  v_exact_points integer := 3;
+  v_calc_outcome integer;
+  v_calc_scorer integer;
+  v_calc_exact integer;
 begin
-  -- Actualizar cada predicción del partido
+  if p_home_score > p_away_score then v_outcome := 'home';
+  elsif p_away_score > p_home_score then v_outcome := 'away';
+  else v_outcome := 'draw';
+  end if;
+
+  select points into v_outcome_points from public.scoring_settings where prediction_type = 'outcome';
+  select points into v_scorer_points from public.scoring_settings where prediction_type = 'scorer';
+  select points into v_exact_points from public.scoring_settings where prediction_type = 'exact_score';
+
   for v_pred in
     select * from public.predictions where match_id = p_match_id
   loop
-    v_points := public.calculate_prediction_points(
-      v_pred.predicted_home_score,
-      v_pred.predicted_away_score,
-      p_home_score,
-      p_away_score
-    );
+    v_calc_outcome := case
+      when v_pred.predicted_outcome is not null and v_pred.predicted_outcome = v_outcome then coalesce(v_outcome_points, 1)
+      else 0
+    end;
+
+    v_calc_scorer := case
+      when v_pred.predicted_scorer_id is not null and exists (
+        select 1 from public.match_goal_scorers mgs
+        where mgs.match_id = p_match_id and mgs.player_id = v_pred.predicted_scorer_id
+      ) then coalesce(v_scorer_points, 2)
+      else 0
+    end;
+
+    v_calc_exact := case
+      when v_pred.predicted_home_score is not null
+        and v_pred.predicted_away_score is not null
+        and v_pred.predicted_home_score = p_home_score
+        and v_pred.predicted_away_score = p_away_score
+      then coalesce(v_exact_points, 3)
+      else 0
+    end;
 
     update public.predictions
     set
-      points_earned = v_points,
-      is_exact_score = (v_pred.predicted_home_score = p_home_score and v_pred.predicted_away_score = p_away_score),
+      outcome_points = v_calc_outcome,
+      scorer_points = v_calc_scorer,
+      exact_score_points = v_calc_exact,
+      points_earned = v_calc_outcome + v_calc_scorer + v_calc_exact,
+      is_exact_score = (v_calc_exact > 0),
       updated_at = now()
     where id = v_pred.id;
 
-    -- Actualizar total de puntos del usuario
-    update public.profiles
-    set
-      total_points = total_points + v_points,
-      updated_at = now()
-    where id = v_pred.user_id;
+    perform public.recalculate_profile_points(v_pred.user_id);
   end loop;
 end;
 $$ language plpgsql security definer;

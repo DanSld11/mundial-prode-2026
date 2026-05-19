@@ -6,6 +6,8 @@ export type Role = 'player' | 'admin'
 export type Stage = 'group' | 'round_of_32' | 'round_of_16' | 'quarterfinal' | 'semifinal' | 'third_place' | 'final'
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 export type GroupName = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L'
+export type PredictedOutcome = 'home' | 'away' | 'draw'
+export type PredictionType = 'outcome' | 'scorer' | 'exact_score'
 
 export interface Profile {
   id: string
@@ -28,6 +30,18 @@ export interface Team {
   group_name: GroupName
   confederation: string | null
   created_at: string
+}
+
+export interface Player {
+  id: string
+  team_id: string
+  name: string
+  shirt_number: number | null
+  position: string | null
+  active: boolean
+  created_at: string
+  updated_at: string
+  team?: Team
 }
 
 export interface Match {
@@ -58,15 +72,27 @@ export interface Prediction {
   id: string
   user_id: string
   match_id: string
-  predicted_home_score: number
-  predicted_away_score: number
+  predicted_outcome: PredictedOutcome | null
   predicted_winner_id: string | null
+  predicted_scorer_id: string | null
+  predicted_home_score: number | null
+  predicted_away_score: number | null
+  outcome_points: number
+  scorer_points: number
+  exact_score_points: number
   points_earned: number
   is_exact_score: boolean
   created_at: string
   updated_at: string
   // joined
   match?: Match
+  predicted_scorer?: Player
+}
+
+export interface ScoringSetting {
+  prediction_type: PredictionType
+  points: number
+  updated_at: string
 }
 
 export interface BracketPrediction {
@@ -96,8 +122,10 @@ export interface LeaderboardEntry {
 
 // Puntuación del sistema
 export const POINTS_CONFIG = {
-  correct_winner: 2,       // acertar ganador / empate
-  exact_score: 4,          // acertar marcador exacto
+  outcome: 1,              // acertar ganador / empate
+  scorer: 2,               // acertar jugador que anota
+  exact_score: 3,          // acertar marcador exacto
+  correct_winner: 1,
   group_stage_qualifier: 1, // acertar equipo que clasifica
   round_of_16_winner: 3,
   quarterfinal_winner: 5,

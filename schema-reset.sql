@@ -9,11 +9,15 @@
 DROP VIEW IF EXISTS public.leaderboard CASCADE;
 DROP FUNCTION IF EXISTS public.update_match_predictions(uuid, integer, integer) CASCADE;
 DROP FUNCTION IF EXISTS public.calculate_prediction_points(integer, integer, integer, integer) CASCADE;
+DROP FUNCTION IF EXISTS public.recalculate_profile_points(uuid) CASCADE;
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP TABLE IF EXISTS public.bracket_predictions CASCADE;
+DROP TABLE IF EXISTS public.match_goal_scorers CASCADE;
 DROP TABLE IF EXISTS public.predictions CASCADE;
 DROP TABLE IF EXISTS public.matches CASCADE;
+DROP TABLE IF EXISTS public.players CASCADE;
+DROP TABLE IF EXISTS public.scoring_settings CASCADE;
 DROP TABLE IF EXISTS public.teams CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
 
@@ -79,6 +83,20 @@ CREATE TABLE public.teams (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE public.players (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  team_id UUID REFERENCES public.teams(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  shirt_number INTEGER,
+  position TEXT,
+  active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX players_team_id_idx ON public.players(team_id);
+CREATE INDEX players_active_idx ON public.players(active);
+
 -- =============================================
 -- 5. TABLA: matches (partidos)
 -- =============================================
@@ -111,15 +129,38 @@ CREATE TABLE public.predictions (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   match_id UUID REFERENCES public.matches(id) ON DELETE CASCADE NOT NULL,
-  predicted_home_score INTEGER NOT NULL,
-  predicted_away_score INTEGER NOT NULL,
+  predicted_outcome TEXT CHECK (predicted_outcome IN ('home', 'away', 'draw')),
+  predicted_home_score INTEGER,
+  predicted_away_score INTEGER,
   predicted_winner_id UUID REFERENCES public.teams(id),
+  predicted_scorer_id UUID REFERENCES public.players(id),
+  outcome_points INTEGER NOT NULL DEFAULT 0,
+  scorer_points INTEGER NOT NULL DEFAULT 0,
+  exact_score_points INTEGER NOT NULL DEFAULT 0,
   points_earned INTEGER DEFAULT 0,
   is_exact_score BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (user_id, match_id)
 );
+
+CREATE TABLE public.match_goal_scorers (
+  match_id UUID REFERENCES public.matches(id) ON DELETE CASCADE NOT NULL,
+  player_id UUID REFERENCES public.players(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (match_id, player_id)
+);
+
+CREATE INDEX match_goal_scorers_player_id_idx ON public.match_goal_scorers(player_id);
+
+CREATE TABLE public.scoring_settings (
+  prediction_type TEXT PRIMARY KEY CHECK (prediction_type IN ('outcome', 'scorer', 'exact_score')),
+  points INTEGER NOT NULL CHECK (points >= 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO public.scoring_settings (prediction_type, points)
+VALUES ('outcome', 1), ('scorer', 2), ('exact_score', 3);
 
 -- RLS para predicciones
 ALTER TABLE public.predictions ENABLE ROW LEVEL SECURITY;
@@ -156,41 +197,16 @@ CREATE POLICY "Usuario crea su bracket" ON public.bracket_predictions
 CREATE POLICY "Usuario edita su bracket" ON public.bracket_predictions
   FOR UPDATE USING (auth.uid() = user_id);
 
--- =============================================
--- 8. FUNCION: calcular puntos de una prediccion
--- =============================================
-CREATE OR REPLACE FUNCTION public.calculate_prediction_points(
-  p_predicted_home INTEGER,
-  p_predicted_away INTEGER,
-  p_actual_home INTEGER,
-  p_actual_away INTEGER
-) RETURNS INTEGER AS $$
-DECLARE
-  v_points INTEGER := 0;
-  v_predicted_winner TEXT;
-  v_actual_winner TEXT;
+CREATE OR REPLACE FUNCTION public.recalculate_profile_points(p_user_id UUID)
+RETURNS VOID AS $$
 BEGIN
-  IF p_predicted_home > p_predicted_away THEN v_predicted_winner := 'home';
-  ELSIF p_predicted_away > p_predicted_home THEN v_predicted_winner := 'away';
-  ELSE v_predicted_winner := 'draw';
-  END IF;
-
-  IF p_actual_home > p_actual_away THEN v_actual_winner := 'home';
-  ELSIF p_actual_away > p_actual_home THEN v_actual_winner := 'away';
-  ELSE v_actual_winner := 'draw';
-  END IF;
-
-  IF p_predicted_home = p_actual_home AND p_predicted_away = p_actual_away THEN
-    RETURN 4;
-  END IF;
-
-  IF v_predicted_winner = v_actual_winner THEN
-    RETURN 2;
-  END IF;
-
-  RETURN 0;
+  UPDATE public.profiles
+  SET
+    total_points = COALESCE((SELECT SUM(points_earned) FROM public.predictions WHERE user_id = p_user_id), 0),
+    updated_at = NOW()
+  WHERE id = p_user_id;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- =============================================
 -- 9. FUNCION: actualizar puntos al cargar resultado
@@ -202,30 +218,59 @@ CREATE OR REPLACE FUNCTION public.update_match_predictions(
 ) RETURNS VOID AS $$
 DECLARE
   v_pred RECORD;
-  v_points INTEGER;
+  v_outcome TEXT;
+  v_outcome_points INTEGER := 1;
+  v_scorer_points INTEGER := 2;
+  v_exact_points INTEGER := 3;
+  v_calc_outcome INTEGER;
+  v_calc_scorer INTEGER;
+  v_calc_exact INTEGER;
 BEGIN
+  IF p_home_score > p_away_score THEN v_outcome := 'home';
+  ELSIF p_away_score > p_home_score THEN v_outcome := 'away';
+  ELSE v_outcome := 'draw';
+  END IF;
+
+  SELECT points INTO v_outcome_points FROM public.scoring_settings WHERE prediction_type = 'outcome';
+  SELECT points INTO v_scorer_points FROM public.scoring_settings WHERE prediction_type = 'scorer';
+  SELECT points INTO v_exact_points FROM public.scoring_settings WHERE prediction_type = 'exact_score';
+
   FOR v_pred IN
     SELECT * FROM public.predictions WHERE match_id = p_match_id
   LOOP
-    v_points := public.calculate_prediction_points(
-      v_pred.predicted_home_score,
-      v_pred.predicted_away_score,
-      p_home_score,
-      p_away_score
-    );
+    v_calc_outcome := CASE
+      WHEN v_pred.predicted_outcome IS NOT NULL AND v_pred.predicted_outcome = v_outcome THEN COALESCE(v_outcome_points, 1)
+      ELSE 0
+    END;
+
+    v_calc_scorer := CASE
+      WHEN v_pred.predicted_scorer_id IS NOT NULL AND EXISTS (
+        SELECT 1 FROM public.match_goal_scorers mgs
+        WHERE mgs.match_id = p_match_id AND mgs.player_id = v_pred.predicted_scorer_id
+      ) THEN COALESCE(v_scorer_points, 2)
+      ELSE 0
+    END;
+
+    v_calc_exact := CASE
+      WHEN v_pred.predicted_home_score IS NOT NULL
+        AND v_pred.predicted_away_score IS NOT NULL
+        AND v_pred.predicted_home_score = p_home_score
+        AND v_pred.predicted_away_score = p_away_score
+      THEN COALESCE(v_exact_points, 3)
+      ELSE 0
+    END;
 
     UPDATE public.predictions
     SET
-      points_earned = v_points,
-      is_exact_score = (v_pred.predicted_home_score = p_home_score AND v_pred.predicted_away_score = p_away_score),
+      outcome_points = v_calc_outcome,
+      scorer_points = v_calc_scorer,
+      exact_score_points = v_calc_exact,
+      points_earned = v_calc_outcome + v_calc_scorer + v_calc_exact,
+      is_exact_score = (v_calc_exact > 0),
       updated_at = NOW()
     WHERE id = v_pred.id;
 
-    UPDATE public.profiles
-    SET
-      total_points = total_points + v_points,
-      updated_at = NOW()
-    WHERE id = v_pred.user_id;
+    PERFORM public.recalculate_profile_points(v_pred.user_id);
   END LOOP;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

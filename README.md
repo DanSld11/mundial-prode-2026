@@ -137,9 +137,9 @@ src/
 - Seed automático desde panel admin
 
 ### ✅ Predicciones
-- Predecir resultado de cada partido (goles local/visitante)
+- Predecir ganador/empate, goleador y marcador exacto de cada partido
 - Bloqueo automático al iniciar el partido
-- Sistema de puntos: 2 pts ganador, 4 pts exacto
+- Sistema de puntos configurable: 1 pt resultado, 2 pts goleador, 3 pts marcador exacto
 - Visualización de predicciones personales
 
 ### ✅ Bracket Eliminatorio
@@ -172,8 +172,11 @@ src/
 ### Fase de Grupos
 | Predicción | Puntos |
 |-----------|--------|
-| Acertar ganador / empate | 2 pts |
-| Acertar resultado exacto | 4 pts |
+| Acertar ganador / empate | 1 pt |
+| Acertar jugador que anota | 2 pts |
+| Acertar resultado exacto | 3 pts |
+
+Estos valores pueden modificarse desde el panel de admin.
 
 ### Bracket Eliminatorio
 | Ronda | Puntos |

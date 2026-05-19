@@ -1,0 +1,142 @@
+'use client'
+
+import { useEffect, useMemo, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
+import { UserPlus, Users } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { TeamFlag } from '@/components/team-flag'
+
+export default function AdminJugadoresPage() {
+  const [teams, setTeams] = useState<any[]>([])
+  const [players, setPlayers] = useState<any[]>([])
+  const [selectedTeamId, setSelectedTeamId] = useState('')
+  const [name, setName] = useState('')
+  const [shirtNumber, setShirtNumber] = useState('')
+  const [position, setPosition] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+
+  const supabase = useMemo(() => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!), [])
+
+  async function load() {
+    const [{ data: teamsData }, { data: playersData }] = await Promise.all([
+      supabase.from('teams').select('*').order('group_name').order('name_es'),
+      supabase.from('players').select('*, team:teams(id,name_es,code,flag_emoji)').order('name'),
+    ])
+    setTeams(teamsData ?? [])
+    setPlayers(playersData ?? [])
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  async function createPlayer(event: React.FormEvent) {
+    event.preventDefault()
+    if (!selectedTeamId || !name.trim()) return
+
+    setSaving(true)
+    await supabase.from('players').insert({
+      team_id: selectedTeamId,
+      name: name.trim(),
+      shirt_number: shirtNumber ? parseInt(shirtNumber) : null,
+      position: position.trim() || null,
+      active: true,
+    })
+    setName('')
+    setShirtNumber('')
+    setPosition('')
+    setSaving(false)
+    await load()
+  }
+
+  async function toggleActive(player: any) {
+    await supabase.from('players').update({ active: !player.active, updated_at: new Date().toISOString() }).eq('id', player.id)
+    await load()
+  }
+
+  async function updatePlayer(player: any, updates: Record<string, any>) {
+    await supabase.from('players').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', player.id)
+    await load()
+  }
+
+  const visiblePlayers = selectedTeamId ? players.filter((player) => player.team_id === selectedTeamId) : players
+
+  if (loading) return <div className="py-20 text-center text-sm text-muted-foreground">Cargando jugadores...</div>
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border bg-card p-5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-red text-white">
+            <Users className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Jugadores</h1>
+            <p className="text-sm text-muted-foreground">Gestiona planteles por selección para predicción de goleador.</p>
+          </div>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <UserPlus className="h-4 w-4 text-brand-red" />
+            Nuevo jugador
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={createPlayer} className="grid gap-3 md:grid-cols-[1.4fr_1.4fr_0.6fr_1fr_auto]">
+            <select value={selectedTeamId} onChange={(event) => setSelectedTeamId(event.target.value)} className="h-10 rounded-lg border bg-background px-3 text-sm" required>
+              <option value="">Seleccionar equipo...</option>
+              {teams.map((team) => (
+                <option key={team.id} value={team.id}>{team.group_name} · {team.name_es}</option>
+              ))}
+            </select>
+            <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nombre del jugador" required />
+            <Input value={shirtNumber} onChange={(event) => setShirtNumber(event.target.value)} type="number" min={1} max={99} placeholder="Nro." />
+            <Input value={position} onChange={(event) => setPosition(event.target.value)} placeholder="Posición" />
+            <Button disabled={saving} className="bg-brand-red text-white hover:bg-red-700">
+              {saving ? 'Guardando...' : 'Agregar'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-0">
+          <div className="border-b p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="font-semibold">Plantel cargado</h2>
+              <Badge variant="secondary">{visiblePlayers.length} jugadores</Badge>
+            </div>
+          </div>
+          <div className="divide-y">
+            {visiblePlayers.length === 0 ? (
+              <div className="p-8 text-center text-sm text-muted-foreground">No hay jugadores cargados para este filtro.</div>
+            ) : (
+              visiblePlayers.map((player) => (
+                <div key={player.id} className="grid gap-3 p-4 md:grid-cols-[1.2fr_1.4fr_0.6fr_1fr_auto] md:items-center">
+                  <div className="flex items-center gap-2">
+                    <TeamFlag code={player.team?.flag_emoji} label={player.team?.name_es} />
+                    <span className="text-sm font-semibold">{player.team?.name_es}</span>
+                  </div>
+                  <Input defaultValue={player.name} onBlur={(event) => event.target.value !== player.name && updatePlayer(player, { name: event.target.value })} />
+                  <Input defaultValue={player.shirt_number ?? ''} type="number" min={1} max={99} onBlur={(event) => updatePlayer(player, { shirt_number: event.target.value ? parseInt(event.target.value) : null })} />
+                  <Input defaultValue={player.position ?? ''} onBlur={(event) => updatePlayer(player, { position: event.target.value || null })} />
+                  <Button type="button" variant="outline" size="sm" onClick={() => toggleActive(player)}>
+                    {player.active ? 'Activo' : 'Inactivo'}
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

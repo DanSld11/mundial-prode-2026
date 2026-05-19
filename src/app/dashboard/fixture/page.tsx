@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { CalendarDays, MapPin } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { PredictionForm } from '@/components/predictions/prediction-form'
 import { TeamFlag } from '@/components/team-flag'
 
 function getAccessToken() {
@@ -29,7 +29,10 @@ export default function FixturePage() {
 
     const token = getAccessToken()
     if (token) {
-      const s = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { autoRefreshToken: false, persistSession: false } })
+      const s = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+        auth: { autoRefreshToken: false, persistSession: false },
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      })
       s.auth.getUser(token).then(({ data }) => {
         if (data.user) {
           s.from('predictions').select('*').eq('user_id', data.user.id).then(({ data: p }) => setPredictions(p ?? []))
@@ -116,16 +119,31 @@ export default function FixturePage() {
                             <MapPin className="h-3 w-3" />{match.city}
                           </div>
                         </div>
-                        <div className="mt-2">
-                          <PredictionForm
-                            matchId={match.id}
-                            homeTeamName={match.home_team?.code || '?'}
-                            awayTeamName={match.away_team?.code || '?'}
-                            existingPrediction={pred ? { predicted_home_score: pred.predicted_home_score, predicted_away_score: pred.predicted_away_score } : undefined}
-                            isLocked={isLocked}
-                          />
+                        <div className="mt-3 flex flex-col items-center justify-between gap-2 border-t pt-3 sm:flex-row">
+                          <div className="text-xs text-muted-foreground">
+                            {pred ? (
+                              <span>
+                                Predicción guardada
+                                {pred.points_earned > 0 ? ` · +${pred.points_earned} pts` : ''}
+                              </span>
+                            ) : isLocked ? (
+                              <span>Predicciones cerradas</span>
+                            ) : (
+                              <span>Resultado, goleador y marcador exacto</span>
+                            )}
+                          </div>
+                          <Link
+                            href={`/dashboard/fixture/${match.id}`}
+                            className={`inline-flex h-8 items-center justify-center rounded-lg px-3 text-sm font-medium transition-colors ${
+                              pred
+                                ? 'border bg-background hover:bg-muted'
+                                : 'bg-brand-red text-white hover:bg-red-700'
+                            }`}
+                          >
+                            Entrar al encuentro
+                          </Link>
                           {pred && pred.points_earned > 0 && (
-                            <div className="mt-1 text-center">
+                            <div className="sm:hidden">
                               <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-xs">+{pred.points_earned} pts{pred.is_exact_score ? ' exacto' : ''}</Badge>
                             </div>
                           )}

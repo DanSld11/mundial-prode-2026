@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import type { Match, Team } from '@/types'
+import type { Match, Player, Team } from '@/types'
 import { TeamFlag } from '@/components/team-flag'
 
 interface MatchWithTeams extends Omit<Match, 'home_team' | 'away_team'> {
@@ -26,6 +26,22 @@ export default async function AdminPartidosPage() {
     .order('match_date', { ascending: true })
 
   const matches = (matchesData ?? []) as unknown as MatchWithTeams[]
+  const { data: playersData } = await supabase
+    .from('players')
+    .select('*, team:teams(id,name_es,code,flag_emoji)')
+    .eq('active', true)
+    .order('name')
+
+  const { data: scorersData } = await supabase
+    .from('match_goal_scorers')
+    .select('match_id, player_id')
+
+  const players = (playersData ?? []) as unknown as Player[]
+  const scorerMap = new Map<string, Set<string>>()
+  ;(scorersData ?? []).forEach((row: any) => {
+    if (!scorerMap.has(row.match_id)) scorerMap.set(row.match_id, new Set())
+    scorerMap.get(row.match_id)?.add(row.player_id)
+  })
 
   return (
     <div className="space-y-6">
@@ -39,16 +55,17 @@ export default async function AdminPartidosPage() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>#</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Grupo</TableHead>
-                  <TableHead>Local</TableHead>
-                  <TableHead className="text-center">Resultado</TableHead>
-                  <TableHead>Visitante</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Acción</TableHead>
-                </TableRow>
+                  <TableRow>
+                    <TableHead>#</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Grupo</TableHead>
+                    <TableHead>Local</TableHead>
+                    <TableHead className="text-center">Resultado</TableHead>
+                    <TableHead>Visitante</TableHead>
+                    <TableHead>Goleadores</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Acción</TableHead>
+                  </TableRow>
               </TableHeader>
               <TableBody>
                 {matches.map((match) => (
@@ -67,47 +84,51 @@ export default async function AdminPartidosPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      {match.status === 'finished' ? (
-                        <span className="font-bold text-lg">
-                          {match.home_score} - {match.away_score}
-                        </span>
-                      ) : (
-                        <form
-                          action="/admin/update-result"
-                          method="post"
-                          className="flex items-center gap-1 justify-center"
-                        >
-                          <input type="hidden" name="match_id" value={match.id} />
-                          <Input
-                            name="home_score"
-                            type="number"
-                            min={0}
-                            max={20}
-                            defaultValue={0}
-                            className="w-12 h-8 text-center p-0"
-                            required
-                          />
-                          <span className="text-xs">-</span>
-                          <Input
-                            name="away_score"
-                            type="number"
-                            min={0}
-                            max={20}
-                            defaultValue={0}
-                            className="w-12 h-8 text-center p-0"
-                            required
-                          />
-                          <Button type="submit" size="sm" variant="outline" className="h-7 text-xs ml-2">
-                            Guardar
-                          </Button>
-                        </form>
-                      )}
+                      <form id={`result-${match.id}`} action="/admin/update-result" method="post" className="flex items-center gap-1 justify-center">
+                        <input type="hidden" name="match_id" value={match.id} />
+                        <Input
+                          name="home_score"
+                          type="number"
+                          min={0}
+                          max={20}
+                          defaultValue={match.home_score ?? 0}
+                          className="w-12 h-8 text-center p-0"
+                          required
+                        />
+                        <span className="text-xs">-</span>
+                        <Input
+                          name="away_score"
+                          type="number"
+                          min={0}
+                          max={20}
+                          defaultValue={match.away_score ?? 0}
+                          className="w-12 h-8 text-center p-0"
+                          required
+                        />
+                      </form>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <TeamFlag code={match.away_team?.flag_emoji} label={match.away_team?.name_es} />
                         <span className="text-sm">{match.away_team?.name_es}</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <select
+                        name="scorer_ids"
+                        form={`result-${match.id}`}
+                        multiple
+                        defaultValue={Array.from(scorerMap.get(match.id) ?? [])}
+                        className="h-20 min-w-48 rounded-lg border bg-background px-2 py-1 text-xs"
+                      >
+                        {players
+                          .filter((player) => player.team_id === match.home_team_id || player.team_id === match.away_team_id)
+                          .map((player) => (
+                            <option key={player.id} value={player.id}>
+                              {player.team_id === match.home_team_id ? match.home_team?.code : match.away_team?.code} · {player.shirt_number ? `${player.shirt_number} ` : ''}{player.name}
+                            </option>
+                          ))}
+                      </select>
                     </TableCell>
                     <TableCell>
                       {match.status === 'finished' ? (
@@ -117,9 +138,9 @@ export default async function AdminPartidosPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {match.status === 'finished' && (
-                        <span className="text-xs text-green-600">✓ Guardado</span>
-                      )}
+                      <Button type="submit" form={`result-${match.id}`} size="sm" variant="outline" className="h-7 text-xs">
+                        {match.status === 'finished' ? 'Actualizar' : 'Guardar'}
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

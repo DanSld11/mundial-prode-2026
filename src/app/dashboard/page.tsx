@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ArrowRight, CalendarDays, Medal, Target, Trophy, Users } from 'lucide-react'
+import { ArrowRight, CalendarDays, Medal, Shield, Target, Trophy, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TeamFlag } from '@/components/team-flag'
@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const [teams, setTeams] = useState<any[]>([])
   const [matches, setMatches] = useState<any[]>([])
   const [leaders, setLeaders] = useState<any[]>([])
+  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -40,6 +41,19 @@ export default function DashboardPage() {
       setLeaders(leadersResult.data ?? [])
       setLoading(false)
     })
+
+    const token = document.cookie.split('; ').find((row) => row.startsWith('sb-access-token='))?.split('=')[1]
+    if (token) {
+      const authClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
+      authClient.auth.getUser(token).then(({ data }) => {
+        if (!data.user) return
+        authClient.from('profiles').select('role').eq('id', data.user.id).single().then(({ data: profile }) => {
+          setIsAdmin(profile?.role === 'admin')
+        })
+      })
+    }
   }, [])
 
   const groupCount = useMemo(() => new Set(teams.map((team) => team.group_name)).size, [teams])
@@ -122,7 +136,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {quickLinks.map((item) => (
+        {[...quickLinks, ...(isAdmin ? [{ href: '/admin', title: 'Admin', description: 'Gestionar torneo', icon: Shield }] : [])].map((item) => (
           <Link key={item.href} href={item.href} className="group rounded-xl border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
             <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
               <item.icon className="h-5 w-5" />

@@ -71,6 +71,24 @@ export default function AdminPage() {
             <a href="/admin/usuarios"><Button variant="outline" size="sm">Ver lista</Button></a>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Jugadores</CardTitle>
+            <CardDescription>Cargar planteles por selección.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <a href="/admin/jugadores"><Button variant="outline" size="sm">Gestionar</Button></a>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Puntuación</CardTitle>
+            <CardDescription>Editar puntos de predicciones.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <a href="/admin/puntuacion"><Button variant="outline" size="sm">Configurar</Button></a>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

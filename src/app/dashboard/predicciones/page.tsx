@@ -18,11 +18,14 @@ export default function PrediccionesPage() {
   useEffect(() => {
     const token = getAccessToken()
     if (!token) { setLoading(false); return }
-    const s = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { autoRefreshToken: false, persistSession: false } })
+    const s = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    })
     s.auth.getUser(token).then(({ data }) => {
       if (data.user) {
         s.from('predictions')
-          .select('*, match:matches(*, home_team:teams!matches_home_team_id_fkey(name_es,flag_emoji,code), away_team:teams!matches_away_team_id_fkey(name_es,flag_emoji,code))')
+          .select('*, predicted_scorer:players(name,shirt_number), match:matches(*, home_team:teams!matches_home_team_id_fkey(name_es,flag_emoji,code), away_team:teams!matches_away_team_id_fkey(name_es,flag_emoji,code))')
           .eq('user_id', data.user.id)
           .order('created_at', { ascending: false })
           .then(({ data: p }) => { setPredictions(p ?? []); setLoading(false) })
@@ -34,7 +37,7 @@ export default function PrediccionesPage() {
 
   const total = predictions.length
   const correct = predictions.filter(p => p.points_earned > 0).length
-  const exact = predictions.filter(p => p.is_exact_score).length
+  const exact = predictions.filter(p => p.exact_score_points > 0 || p.is_exact_score).length
   const pending = predictions.filter(p => p.points_earned === 0 && p.match?.status !== 'finished').length
 
   return (
@@ -71,14 +74,18 @@ export default function PrediccionesPage() {
                       <span className="truncate text-right text-sm font-semibold">{p.match?.home_team?.name_es}</span>
                       <TeamFlag code={p.match?.home_team?.flag_emoji} label={p.match?.home_team?.name_es} className="shrink-0" />
                     </div>
-                    <span className="rounded-md bg-secondary px-3 py-1 text-sm font-bold tabular-nums">{p.predicted_home_score} - {p.predicted_away_score}</span>
+                    <span className="rounded-md bg-secondary px-3 py-1 text-sm font-bold tabular-nums">
+                      {p.predicted_home_score ?? '-'} - {p.predicted_away_score ?? '-'}
+                    </span>
                     <div className="flex min-w-0 items-center gap-2">
                       <TeamFlag code={p.match?.away_team?.flag_emoji} label={p.match?.away_team?.name_es} className="shrink-0" />
                       <span className="truncate text-sm font-semibold">{p.match?.away_team?.name_es}</span>
                     </div>
                   </div>
-                  <div className="flex justify-center sm:justify-end">
-                    {isFinished && p.points_earned > 0 && <Badge className="bg-emerald-100 text-emerald-800 text-xs">+{p.points_earned} {p.is_exact_score ? 'exacto' : ''}</Badge>}
+                  <div className="flex flex-wrap justify-center gap-1 sm:justify-end">
+                    {p.predicted_outcome && <Badge variant="outline" className="text-xs">Resultado: {p.predicted_outcome === 'home' ? 'Local' : p.predicted_outcome === 'away' ? 'Visitante' : 'Empate'}</Badge>}
+                    {p.predicted_scorer && <Badge variant="outline" className="text-xs">Gol: {p.predicted_scorer.name}</Badge>}
+                    {isFinished && p.points_earned > 0 && <Badge className="bg-emerald-100 text-emerald-800 text-xs">+{p.points_earned} pts</Badge>}
                     {isFinished && p.points_earned === 0 && <Badge variant="secondary" className="text-xs">0 pts</Badge>}
                     {!isFinished && <Badge variant="outline" className="text-xs">Pendiente</Badge>}
                   </div>

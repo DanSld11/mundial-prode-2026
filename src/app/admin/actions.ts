@@ -83,6 +83,7 @@ export async function updateMatchResultAction(formData: FormData) {
   const matchId = formData.get('match_id') as string
   const homeScore = parseInt(formData.get('home_score') as string)
   const awayScore = parseInt(formData.get('away_score') as string)
+  const scorerIds = formData.getAll('scorer_ids').map(String).filter(Boolean)
 
   if (!matchId || isNaN(homeScore) || isNaN(awayScore)) {
     return { error: 'Datos inválidos' }
@@ -127,6 +128,18 @@ export async function updateMatchResultAction(formData: FormData) {
     return { error: updateError.message }
   }
 
+  await supabase.from('match_goal_scorers').delete().eq('match_id', matchId)
+
+  if (scorerIds.length > 0) {
+    const { error: scorersError } = await supabase
+      .from('match_goal_scorers')
+      .insert(scorerIds.map((playerId) => ({ match_id: matchId, player_id: playerId })))
+
+    if (scorersError) {
+      return { error: scorersError.message }
+    }
+  }
+
   // Recalcular puntos
   const { error: rpcError } = await supabase.rpc('update_match_predictions', {
     p_match_id: matchId,
@@ -142,5 +155,6 @@ export async function updateMatchResultAction(formData: FormData) {
   revalidatePath('/dashboard/fixture')
   revalidatePath('/dashboard/predicciones')
   revalidatePath('/dashboard/tabla')
+  revalidatePath('/dashboard')
   return { success: true }
 }
