@@ -1,22 +1,33 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  const { data: teams, error: teamsError } = await supabase.from('teams').select('name_es, group_name', { count: 'exact' }).limit(5)
-  const { count: matchCount, error: matchError } = await supabase.from('matches').select('*', { count: 'exact', head: true })
+  // Con service role key
+  const resService = await fetch(`${baseUrl}/rest/v1/teams?select=count`, {
+    headers: { 'apikey': serviceKey!, 'Authorization': `Bearer ${serviceKey!}`, 'Prefer': 'count=exact' },
+  })
+  const countService = resService.headers.get('content-range')?.split('/')[1] || '0'
+
+  // Con anon key
+  const resAnon = await fetch(`${baseUrl}/rest/v1/teams?select=count`, {
+    headers: { 'apikey': anonKey!, 'Prefer': 'count=exact' },
+  })
+  const countAnon = resAnon.headers.get('content-range')?.split('/')[1] || '0'
+
+  // Sample con service role
+  const resSample = await fetch(`${baseUrl}/rest/v1/teams?select=name_es,group_name&limit=5`, {
+    headers: { 'apikey': serviceKey!, 'Authorization': `Bearer ${serviceKey!}` },
+  })
+  const sample = await resSample.json()
 
   return NextResponse.json({
-    teamsCount: teams?.length ?? 0,
-    totalTeams: (teams as any)?.length ?? 0,
-    matchCount: matchCount ?? 0,
-    sample: teams?.slice(0, 5) || [],
-    teamsError: teamsError?.message || null,
-    matchError: matchError?.message || null,
-    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    countWithServiceKey: parseInt(countService),
+    countWithAnonKey: parseInt(countAnon),
+    anonStatus: resAnon.status,
+    serviceStatus: resService.status,
+    sample: Array.isArray(sample) ? sample.slice(0, 5) : [],
   })
 }
