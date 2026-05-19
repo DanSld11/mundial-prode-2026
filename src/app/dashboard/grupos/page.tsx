@@ -6,6 +6,18 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Users, Trophy } from 'lucide-react'
 
+function FlagImg({ code, className }: { code: string; className?: string }) {
+  return (
+    <img
+      src={`https://flagcdn.com/w40/${code}.png`}
+      srcSet={`https://flagcdn.com/w80/${code}.png 2x`}
+      alt={code}
+      className={className || 'w-5 h-auto rounded-sm border shadow-sm'}
+      loading="lazy"
+    />
+  )
+}
+
 const groups = ['A','B','C','D','E','F','G','H','I','J','K','L'] as const
 
 export default function GruposPage() {
@@ -13,10 +25,7 @@ export default function GruposPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
     supabase.from('teams').select('*').order('group_name').order('name_es').then(({ data }) => {
       setTeams(data ?? [])
       setLoading(false)
@@ -37,11 +46,11 @@ export default function GruposPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Grupos</h1>
             <p className="text-sm text-muted-foreground">
-              {totalTeams > 0 ? `${totalTeams} equipos · 12 grupos · Mundial 2026` : 'Sin equipos cargados'}
+              {totalTeams > 0 ? '48 equipos · 12 grupos · FIFA World Cup 2026' : 'Sin equipos cargados'}
             </p>
           </div>
         </div>
-        <Badge variant="outline" className="text-xs">{totalTeams}/48 equipos</Badge>
+        <Badge variant="outline" className="text-xs">{totalTeams}/48</Badge>
       </div>
 
       {totalTeams === 0 ? (
@@ -61,15 +70,18 @@ export default function GruposPage() {
                   <Badge variant="secondary" className="text-xs">{groupTeams.length}</Badge>
                 </CardHeader>
                 <CardContent className="p-0 divide-y">
-                  {groupTeams.map((team) => (
-                    <div key={team.id} className="flex items-center justify-between px-4 py-2.5 hover:bg-muted/20 transition-colors">
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-lg">{team.flag_emoji}</span>
-                        <span className="text-sm font-medium">{team.name_es}</span>
+                  {groupTeams.map((team) => {
+                    const cc = team.flag_emoji || team.code?.substring(0, 2).toLowerCase()
+                    return (
+                      <div key={team.id} className="flex items-center justify-between px-4 py-2.5 hover:bg-muted/20 transition-colors">
+                        <div className="flex items-center gap-2.5">
+                          <FlagImg code={cc} className="w-5 h-auto rounded-sm border shadow-sm" />
+                          <span className="text-sm font-medium">{team.name_es}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground font-mono">{team.code}</span>
                       </div>
-                      <span className="text-xs text-muted-foreground font-mono">{team.code}</span>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </CardContent>
               </Card>
             )

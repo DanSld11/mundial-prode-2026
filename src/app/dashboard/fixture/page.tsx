@@ -9,6 +9,11 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { PredictionForm } from '@/components/predictions/prediction-form'
 
+function FlagImg({ code, size }: { code: string; size?: number }) {
+  const w = size || 40
+  return <img src={`https://flagcdn.com/w${w}/${code}.png`} srcSet={`https://flagcdn.com/w${w*2}/${code}.png 2x`} alt="" className="w-6 h-auto rounded-xs border shadow-sm inline-block" loading="lazy" />
+}
+
 function getAccessToken() {
   return document.cookie.split('; ').find(r => r.startsWith('sb-access-token='))?.split('=')[1]
 }
@@ -26,7 +31,6 @@ export default function FixturePage() {
       .order('match_date', { ascending: true })
       .then(({ data }) => { setMatches(data ?? []); setLoading(false) })
 
-    // Cargar predicciones
     const token = getAccessToken()
     if (token) {
       const s = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { autoRefreshToken: false, persistSession: false } })
@@ -56,7 +60,7 @@ export default function FixturePage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Fixture</h1>
-          <p className="text-sm text-muted-foreground">Fase de grupos · 72 partidos</p>
+          <p className="text-sm text-muted-foreground">Fase de grupos · 11–27 junio 2026</p>
         </div>
       </div>
 
@@ -64,6 +68,7 @@ export default function FixturePage() {
         <div className="rounded-xl border bg-card p-12 text-center">
           <CalendarDays className="mx-auto h-10 w-10 text-muted-foreground/30 mb-3" />
           <h3 className="font-semibold text-muted-foreground">No hay partidos cargados</h3>
+          <p className="text-sm text-muted-foreground/60 mt-1">Ejecutá el seed desde el panel de admin.</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -77,34 +82,35 @@ export default function FixturePage() {
                   const pred = predictionsMap.get(match.id)
                   const isLocked = match.predictions_locked || new Date(match.match_date) < new Date()
                   const isFinished = match.status === 'finished'
+                  const homeFlag = match.home_team?.flag_emoji
+                  const awayFlag = match.away_team?.flag_emoji
 
                   return (
                     <Card key={match.id} className="border shadow-sm hover:shadow transition-shadow">
                       <CardContent className="p-3">
-                        <div className="flex items-center gap-3">
-                          <Badge variant="secondary" className="text-xs shrink-0 w-10 justify-center">G{match.group_name}</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs shrink-0 w-12 justify-center font-mono">G{match.group_name}</Badge>
                           <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                             <div className="flex items-center gap-2 justify-end">
                               <span className="text-sm font-medium text-right leading-tight">{match.home_team?.name_es}</span>
-                              <span className="text-base">{match.home_team?.flag_emoji}</span>
+                              {homeFlag && <FlagImg code={homeFlag} />}
                             </div>
                             <div className="text-center px-3">
                               {isFinished ? (
                                 <span className="text-lg font-bold tabular-nums">{match.home_score} - {match.away_score}</span>
                               ) : (
-                                <span className="text-sm font-medium text-muted-foreground">
+                                <span className="text-xs font-medium text-muted-foreground">
                                   {format(new Date(match.match_date), 'HH:mm')}
                                 </span>
                               )}
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-base">{match.away_team?.flag_emoji}</span>
+                              {awayFlag && <FlagImg code={awayFlag} />}
                               <span className="text-sm font-medium text-left leading-tight">{match.away_team?.name_es}</span>
                             </div>
                           </div>
                           <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                            <MapPin className="h-3 w-3" />
-                            {match.city}
+                            <MapPin className="h-3 w-3" />{match.city}
                           </div>
                         </div>
                         <div className="mt-2">
@@ -117,9 +123,7 @@ export default function FixturePage() {
                           />
                           {pred && pred.points_earned > 0 && (
                             <div className="mt-1 text-center">
-                              <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-xs">
-                                +{pred.points_earned} pts{pred.is_exact_score ? ' exacto' : ''}
-                              </Badge>
+                              <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 text-xs">+{pred.points_earned} pts{pred.is_exact_score ? ' exacto' : ''}</Badge>
                             </div>
                           )}
                         </div>

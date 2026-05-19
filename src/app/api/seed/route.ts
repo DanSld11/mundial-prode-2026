@@ -2,65 +2,65 @@ import { NextResponse } from 'next/server'
 
 const REAL_TEAMS = [
   // Grupo A
-  { name:'Mexico',name_es:'México',code:'MEX',flag_emoji:'🇲🇽',group_name:'A',confederation:'CONCACAF' },
-  { name:'South Africa',name_es:'Sudáfrica',code:'RSA',flag_emoji:'🇿🇦',group_name:'A',confederation:'CAF' },
-  { name:'South Korea',name_es:'Corea del Sur',code:'KOR',flag_emoji:'🇰🇷',group_name:'A',confederation:'AFC' },
-  { name:'Czech Republic',name_es:'República Checa',code:'CZE',flag_emoji:'🇨🇿',group_name:'A',confederation:'UEFA' },
+  { name:'Mexico',name_es:'México',code:'MEX',country_code:'mx',group_name:'A',confederation:'CONCACAF' },
+  { name:'South Africa',name_es:'Sudáfrica',code:'RSA',country_code:'za',group_name:'A',confederation:'CAF' },
+  { name:'South Korea',name_es:'Corea del Sur',code:'KOR',country_code:'kr',group_name:'A',confederation:'AFC' },
+  { name:'Czech Republic',name_es:'Rep. Checa',code:'CZE',country_code:'cz',group_name:'A',confederation:'UEFA' },
   // Grupo B
-  { name:'Canada',name_es:'Canadá',code:'CAN',flag_emoji:'🇨🇦',group_name:'B',confederation:'CONCACAF' },
-  { name:'Bosnia and Herzegovina',name_es:'Bosnia y Herzegovina',code:'BIH',flag_emoji:'🇧🇦',group_name:'B',confederation:'UEFA' },
-  { name:'Qatar',name_es:'Qatar',code:'QAT',flag_emoji:'🇶🇦',group_name:'B',confederation:'AFC' },
-  { name:'Switzerland',name_es:'Suiza',code:'SUI',flag_emoji:'🇨🇭',group_name:'B',confederation:'UEFA' },
+  { name:'Canada',name_es:'Canadá',code:'CAN',country_code:'ca',group_name:'B',confederation:'CONCACAF' },
+  { name:'Bosnia and Herz.',name_es:'Bosnia y Herz.',code:'BIH',country_code:'ba',group_name:'B',confederation:'UEFA' },
+  { name:'Qatar',name_es:'Qatar',code:'QAT',country_code:'qa',group_name:'B',confederation:'AFC' },
+  { name:'Switzerland',name_es:'Suiza',code:'SUI',country_code:'ch',group_name:'B',confederation:'UEFA' },
   // Grupo C
-  { name:'Brazil',name_es:'Brasil',code:'BRA',flag_emoji:'🇧🇷',group_name:'C',confederation:'CONMEBOL' },
-  { name:'Morocco',name_es:'Marruecos',code:'MAR',flag_emoji:'🇲🇦',group_name:'C',confederation:'CAF' },
-  { name:'Haiti',name_es:'Haití',code:'HAI',flag_emoji:'🇭🇹',group_name:'C',confederation:'CONCACAF' },
-  { name:'Scotland',name_es:'Escocia',code:'SCO',flag_emoji:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',group_name:'C',confederation:'UEFA' },
+  { name:'Brazil',name_es:'Brasil',code:'BRA',country_code:'br',group_name:'C',confederation:'CONMEBOL' },
+  { name:'Morocco',name_es:'Marruecos',code:'MAR',country_code:'ma',group_name:'C',confederation:'CAF' },
+  { name:'Haiti',name_es:'Haití',code:'HAI',country_code:'ht',group_name:'C',confederation:'CONCACAF' },
+  { name:'Scotland',name_es:'Escocia',code:'SCO',country_code:'gb-sct',group_name:'C',confederation:'UEFA' },
   // Grupo D
-  { name:'United States',name_es:'Estados Unidos',code:'USA',flag_emoji:'🇺🇸',group_name:'D',confederation:'CONCACAF' },
-  { name:'Paraguay',name_es:'Paraguay',code:'PAR',flag_emoji:'🇵🇾',group_name:'D',confederation:'CONMEBOL' },
-  { name:'Australia',name_es:'Australia',code:'AUS',flag_emoji:'🇦🇺',group_name:'D',confederation:'AFC' },
-  { name:'Turkey',name_es:'Turquía',code:'TUR',flag_emoji:'🇹🇷',group_name:'D',confederation:'UEFA' },
+  { name:'United States',name_es:'Estados Unidos',code:'USA',country_code:'us',group_name:'D',confederation:'CONCACAF' },
+  { name:'Paraguay',name_es:'Paraguay',code:'PAR',country_code:'py',group_name:'D',confederation:'CONMEBOL' },
+  { name:'Australia',name_es:'Australia',code:'AUS',country_code:'au',group_name:'D',confederation:'AFC' },
+  { name:'Turkey',name_es:'Turquía',code:'TUR',country_code:'tr',group_name:'D',confederation:'UEFA' },
   // Grupo E
-  { name:'Germany',name_es:'Alemania',code:'GER',flag_emoji:'🇩🇪',group_name:'E',confederation:'UEFA' },
-  { name:'Curacao',name_es:'Curazao',code:'CUW',flag_emoji:'🇨🇼',group_name:'E',confederation:'CONCACAF' },
-  { name:'Ivory Coast',name_es:'Costa de Marfil',code:'CIV',flag_emoji:'🇨🇮',group_name:'E',confederation:'CAF' },
-  { name:'Ecuador',name_es:'Ecuador',code:'ECU',flag_emoji:'🇪🇨',group_name:'E',confederation:'CONMEBOL' },
+  { name:'Germany',name_es:'Alemania',code:'GER',country_code:'de',group_name:'E',confederation:'UEFA' },
+  { name:'Curacao',name_es:'Curazao',code:'CUW',country_code:'cw',group_name:'E',confederation:'CONCACAF' },
+  { name:'Ivory Coast',name_es:'Costa de Marfil',code:'CIV',country_code:'ci',group_name:'E',confederation:'CAF' },
+  { name:'Ecuador',name_es:'Ecuador',code:'ECU',country_code:'ec',group_name:'E',confederation:'CONMEBOL' },
   // Grupo F
-  { name:'Netherlands',name_es:'Holanda',code:'NED',flag_emoji:'🇳🇱',group_name:'F',confederation:'UEFA' },
-  { name:'Japan',name_es:'Japón',code:'JPN',flag_emoji:'🇯🇵',group_name:'F',confederation:'AFC' },
-  { name:'Sweden',name_es:'Suecia',code:'SWE',flag_emoji:'🇸🇪',group_name:'F',confederation:'UEFA' },
-  { name:'Tunisia',name_es:'Túnez',code:'TUN',flag_emoji:'🇹🇳',group_name:'F',confederation:'CAF' },
+  { name:'Netherlands',name_es:'Países Bajos',code:'NED',country_code:'nl',group_name:'F',confederation:'UEFA' },
+  { name:'Japan',name_es:'Japón',code:'JPN',country_code:'jp',group_name:'F',confederation:'AFC' },
+  { name:'Sweden',name_es:'Suecia',code:'SWE',country_code:'se',group_name:'F',confederation:'UEFA' },
+  { name:'Tunisia',name_es:'Túnez',code:'TUN',country_code:'tn',group_name:'F',confederation:'CAF' },
   // Grupo G
-  { name:'Belgium',name_es:'Bélgica',code:'BEL',flag_emoji:'🇧🇪',group_name:'G',confederation:'UEFA' },
-  { name:'Egypt',name_es:'Egipto',code:'EGY',flag_emoji:'🇪🇬',group_name:'G',confederation:'CAF' },
-  { name:'Iran',name_es:'Irán',code:'IRN',flag_emoji:'🇮🇷',group_name:'G',confederation:'AFC' },
-  { name:'New Zealand',name_es:'Nueva Zelanda',code:'NZL',flag_emoji:'🇳🇿',group_name:'G',confederation:'OFC' },
+  { name:'Belgium',name_es:'Bélgica',code:'BEL',country_code:'be',group_name:'G',confederation:'UEFA' },
+  { name:'Egypt',name_es:'Egipto',code:'EGY',country_code:'eg',group_name:'G',confederation:'CAF' },
+  { name:'Iran',name_es:'Irán',code:'IRN',country_code:'ir',group_name:'G',confederation:'AFC' },
+  { name:'New Zealand',name_es:'Nueva Zelanda',code:'NZL',country_code:'nz',group_name:'G',confederation:'OFC' },
   // Grupo H
-  { name:'Spain',name_es:'España',code:'ESP',flag_emoji:'🇪🇸',group_name:'H',confederation:'UEFA' },
-  { name:'Cape Verde',name_es:'Cabo Verde',code:'CPV',flag_emoji:'🇨🇻',group_name:'H',confederation:'CAF' },
-  { name:'Saudi Arabia',name_es:'Arabia Saudita',code:'KSA',flag_emoji:'🇸🇦',group_name:'H',confederation:'AFC' },
-  { name:'Uruguay',name_es:'Uruguay',code:'URU',flag_emoji:'🇺🇾',group_name:'H',confederation:'CONMEBOL' },
+  { name:'Spain',name_es:'España',code:'ESP',country_code:'es',group_name:'H',confederation:'UEFA' },
+  { name:'Cape Verde',name_es:'Cabo Verde',code:'CPV',country_code:'cv',group_name:'H',confederation:'CAF' },
+  { name:'Saudi Arabia',name_es:'Arabia Saudita',code:'KSA',country_code:'sa',group_name:'H',confederation:'AFC' },
+  { name:'Uruguay',name_es:'Uruguay',code:'URU',country_code:'uy',group_name:'H',confederation:'CONMEBOL' },
   // Grupo I
-  { name:'France',name_es:'Francia',code:'FRA',flag_emoji:'🇫🇷',group_name:'I',confederation:'UEFA' },
-  { name:'Senegal',name_es:'Senegal',code:'SEN',flag_emoji:'🇸🇳',group_name:'I',confederation:'CAF' },
-  { name:'Iraq',name_es:'Irak',code:'IRQ',flag_emoji:'🇮🇶',group_name:'I',confederation:'AFC' },
-  { name:'Norway',name_es:'Noruega',code:'NOR',flag_emoji:'🇳🇴',group_name:'I',confederation:'UEFA' },
+  { name:'France',name_es:'Francia',code:'FRA',country_code:'fr',group_name:'I',confederation:'UEFA' },
+  { name:'Senegal',name_es:'Senegal',code:'SEN',country_code:'sn',group_name:'I',confederation:'CAF' },
+  { name:'Iraq',name_es:'Irak',code:'IRQ',country_code:'iq',group_name:'I',confederation:'AFC' },
+  { name:'Norway',name_es:'Noruega',code:'NOR',country_code:'no',group_name:'I',confederation:'UEFA' },
   // Grupo J
-  { name:'Argentina',name_es:'Argentina',code:'ARG',flag_emoji:'🇦🇷',group_name:'J',confederation:'CONMEBOL' },
-  { name:'Algeria',name_es:'Argelia',code:'ALG',flag_emoji:'🇩🇿',group_name:'J',confederation:'CAF' },
-  { name:'Austria',name_es:'Austria',code:'AUT',flag_emoji:'🇦🇹',group_name:'J',confederation:'UEFA' },
-  { name:'Jordan',name_es:'Jordania',code:'JOR',flag_emoji:'🇯🇴',group_name:'J',confederation:'AFC' },
+  { name:'Argentina',name_es:'Argentina',code:'ARG',country_code:'ar',group_name:'J',confederation:'CONMEBOL' },
+  { name:'Algeria',name_es:'Argelia',code:'ALG',country_code:'dz',group_name:'J',confederation:'CAF' },
+  { name:'Austria',name_es:'Austria',code:'AUT',country_code:'at',group_name:'J',confederation:'UEFA' },
+  { name:'Jordan',name_es:'Jordania',code:'JOR',country_code:'jo',group_name:'J',confederation:'AFC' },
   // Grupo K
-  { name:'Portugal',name_es:'Portugal',code:'POR',flag_emoji:'🇵🇹',group_name:'K',confederation:'UEFA' },
-  { name:'DR Congo',name_es:'RD Congo',code:'COD',flag_emoji:'🇨🇩',group_name:'K',confederation:'CAF' },
-  { name:'Uzbekistan',name_es:'Uzbekistán',code:'UZB',flag_emoji:'🇺🇿',group_name:'K',confederation:'AFC' },
-  { name:'Colombia',name_es:'Colombia',code:'COL',flag_emoji:'🇨🇴',group_name:'K',confederation:'CONMEBOL' },
+  { name:'Portugal',name_es:'Portugal',code:'POR',country_code:'pt',group_name:'K',confederation:'UEFA' },
+  { name:'DR Congo',name_es:'RD Congo',code:'COD',country_code:'cd',group_name:'K',confederation:'CAF' },
+  { name:'Uzbekistan',name_es:'Uzbekistán',code:'UZB',country_code:'uz',group_name:'K',confederation:'AFC' },
+  { name:'Colombia',name_es:'Colombia',code:'COL',country_code:'co',group_name:'K',confederation:'CONMEBOL' },
   // Grupo L
-  { name:'England',name_es:'Inglaterra',code:'ENG',flag_emoji:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',group_name:'L',confederation:'UEFA' },
-  { name:'Croatia',name_es:'Croacia',code:'CRO',flag_emoji:'🇭🇷',group_name:'L',confederation:'UEFA' },
-  { name:'Ghana',name_es:'Ghana',code:'GHA',flag_emoji:'🇬🇭',group_name:'L',confederation:'CAF' },
-  { name:'Panama',name_es:'Panamá',code:'PAN',flag_emoji:'🇵🇦',group_name:'L',confederation:'CONCACAF' },
+  { name:'England',name_es:'Inglaterra',code:'ENG',country_code:'gb-eng',group_name:'L',confederation:'UEFA' },
+  { name:'Croatia',name_es:'Croacia',code:'CRO',country_code:'hr',group_name:'L',confederation:'UEFA' },
+  { name:'Ghana',name_es:'Ghana',code:'GHA',country_code:'gh',group_name:'L',confederation:'CAF' },
+  { name:'Panama',name_es:'Panamá',code:'PAN',country_code:'pa',group_name:'L',confederation:'CONCACAF' },
 ]
 
 // Fixture real del Mundial 2026 (Fase de grupos)
@@ -184,7 +184,10 @@ export async function GET(request: Request) {
       let count = 0
       let errors: string[] = []
       for (const t of REAL_TEAMS) {
-        const res = await fetch(`${baseUrl}/rest/v1/teams`, { method: 'POST', headers, body: JSON.stringify(t) })
+        const res = await fetch(`${baseUrl}/rest/v1/teams`, { method: 'POST', headers, body: JSON.stringify({
+          name: t.name, name_es: t.name_es, code: t.code,
+          flag_emoji: t.country_code, group_name: t.group_name, confederation: t.confederation,
+        }) })
         if (!res.ok) { const err = await res.text(); errors.push(`${t.code}: ${res.status} ${err}`) }
         else count++
       }
