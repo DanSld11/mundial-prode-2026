@@ -28,7 +28,7 @@ export async function loginAction(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  return { success: true }
+  redirect('/dashboard/grupos')
 }
 
 // ── REGISTER ──
