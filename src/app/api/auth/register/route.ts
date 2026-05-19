@@ -4,14 +4,22 @@ import { cookies } from 'next/headers'
 
 export async function POST(request: Request) {
   try {
-    const { email, password, username, favoriteTeam } = await request.json()
+    const formData = await request.formData()
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const username = formData.get('username') as string
+    const favoriteTeam = formData.get('favorite_team') as string
 
     if (!email || !password || !username) {
-      return NextResponse.json({ error: 'Completá todos los campos' }, { status: 400 })
+      return NextResponse.redirect(new URL('/auth/register?error=Completá+todos+los+campos', request.url))
     }
 
     if (password.length < 8) {
-      return NextResponse.json({ error: 'La contraseña debe tener al menos 8 caracteres' }, { status: 400 })
+      return NextResponse.redirect(new URL('/auth/register?error=Contraseña+muy+corta', request.url))
+    }
+
+    if (username.length < 3 || username.length > 20) {
+      return NextResponse.redirect(new URL('/auth/register?error=Usuario+invalido', request.url))
     }
 
     const cookieStore = await cookies()
@@ -31,7 +39,6 @@ export async function POST(request: Request) {
       }
     )
 
-    // Verificar username
     const { data: existingUser } = await supabase
       .from('profiles')
       .select('id')
@@ -39,31 +46,24 @@ export async function POST(request: Request) {
       .single()
 
     if (existingUser) {
-      return NextResponse.json({ error: 'Ese nombre de usuario ya está en uso' }, { status: 409 })
+      return NextResponse.redirect(new URL('/auth/register?error=Usuario+ya+existe', request.url))
     }
 
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: {
-          username,
-          favorite_team: favoriteTeam || null,
-        },
+        data: { username, favorite_team: favoriteTeam || null },
       },
     })
 
     if (error) {
-      return NextResponse.json({
-        error: error.message.includes('already registered')
-          ? 'Este email ya está registrado'
-          : error.message,
-      }, { status: 400 })
+      return NextResponse.redirect(new URL('/auth/register?error=Error+al+registrarse', request.url))
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.redirect(new URL('/dashboard/grupos', request.url))
   } catch (err: any) {
     console.error('Register error:', err)
-    return NextResponse.json({ error: err.message || 'Error del servidor' }, { status: 500 })
+    return NextResponse.redirect(new URL('/auth/register?error=Error+del+servidor', request.url))
   }
 }

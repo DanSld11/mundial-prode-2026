@@ -4,10 +4,12 @@ import { cookies } from 'next/headers'
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json()
+    const formData = await request.formData()
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
 
     if (!email || !password) {
-      return NextResponse.json({ error: 'Completá todos los campos' }, { status: 400 })
+      return NextResponse.redirect(new URL('/auth/login?error=Completá+todos+los+campos', request.url))
     }
 
     const cookieStore = await cookies()
@@ -17,9 +19,7 @@ export async function POST(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
+          getAll() { return cookieStore.getAll() },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set(name, value, options)
@@ -32,16 +32,12 @@ export async function POST(request: Request) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      return NextResponse.json({
-        error: error.message.includes('Invalid login')
-          ? 'Email o contraseña incorrectos'
-          : error.message,
-      }, { status: 401 })
+      return NextResponse.redirect(new URL('/auth/login?error=Email+o+contraseña+incorrectos', request.url))
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.redirect(new URL('/dashboard/grupos', request.url))
   } catch (err: any) {
     console.error('Login error:', err)
-    return NextResponse.json({ error: err.message || 'Error del servidor' }, { status: 500 })
+    return NextResponse.redirect(new URL('/auth/login?error=Error+del+servidor', request.url))
   }
 }

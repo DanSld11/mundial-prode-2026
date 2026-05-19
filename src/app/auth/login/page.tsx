@@ -1,40 +1,11 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
 export default function LoginPage() {
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
-
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await res.json()
-
-      if (!res.ok || data.error) {
-        setError(data.error || 'Error al iniciar sesión')
-      } else {
-        window.location.href = '/dashboard/grupos'
-      }
-    } catch (err: any) {
-      setError(err.message || 'Error de conexión')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const searchParams = useSearchParams()
+  const errorMsg = searchParams.get('error')
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
@@ -54,13 +25,13 @@ export default function LoginPage() {
         <div className="bg-[#111] border border-white/8 rounded-xl p-8">
           <h1 className="text-white text-xl font-semibold mb-6">Ingresar</h1>
 
-          {error && (
+          {errorMsg && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 mb-5 text-red-400 text-sm">
-              {error}
+              {errorMsg}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form action="/api/auth/login" method="POST" className="space-y-5">
             <div>
               <label className="block text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">
                 Email
@@ -90,10 +61,9 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-[#C8102E] hover:bg-[#e01230] text-white font-bold text-sm uppercase tracking-widest py-3 rounded-md transition-all hover:-translate-y-px disabled:opacity-50"
+              className="w-full bg-[#C8102E] hover:bg-[#e01230] text-white font-bold text-sm uppercase tracking-widest py-3 rounded-md transition-all hover:-translate-y-px"
             >
-              {loading ? 'Ingresando...' : 'Ingresar al prode'}
+              Ingresar al prode
             </button>
           </form>
 
