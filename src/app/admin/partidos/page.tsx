@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { Match, Team } from '@/types'
+import { TeamFlag } from '@/components/team-flag'
 
 interface MatchWithTeams extends Omit<Match, 'home_team' | 'away_team'> {
   home_team: Pick<Team, 'name_es' | 'flag_emoji' | 'code'> | null
@@ -61,7 +62,7 @@ export default async function AdminPartidosPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <span>{match.home_team?.flag_emoji}</span>
+                        <TeamFlag code={match.home_team?.flag_emoji} label={match.home_team?.name_es} />
                         <span className="text-sm">{match.home_team?.name_es}</span>
                       </div>
                     </TableCell>
@@ -104,7 +105,7 @@ export default async function AdminPartidosPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <span>{match.away_team?.flag_emoji}</span>
+                        <TeamFlag code={match.away_team?.flag_emoji} label={match.away_team?.name_es} />
                         <span className="text-sm">{match.away_team?.name_es}</span>
                       </div>
                     </TableCell>

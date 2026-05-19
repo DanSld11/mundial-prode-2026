@@ -8,11 +8,7 @@ import { CalendarDays, MapPin } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { PredictionForm } from '@/components/predictions/prediction-form'
-
-function FlagImg({ code, size }: { code: string; size?: number }) {
-  const w = size || 40
-  return <img src={`https://flagcdn.com/w${w}/${code}.png`} srcSet={`https://flagcdn.com/w${w*2}/${code}.png 2x`} alt="" className="w-6 h-auto rounded-xs border shadow-sm inline-block" loading="lazy" />
-}
+import { TeamFlag } from '@/components/team-flag'
 
 function getAccessToken() {
   return document.cookie.split('; ').find(r => r.startsWith('sb-access-token='))?.split('=')[1]
@@ -54,13 +50,15 @@ export default function FixturePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-brand-red/10">
-          <CalendarDays className="h-5 w-5 text-brand-red" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Fixture</h1>
-          <p className="text-sm text-muted-foreground">Fase de grupos · 11–27 junio 2026</p>
+      <div className="rounded-xl border bg-card p-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-red text-white shadow-sm">
+            <CalendarDays className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Fixture</h1>
+            <p className="text-sm text-muted-foreground">Fase de grupos oficial · 11-27 junio 2026</p>
+          </div>
         </div>
       </div>
 
@@ -86,30 +84,35 @@ export default function FixturePage() {
                   const awayFlag = match.away_team?.flag_emoji
 
                   return (
-                    <Card key={match.id} className="border shadow-sm hover:shadow transition-shadow">
+                    <Card key={match.id} className="border shadow-sm transition-shadow hover:shadow-md">
                       <CardContent className="p-3">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs shrink-0 w-12 justify-center font-mono">G{match.group_name}</Badge>
-                          <div className="flex-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                            <div className="flex items-center gap-2 justify-end">
-                              <span className="text-sm font-medium text-right leading-tight">{match.home_team?.name_es}</span>
-                              {homeFlag && <FlagImg code={homeFlag} />}
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                          <div className="flex items-center justify-between gap-2 sm:w-28 sm:justify-start">
+                            <Badge variant="secondary" className="w-12 shrink-0 justify-center font-mono text-xs">G{match.group_name}</Badge>
+                            <span className="text-xs text-muted-foreground sm:hidden">
+                              {format(new Date(match.match_date), 'HH:mm')}
+                            </span>
+                          </div>
+                          <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-2">
+                            <div className="flex min-w-0 items-center justify-end gap-2">
+                              <span className="truncate text-right text-sm font-semibold leading-tight">{match.home_team?.name_es}</span>
+                              <TeamFlag code={homeFlag} label={match.home_team?.name_es} className="shrink-0" />
                             </div>
-                            <div className="text-center px-3">
+                            <div className="min-w-16 px-3 text-center">
                               {isFinished ? (
                                 <span className="text-lg font-bold tabular-nums">{match.home_score} - {match.away_score}</span>
                               ) : (
-                                <span className="text-xs font-medium text-muted-foreground">
+                                <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
                                   {format(new Date(match.match_date), 'HH:mm')}
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2">
-                              {awayFlag && <FlagImg code={awayFlag} />}
-                              <span className="text-sm font-medium text-left leading-tight">{match.away_team?.name_es}</span>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <TeamFlag code={awayFlag} label={match.away_team?.name_es} className="shrink-0" />
+                              <span className="truncate text-left text-sm font-semibold leading-tight">{match.away_team?.name_es}</span>
                             </div>
                           </div>
-                          <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground sm:w-40 sm:shrink-0">
                             <MapPin className="h-3 w-3" />{match.city}
                           </div>
                         </div>

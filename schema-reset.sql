@@ -73,7 +73,7 @@ CREATE TABLE public.teams (
   name TEXT NOT NULL,
   name_es TEXT NOT NULL,
   code TEXT NOT NULL UNIQUE,
-  flag_emoji TEXT,
+  flag_emoji TEXT, -- codigo de bandera para FlagCDN (ej: mx, gb-eng) o emoji legacy
   group_name TEXT NOT NULL CHECK (group_name IN ('A','B','C','D','E','F','G','H','I','J','K','L')),
   confederation TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -139,7 +139,7 @@ CREATE POLICY "Usuario edita sus predicciones (si no esta bloqueado)" ON public.
 CREATE TABLE public.bracket_predictions (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  stage TEXT NOT NULL CHECK (stage IN ('round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'final')),
+  stage TEXT NOT NULL CHECK (stage IN ('round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'third_place', 'final')),
   slot_key TEXT NOT NULL,
   team_id UUID REFERENCES public.teams(id),
   points_earned INTEGER DEFAULT 0,

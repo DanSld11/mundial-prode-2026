@@ -5,18 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Users, Trophy } from 'lucide-react'
-
-function FlagImg({ code, className }: { code: string; className?: string }) {
-  return (
-    <img
-      src={`https://flagcdn.com/w40/${code}.png`}
-      srcSet={`https://flagcdn.com/w80/${code}.png 2x`}
-      alt={code}
-      className={className || 'w-5 h-auto rounded-sm border shadow-sm'}
-      loading="lazy"
-    />
-  )
-}
+import { TeamFlag } from '@/components/team-flag'
 
 const groups = ['A','B','C','D','E','F','G','H','I','J','K','L'] as const
 
@@ -38,19 +27,21 @@ export default function GruposPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="rounded-xl border bg-card p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-brand-red/10">
-            <Users className="h-5 w-5 text-brand-red" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-red text-white shadow-sm">
+            <Users className="h-5 w-5" />
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Grupos</h1>
             <p className="text-sm text-muted-foreground">
-              {totalTeams > 0 ? '48 equipos · 12 grupos · FIFA World Cup 2026' : 'Sin equipos cargados'}
+              {totalTeams > 0 ? '48 selecciones · 12 grupos · Copa Mundial FIFA 2026' : 'Sin equipos cargados'}
             </p>
           </div>
         </div>
-        <Badge variant="outline" className="text-xs">{totalTeams}/48</Badge>
+        <Badge variant="outline" className="shrink-0 text-xs">{totalTeams}/48</Badge>
+        </div>
       </div>
 
       {totalTeams === 0 ? (
@@ -64,21 +55,23 @@ export default function GruposPage() {
           {groups.map((g) => {
             const groupTeams = teams.filter((t) => t.group_name === g)
             return (
-              <Card key={g} className="overflow-hidden border shadow-sm hover:shadow transition-shadow">
-                <CardHeader className="bg-muted/30 px-4 py-3 flex flex-row items-center justify-between space-y-0">
+              <Card key={g} className="overflow-hidden border shadow-sm transition-shadow hover:shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b bg-muted/30 px-4 py-3">
                   <CardTitle className="text-base font-semibold">Grupo {g}</CardTitle>
                   <Badge variant="secondary" className="text-xs">{groupTeams.length}</Badge>
                 </CardHeader>
                 <CardContent className="p-0 divide-y">
                   {groupTeams.map((team) => {
-                    const cc = team.flag_emoji || team.code?.substring(0, 2).toLowerCase()
                     return (
-                      <div key={team.id} className="flex items-center justify-between px-4 py-2.5 hover:bg-muted/20 transition-colors">
-                        <div className="flex items-center gap-2.5">
-                          <FlagImg code={cc} className="w-5 h-auto rounded-sm border shadow-sm" />
-                          <span className="text-sm font-medium">{team.name_es}</span>
+                      <div key={team.id} className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/20">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <TeamFlag code={team.flag_emoji} label={team.name_es} className="shrink-0" />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold">{team.name_es}</p>
+                            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{team.confederation}</p>
+                          </div>
                         </div>
-                        <span className="text-xs text-muted-foreground font-mono">{team.code}</span>
+                        <span className="shrink-0 rounded bg-secondary px-1.5 py-0.5 font-mono text-[11px] text-secondary-foreground">{team.code}</span>
                       </div>
                     )
                   })}

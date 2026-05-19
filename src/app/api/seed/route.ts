@@ -179,8 +179,20 @@ export async function GET(request: Request) {
     'Prefer': 'return=minimal',
   }
 
+  async function deleteAll(table: string) {
+    return fetch(`${baseUrl}/rest/v1/${table}?id=not.is.null`, {
+      method: 'DELETE',
+      headers,
+    })
+  }
+
   try {
     if (action === 'teams') {
+      await deleteAll('bracket_predictions')
+      await deleteAll('predictions')
+      await deleteAll('matches')
+      await deleteAll('teams')
+
       let count = 0
       let errors: string[] = []
       for (const t of REAL_TEAMS) {
@@ -195,6 +207,9 @@ export async function GET(request: Request) {
     }
 
     if (action === 'matches') {
+      await deleteAll('predictions')
+      await deleteAll('matches')
+
       const res = await fetch(`${baseUrl}/rest/v1/teams?select=id,code`, { headers })
       const teams = await res.json()
       if (!Array.isArray(teams) || teams.length === 0) {

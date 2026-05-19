@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { saveBracketPredictionAction } from './actions'
 import { Swords, Trophy, Medal } from 'lucide-react'
+import { TeamFlag } from '@/components/team-flag'
 
 interface Team {
   id: string
@@ -124,14 +125,14 @@ export default function BracketPageClient({ teams, predictions }: BracketPageCli
                             <option value="">Seleccionar equipo...</option>
                             {teams.map((team) => (
                               <option key={team.id} value={team.id}>
-                                {team.flag_emoji} {team.name_es}
+                                {team.name_es}
                               </option>
                             ))}
                           </select>
                         </div>
                         {selectedTeam && (
                           <div className="mt-2 flex items-center gap-2 text-sm">
-                            <span className="text-lg">{selectedTeam.flag_emoji}</span>
+                            <TeamFlag code={selectedTeam.flag_emoji} label={selectedTeam.name_es} />
                             <span className="font-medium">{selectedTeam.name_es}</span>
                             <span className="text-xs text-muted-foreground">{selectedTeam.code}</span>
                           </div>

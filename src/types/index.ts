@@ -24,7 +24,7 @@ export interface Team {
   name: string
   name_es: string
   code: string         // ej: 'ARG', 'BRA'
-  flag_emoji: string | null
+  flag_emoji: string | null  // codigo FlagCDN (mx, gb-eng) o emoji legacy
   group_name: GroupName
   confederation: string | null
   created_at: string

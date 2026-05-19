@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Target, CheckCircle2, Trophy, Clock } from 'lucide-react'
+import { TeamFlag } from '@/components/team-flag'
 
 function getAccessToken() {
   return document.cookie.split('; ').find(r => r.startsWith('sb-access-token='))?.split('=')[1]
@@ -38,9 +39,11 @@ export default function PrediccionesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-brand-red/10"><Target className="h-5 w-5 text-brand-red" /></div>
-        <div><h1 className="text-2xl font-bold">Mis Predicciones</h1><p className="text-sm text-muted-foreground">Tus pronósticos y puntos</p></div>
+      <div className="rounded-xl border bg-card p-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-red text-white shadow-sm"><Target className="h-5 w-5" /></div>
+          <div><h1 className="text-2xl font-bold">Mis Predicciones</h1><p className="text-sm text-muted-foreground">Tus pronósticos y puntos</p></div>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -61,16 +64,20 @@ export default function PrediccionesPage() {
           {predictions.map(p => {
             const isFinished = p.match?.status === 'finished'
             return (
-              <Card key={p.id}>
-                <CardContent className="p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span>{p.match?.home_team?.flag_emoji}</span>
-                    <span className="text-sm font-medium">{p.match?.home_team?.name_es}</span>
-                    <span className="text-sm font-bold tabular-nums">{p.predicted_home_score} - {p.predicted_away_score}</span>
-                    <span className="text-sm font-medium">{p.match?.away_team?.name_es}</span>
-                    <span>{p.match?.away_team?.flag_emoji}</span>
+              <Card key={p.id} className="shadow-sm">
+                <CardContent className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="grid flex-1 grid-cols-[1fr_auto_1fr] items-center gap-2">
+                    <div className="flex min-w-0 items-center justify-end gap-2">
+                      <span className="truncate text-right text-sm font-semibold">{p.match?.home_team?.name_es}</span>
+                      <TeamFlag code={p.match?.home_team?.flag_emoji} label={p.match?.home_team?.name_es} className="shrink-0" />
+                    </div>
+                    <span className="rounded-md bg-secondary px-3 py-1 text-sm font-bold tabular-nums">{p.predicted_home_score} - {p.predicted_away_score}</span>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <TeamFlag code={p.match?.away_team?.flag_emoji} label={p.match?.away_team?.name_es} className="shrink-0" />
+                      <span className="truncate text-sm font-semibold">{p.match?.away_team?.name_es}</span>
+                    </div>
                   </div>
-                  <div>
+                  <div className="flex justify-center sm:justify-end">
                     {isFinished && p.points_earned > 0 && <Badge className="bg-emerald-100 text-emerald-800 text-xs">+{p.points_earned} {p.is_exact_score ? 'exacto' : ''}</Badge>}
                     {isFinished && p.points_earned === 0 && <Badge variant="secondary" className="text-xs">0 pts</Badge>}
                     {!isFinished && <Badge variant="outline" className="text-xs">Pendiente</Badge>}

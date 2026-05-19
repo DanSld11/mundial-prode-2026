@@ -53,8 +53,8 @@ create table public.teams (
   name text not null,
   name_es text not null,  -- nombre en español
   code text not null unique,  -- código FIFA 3 letras: ARG, BRA, etc.
-  flag_emoji text,
-  group_name text not null check (group_name in ('A','B','C','D','E','F','G','H')),
+  flag_emoji text, -- codigo de bandera para FlagCDN (ej: mx, gb-eng) o emoji legacy
+  group_name text not null check (group_name in ('A','B','C','D','E','F','G','H','I','J','K','L')),
   confederation text,       -- CONMEBOL, UEFA, etc.
   created_at timestamptz not null default now()
 );
@@ -119,7 +119,7 @@ create policy "Usuario edita sus predicciones (si no está bloqueado)" on public
 create table public.bracket_predictions (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
-  stage text not null check (stage in ('round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'final')),
+  stage text not null check (stage in ('round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'third_place', 'final')),
   slot_key text not null,   -- ej: "QF1", "SF2", "CHAMPION"
   team_id uuid references public.teams(id),
   points_earned integer default 0,
