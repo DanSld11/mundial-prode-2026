@@ -73,10 +73,10 @@ export default function AdminPage() {
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
     )
-
-    await supabase.from('teams').delete().neq('code', 'NONEXISTENT')
+    await supabase.auth.setSession({ access_token: token, refresh_token: 'x' })
 
     const { error } = await supabase.from('teams').insert(
       SEED_TEAMS.map(t => ({ name: t.name, name_es: t.name_es, code: t.code, flag_emoji: t.flag_emoji, group_name: t.group_name, confederation: t.confederation }))
@@ -94,8 +94,10 @@ export default function AdminPage() {
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
     )
+    await supabase.auth.setSession({ access_token: token, refresh_token: 'x' })
 
     const { data: teams } = await supabase.from('teams').select('id, code')
     if (!teams || teams.length === 0) { toast.error('Insertá equipos primero'); setLoadingMatches(false); return }
