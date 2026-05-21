@@ -1,43 +1,28 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
 export function getAccessToken(): string | null {
-  if (typeof document === 'undefined') return null
-  return document.cookie.split('; ').find((row) => row.startsWith('sb-access-token='))?.split('=')[1] ?? null
+  if (typeof window === 'undefined') return null
+  return 'supabase-browser-session'
 }
 
 // Module-level singletons — avoids "Multiple GoTrueClient instances" warning
-let _anonInstance: ReturnType<typeof createClient> | null = null
-const _authedInstances = new Map<string, ReturnType<typeof createClient>>()
+let _browserInstance: ReturnType<typeof createBrowserClient> | null = null
 
 export function createAnonClient() {
-  if (!_anonInstance) {
-    _anonInstance = createClient(
+  if (!_browserInstance) {
+    _browserInstance = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } },
     )
   }
-  return _anonInstance
+  return _browserInstance
 }
 
-export function createAuthedClient(token: string) {
-  if (!_authedInstances.has(token)) {
-    _authedInstances.set(
-      token,
-      createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          auth: { autoRefreshToken: false, persistSession: false },
-          global: { headers: { Authorization: `Bearer ${token}` } },
-        },
-      ),
-    )
-  }
-  return _authedInstances.get(token)!
+export function createAuthedClient(_token?: string) {
+  return createAnonClient()
 }
 
-export async function getCurrentUserId(token: string): Promise<string | null> {
-  const { data } = await createAuthedClient(token).auth.getUser(token)
+export async function getCurrentUserId(_token?: string): Promise<string | null> {
+  const { data } = await createAnonClient().auth.getUser()
   return data.user?.id ?? null
 }
