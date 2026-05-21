@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, Medal, Shield, Target, Trophy, Users } from 'lucide-react'
+import { ArrowRight, CalendarDays, Crown, Medal, Shield, Target, Trophy, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TeamFlag } from '@/components/team-flag'
@@ -20,6 +20,7 @@ export default function DashboardPage() {
   const [teams, setTeams] = useState<any[]>([])
   const [matches, setMatches] = useState<any[]>([])
   const [leaders, setLeaders] = useState<any[]>([])
+  const [championPick, setChampionPick] = useState<{ name_es: string; flag_emoji: string } | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -49,6 +50,16 @@ export default function DashboardPage() {
         authClient.from('profiles').select('role').eq('id', userId).single().then(({ data: profile }) => {
           setIsAdmin(profile?.role === 'admin')
         })
+        // Load champion bracket prediction
+        authClient.from('bracket_predictions')
+          .select('team_id, team:teams(name_es, flag_emoji)')
+          .eq('user_id', userId)
+          .eq('stage', 'final')
+          .eq('slot_key', 'final-1')
+          .single()
+          .then(({ data: bp }) => {
+            if (bp?.team) setChampionPick(bp.team as unknown as { name_es: string; flag_emoji: string })
+          })
       })
     }
   }, [])
@@ -151,6 +162,28 @@ export default function DashboardPage() {
           </Link>
         ))}
       </section>
+
+      {/* Champion prediction callout */}
+      <Link href="/dashboard/bracket" className="group block overflow-hidden rounded-2xl border bg-gradient-to-r from-brand-gold/10 to-brand-red/10 p-4 shadow-sm transition hover:shadow-md sm:p-5">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-gold text-white shadow-sm">
+            <Crown className="h-7 w-7" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Predicción del campeón</p>
+            {championPick ? (
+              <div className="mt-1 flex items-center gap-2">
+                <span className="text-lg font-bold">{championPick.flag_emoji}</span>
+                <span className="truncate font-bold">{championPick.name_es}</span>
+                <span className="ml-1 rounded-full bg-brand-gold/20 px-2 py-0.5 text-xs font-semibold text-brand-gold">+15 pts</span>
+              </div>
+            ) : (
+              <p className="mt-1 text-sm font-semibold text-muted-foreground">¿Quién será campeón? Elegí tu selección →</p>
+            )}
+          </div>
+          <ArrowRight className="h-5 w-5 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-brand-red" />
+        </div>
+      </Link>
 
       <section className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <Card className="shadow-sm">

@@ -1,15 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { seedTeamsAction, seedMatchesAction, recalculateAllPointsAction } from './actions'
+import { createAnonClient } from '@/lib/auth-client'
+import { formatPeruLongDateTime } from '@/lib/peru-time'
 
 export default function AdminPage() {
   const [loadingTeams, setLoadingTeams] = useState(false)
   const [loadingMatches, setLoadingMatches] = useState(false)
   const [loadingRecalc, setLoadingRecalc] = useState(false)
+  const [recentMatches, setRecentMatches] = useState<any[]>([])
+
+  useEffect(() => {
+    const supabase = createAnonClient()
+    supabase
+      .from('matches')
+      .select('id, status, home_score, away_score, updated_at, group_name, home_team:teams!matches_home_team_id_fkey(name_es,flag_emoji), away_team:teams!matches_away_team_id_fkey(name_es,flag_emoji)')
+      .eq('status', 'finished')
+      .order('updated_at', { ascending: false })
+      .limit(10)
+      .then(({ data }) => setRecentMatches(data ?? []))
+  }, [])
 
   async function seedTeams() {
     setLoadingTeams(true)
@@ -104,6 +119,51 @@ export default function AdminPage() {
             </Button>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Recent activity log */}
+      <div>
+        <h2 className="mb-3 text-base font-semibold">Historial de resultados cargados</h2>
+        {recentMatches.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No hay partidos finalizados aún.</p>
+        ) : (
+          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/30">
+                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">Partido</th>
+                  <th className="px-4 py-2 text-center font-medium text-muted-foreground">Resultado</th>
+                  <th className="px-4 py-2 text-center font-medium text-muted-foreground hidden sm:table-cell">Grupo</th>
+                  <th className="px-4 py-2 text-right font-medium text-muted-foreground hidden md:table-cell">Actualizado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentMatches.map((m: any) => (
+                  <tr key={m.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="shrink-0">{m.home_team?.flag_emoji}</span>
+                        <span className="truncate max-w-[100px] font-medium">{m.home_team?.name_es}</span>
+                        <span className="text-muted-foreground">vs</span>
+                        <span className="truncate max-w-[100px] font-medium">{m.away_team?.name_es}</span>
+                        <span className="shrink-0">{m.away_team?.flag_emoji}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2.5 text-center font-bold tabular-nums">
+                      {m.home_score} - {m.away_score}
+                    </td>
+                    <td className="px-4 py-2.5 text-center hidden sm:table-cell">
+                      <Badge variant="secondary">G{m.group_name}</Badge>
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-xs text-muted-foreground hidden md:table-cell">
+                      {m.updated_at ? formatPeruLongDateTime(m.updated_at) : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )

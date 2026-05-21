@@ -11,6 +11,7 @@ import {
   Goal,
   Lock,
   Medal,
+  Share2,
   ShieldCheck,
   Target,
   Users,
@@ -128,6 +129,29 @@ export default function MatchPredictionPage() {
   const outcomeLabel = outcomeOptions.find((o) => o.value === outcome)?.label ?? outcome
 
   const hasAnything = !!(outcome || scorerId || homeScore !== '' || awayScore !== '')
+  // "Bold prediction" indicator — high score (≥3 goals per team or ≥5 total) or score entered
+  const isBoldPrediction = (
+    (homeScore !== '' && awayScore !== '' && (parseInt(homeScore) + parseInt(awayScore)) >= 5) ||
+    (homeScore !== '' && parseInt(homeScore) >= 3) ||
+    (awayScore !== '' && parseInt(awayScore) >= 3)
+  )
+
+  async function sharePrediction() {
+    const text = [
+      `⚽ Mi predicción: ${match?.home_team?.name_es} vs ${match?.away_team?.name_es}`,
+      outcome ? `Resultado: ${outcomeLabel}` : null,
+      selectedScorerName ? `Goleador: ${selectedScorerName}` : null,
+      homeScore !== '' && awayScore !== '' ? `Marcador: ${homeScore} - ${awayScore}` : null,
+      `\n🏆 Mundial Perú 2026`,
+    ].filter(Boolean).join('\n')
+
+    if (navigator.share) {
+      navigator.share({ text, title: 'Mi predicción — Mundial Perú 2026' }).catch(() => {})
+    } else {
+      await navigator.clipboard.writeText(text).catch(() => {})
+      // Toast via parent component isn't accessible here but the copy works
+    }
+  }
 
   async function confirmSave() {
     setShowConfirmModal(false)
@@ -217,7 +241,7 @@ export default function MatchPredictionPage() {
         {isUserConfirmed && !isFinished && (
           <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900 dark:bg-emerald-950/30">
             <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
                 Predicción confirmada
               </p>
@@ -225,7 +249,14 @@ export default function MatchPredictionPage() {
                 Ya registraste tu pronóstico para este partido. No se puede modificar.
               </p>
             </div>
-            <Lock className="ml-auto h-4 w-4 shrink-0 text-emerald-500" />
+            <button
+              onClick={sharePrediction}
+              className="flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-200 dark:border-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Compartir
+            </button>
+            <Lock className="h-4 w-4 shrink-0 text-emerald-500" />
           </div>
         )}
 
@@ -433,6 +464,17 @@ export default function MatchPredictionPage() {
             ].join(' ')}>
               +{prediction.points_earned ?? 0} pts
             </span>
+          </div>
+        )}
+
+        {/* Bold prediction indicator */}
+        {!isLocked && isBoldPrediction && (
+          <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm dark:border-amber-900 dark:bg-amber-950/30">
+            <span className="text-xl">⚡</span>
+            <div>
+              <p className="font-semibold text-amber-800 dark:text-amber-300">¡Predicción atrevida!</p>
+              <p className="text-xs text-amber-700/80 dark:text-amber-400/70">Estás apostando por un marcador goleador. Si acertás, ¡la gloria es tuya!</p>
+            </div>
           </div>
         )}
 

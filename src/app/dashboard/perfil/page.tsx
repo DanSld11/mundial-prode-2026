@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { getAccessToken, createAuthedClient } from '@/lib/auth-client'
-import { Lock, Medal, Target, Trophy, TrendingUp, UserRound } from 'lucide-react'
+import { Bell, BellOff, Lock, Medal, Target, Trophy, TrendingUp, UserRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { computeBadges } from '@/lib/badges'
 
 interface ProfileStats {
   position: number | null
@@ -29,6 +30,8 @@ export default function PerfilPage() {
   const [token, setToken] = useState<string | null>(null)
   const [tokenChecked, setTokenChecked] = useState(false)
   const [stats, setStats] = useState<ProfileStats | null>(null)
+  const [allPredictions, setAllPredictions] = useState<any[]>([])
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>('default')
 
   const supabase = useMemo(() => token ? createAuthedClient(token) : createAuthedClient(''), [token])
 
@@ -60,6 +63,7 @@ export default function PerfilPage() {
       const allPreds = predsRes.data ?? []
       const pending = allPreds.filter((p: any) => p.match?.status !== 'finished').length
 
+      setAllPredictions(allPreds)
       setStats({
         position: leaderboardRes.data?.position ?? null,
         total_points: leaderboardRes.data?.total_points ?? 0,
@@ -73,7 +77,26 @@ export default function PerfilPage() {
     }
 
     loadProfile()
+
+    // Check notification permission
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotifPermission(Notification.permission)
+    } else {
+      setNotifPermission('unsupported')
+    }
   }, [supabase, token, tokenChecked])
+
+  async function requestNotifications() {
+    if (typeof window === 'undefined' || !('Notification' in window)) return
+    const permission = await Notification.requestPermission()
+    setNotifPermission(permission)
+    if (permission === 'granted') {
+      toast.success('¡Notificaciones activadas! Te avisaremos cuando haya resultados.')
+      new Notification('Mundial Perú 2026', { body: 'Las notificaciones están activadas 🎉', icon: '/icons/icon-192.png' })
+    } else {
+      toast.error('Notificaciones bloqueadas. Podés habilitarlas desde la configuración del navegador.')
+    }
+  }
 
   async function updateProfile(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -119,6 +142,8 @@ export default function PerfilPage() {
     </div>
   )
 
+  const badges = computeBadges(allPredictions)
+  const earnedBadges = badges.filter((b) => b.earned)
   const accuracy = stats && stats.total_predictions > 0
     ? Math.round((stats.predictions_correct / stats.total_predictions) * 100)
     : 0
@@ -187,6 +212,70 @@ export default function PerfilPage() {
             <span>{stats.predictions_correct} acertadas · {stats.exact_scores} exactas</span>
           </div>
         </div>
+      )}
+
+      {/* Badges */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <span>🏅</span>
+            Logros desbloqueados
+            <span className="ml-auto text-sm font-normal text-muted-foreground">{earnedBadges.length}/{badges.length}</span>
+          </CardTitle>
+          <CardDescription>Consigue predicciones correctas y raras para desbloquear todos los logros.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {badges.map((badge) => (
+              <div
+                key={badge.id}
+                className={`flex items-start gap-2 rounded-xl border p-3 transition-all ${
+                  badge.earned
+                    ? 'bg-brand-red/5 border-brand-red/20'
+                    : 'bg-muted/20 opacity-40 grayscale'
+                }`}
+              >
+                <span className="text-2xl leading-none">{badge.emoji}</span>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-bold">{badge.title}</p>
+                  <p className="text-[10px] leading-tight text-muted-foreground">{badge.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Notifications */}
+      {notifPermission !== 'unsupported' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              {notifPermission === 'granted' ? <Bell className="h-4 w-4 text-emerald-500" /> : <BellOff className="h-4 w-4 text-muted-foreground" />}
+              Notificaciones
+            </CardTitle>
+            <CardDescription>
+              {notifPermission === 'granted'
+                ? 'Las notificaciones están activas. Te avisamos cuando haya resultados.'
+                : 'Activá las notificaciones para saber cuando se publican resultados.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {notifPermission === 'granted' ? (
+              <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400">
+                <Bell className="h-4 w-4 shrink-0" />
+                Notificaciones activadas correctamente.
+              </div>
+            ) : notifPermission === 'denied' ? (
+              <p className="text-sm text-muted-foreground">Habilitá los permisos de notificación desde la configuración de tu navegador.</p>
+            ) : (
+              <Button onClick={requestNotifications} variant="outline" className="gap-2">
+                <Bell className="h-4 w-4" />
+                Activar notificaciones
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Edit username */}
