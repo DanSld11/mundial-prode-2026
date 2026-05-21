@@ -3,11 +3,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, AlertCircle, CheckCircle2, Goal, Medal, Target } from 'lucide-react'
+import {
+  ArrowLeft,
+  AlertCircle,
+  CheckCircle2,
+  Goal,
+  Lock,
+  Medal,
+  ShieldCheck,
+  Target,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
 import { TeamFlag } from '@/components/team-flag'
 import { formatPeruLongDateTime } from '@/lib/peru-time'
 import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
@@ -15,6 +25,7 @@ import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId 
 export default function MatchPredictionPage() {
   const params = useParams<{ matchId: string }>()
   const matchId = params.matchId
+
   const [match, setMatch] = useState<any>(null)
   const [players, setPlayers] = useState<any[]>([])
   const [prediction, setPrediction] = useState<any>(null)
@@ -27,7 +38,7 @@ export default function MatchPredictionPage() {
   const [homeScore, setHomeScore] = useState('')
   const [awayScore, setAwayScore] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
 
   const supabase = useMemo(() => createAnonClient(), [])
 
@@ -38,7 +49,6 @@ export default function MatchPredictionPage() {
         .select('*, home_team:teams!matches_home_team_id_fkey(id,name_es,flag_emoji,code), away_team:teams!matches_away_team_id_fkey(id,name_es,flag_emoji,code)')
         .eq('id', matchId)
         .single()
-
       setMatch(matchData)
 
       const teamIds = [matchData?.home_team_id, matchData?.away_team_id].filter(Boolean)
@@ -57,13 +67,13 @@ export default function MatchPredictionPage() {
       if (token) {
         setAccessToken(token)
         const authedSupabase = createAuthedClient(token)
-        const userId = await getCurrentUserId(token)
-        if (userId) {
-          setUserId(userId)
+        const uid = await getCurrentUserId(token)
+        if (uid) {
+          setUserId(uid)
           const { data: predictionData } = await authedSupabase
             .from('predictions')
             .select('*')
-            .eq('user_id', userId)
+            .eq('user_id', uid)
             .eq('match_id', matchId)
             .single()
           if (predictionData) {
@@ -78,35 +88,41 @@ export default function MatchPredictionPage() {
 
       setLoading(false)
     }
-
     load()
   }, [matchId, supabase])
 
-  const isLocked = !!match && (match.predictions_locked || new Date(match.match_date) < new Date())
+  // La predicción se bloquea si: el admin/tiempo la cerró O el usuario ya confirmó
+  const isMatchLocked = !!match && (match.predictions_locked || new Date(match.match_date) < new Date())
+  const isUserConfirmed = !!prediction  // ya confirmó → no puede cambiar
+  const isLocked = isMatchLocked || isUserConfirmed
   const isFinished = match?.status === 'finished'
-  const homePlayers = players.filter((player) => player.team_id === match?.home_team_id)
-  const awayPlayers = players.filter((player) => player.team_id === match?.away_team_id)
 
-  async function savePrediction() {
+  const homePlayers = players.filter((p) => p.team_id === match?.home_team_id)
+  const awayPlayers = players.filter((p) => p.team_id === match?.away_team_id)
+  const selectedScorerName = players.find((p) => p.id === scorerId)?.name ?? null
+
+  const outcomeOptions = match
+    ? [
+        { value: 'home', label: `Gana ${match.home_team?.name_es}`, flag: match.home_team?.flag_emoji, name: match.home_team?.name_es },
+        { value: 'draw', label: 'Empate', flag: null, name: null },
+        { value: 'away', label: `Gana ${match.away_team?.name_es}`, flag: match.away_team?.flag_emoji, name: match.away_team?.name_es },
+      ]
+    : []
+
+  const outcomeLabel = outcomeOptions.find((o) => o.value === outcome)?.label ?? outcome
+
+  const hasAnything = !!(outcome || scorerId || homeScore !== '' || awayScore !== '')
+
+  async function confirmSave() {
+    setShowConfirmModal(false)
     setErrorMessage('')
-    setSuccessMessage('')
-
-    if (!accessToken) {
-      setErrorMessage('No se pudo identificar tu sesión. Vuelve a iniciar sesión e inténtalo otra vez.')
-      return
-    }
-
-    if (!userId || !match) {
-      setErrorMessage('No se pudo cargar tu usuario o el partido.')
-      return
-    }
-
-    if (isLocked) {
-      setErrorMessage('Las predicciones para este encuentro ya están cerradas.')
-      return
-    }
-
     setSaving(true)
+
+    if (!accessToken || !userId || !match) {
+      setErrorMessage('No se pudo identificar tu sesión.')
+      setSaving(false)
+      return
+    }
 
     const nextPrediction = {
       user_id: userId,
@@ -131,170 +147,376 @@ export default function MatchPredictionPage() {
     if (error) {
       setErrorMessage(error.message)
     } else if (data) {
-      setPrediction(data)
-      setSuccessMessage('Predicción guardada correctamente.')
+      setPrediction(data)  // esto activa isUserConfirmed → bloquea el form
     }
     setSaving(false)
-  }
-
-  function pointsBadge(points: number | undefined) {
-    if (!isFinished) return null
-    return <Badge variant={points ? 'default' : 'secondary'}>{points ?? 0} pts</Badge>
-  }
-
-  function statusBadge(saved: boolean, points: number | undefined) {
-    if (!saved) return <span className="text-xs text-muted-foreground">Pendiente</span>
-    if (!isFinished) return <span className="text-xs text-muted-foreground">Guardado</span>
-    return points
-      ? <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Acertada</Badge>
-      : <Badge variant="secondary">Fallida</Badge>
   }
 
   if (loading) return <div className="py-20 text-center text-sm text-muted-foreground">Cargando encuentro...</div>
   if (!match) return <div className="py-20 text-center text-sm text-muted-foreground">Partido no encontrado.</div>
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
-      <Link href="/dashboard/fixture" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" />
-        Volver al fixture
-      </Link>
+    <>
+      <div className="mx-auto max-w-5xl space-y-5">
+        <Link
+          href="/dashboard/fixture"
+          className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Volver al fixture
+        </Link>
 
-      <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <Badge variant="secondary">Grupo {match.group_name}</Badge>
-          <span className="text-sm text-muted-foreground">
-            {formatPeruLongDateTime(match.match_date)} · Hora Perú
-          </span>
-        </div>
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-          <div className="flex min-w-0 flex-col items-center gap-2 text-center sm:flex-row sm:justify-end sm:text-right">
-            <span className="truncate text-lg font-bold">{match.home_team?.name_es}</span>
-            <TeamFlag code={match.home_team?.flag_emoji} label={match.home_team?.name_es} className="h-7 w-10" />
+        {/* Cabecera del partido */}
+        <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <Badge variant="secondary">Grupo {match.group_name}</Badge>
+            <span className="text-sm text-muted-foreground">
+              {formatPeruLongDateTime(match.match_date)} · Hora Perú
+            </span>
           </div>
-          <div className="rounded-xl bg-secondary px-3 py-2 text-sm font-bold">
-            {isFinished ? `${match.home_score} - ${match.away_score}` : 'vs'}
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+            <div className="flex min-w-0 flex-col items-center gap-2 text-center sm:flex-row sm:justify-end sm:text-right">
+              <span className="truncate text-lg font-bold">{match.home_team?.name_es}</span>
+              <TeamFlag code={match.home_team?.flag_emoji} label={match.home_team?.name_es} className="h-7 w-10" />
+            </div>
+            <div className="rounded-xl bg-secondary px-3 py-2 text-sm font-bold">
+              {isFinished ? `${match.home_score} - ${match.away_score}` : 'vs'}
+            </div>
+            <div className="flex min-w-0 flex-col items-center gap-2 text-center sm:flex-row sm:text-left">
+              <TeamFlag code={match.away_team?.flag_emoji} label={match.away_team?.name_es} className="h-7 w-10" />
+              <span className="truncate text-lg font-bold">{match.away_team?.name_es}</span>
+            </div>
           </div>
-          <div className="flex min-w-0 flex-col items-center gap-2 text-center sm:flex-row sm:text-left">
-            <TeamFlag code={match.away_team?.flag_emoji} label={match.away_team?.name_es} className="h-7 w-10" />
-            <span className="truncate text-lg font-bold">{match.away_team?.name_es}</span>
-          </div>
-        </div>
-        {isLocked && <p className="mt-4 text-center text-sm text-muted-foreground">Las predicciones para este encuentro están cerradas.</p>}
-      </section>
+        </section>
 
-      {(errorMessage || successMessage) && (
-        <div className={`flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${
-          errorMessage ? 'border-destructive/20 bg-destructive/10 text-destructive' : 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300'
-        }`}>
-          {errorMessage ? <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}
-          <span>{errorMessage || successMessage}</span>
-        </div>
-      )}
+        {/* Mensajes de estado */}
+        {errorMessage && (
+          <div className="flex items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Target className="h-4 w-4 text-brand-red" />
-              Resultado
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid gap-2">
-              {[
-                { value: 'home', label: `Gana ${match.home_team?.name_es}` },
-                { value: 'draw', label: 'Empate' },
-                { value: 'away', label: `Gana ${match.away_team?.name_es}` },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  disabled={isLocked}
-                  onClick={() => setOutcome(option.value)}
-                  className={`rounded-lg border px-3 py-2 text-left text-sm font-medium transition-colors ${
-                    outcome === option.value ? 'border-brand-red bg-brand-red/10 text-brand-red' : 'bg-background hover:bg-muted'
-                  } disabled:opacity-60`}
+        {/* Banner: predicción ya confirmada */}
+        {isUserConfirmed && !isFinished && (
+          <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900 dark:bg-emerald-950/30">
+            <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                Predicción confirmada
+              </p>
+              <p className="text-xs text-emerald-700/80 dark:text-emerald-400/70">
+                Ya registraste tu pronóstico para este partido. No se puede modificar.
+              </p>
+            </div>
+            <Lock className="ml-auto h-4 w-4 shrink-0 text-emerald-500" />
+          </div>
+        )}
+
+        {/* Banner: partido cerrado por tiempo/admin */}
+        {isMatchLocked && !isUserConfirmed && (
+          <div className="flex items-center gap-3 rounded-xl border bg-muted/50 px-4 py-3">
+            <Lock className="h-5 w-5 shrink-0 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              Las predicciones para este partido ya están cerradas.
+            </p>
+          </div>
+        )}
+
+        {/* Cards de predicción */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          {/* Resultado */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Target className="h-4 w-4 text-brand-red" />
+                Resultado
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-2">
+                {outcomeOptions.map((option) => {
+                  const isSelected = outcome === option.value
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      disabled={isLocked}
+                      onClick={() => !isLocked && setOutcome(option.value)}
+                      className={[
+                        'flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-semibold transition-all',
+                        isSelected
+                          ? 'border-brand-red bg-brand-red text-white shadow-md'
+                          : 'border-border bg-background text-foreground hover:border-muted-foreground/40 hover:bg-muted/60',
+                        isLocked ? 'cursor-not-allowed opacity-70' : 'cursor-pointer',
+                      ].join(' ')}
+                    >
+                      {option.flag && (
+                        <TeamFlag
+                          code={option.flag}
+                          label={option.name ?? ''}
+                          className={isSelected ? 'opacity-90' : ''}
+                        />
+                      )}
+                      <span className="flex-1">{option.label}</span>
+                      {isSelected && (
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-white" />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+              {/* Estado para partidos finalizados */}
+              {isFinished && (
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs text-muted-foreground">
+                    {prediction?.predicted_outcome ? 'Resultado predicho' : 'Sin predicción'}
+                  </span>
+                  <Badge variant={prediction?.outcome_points > 0 ? 'default' : 'secondary'}>
+                    {prediction?.outcome_points ?? 0} pts
+                  </Badge>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Goleador */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Goal className="h-4 w-4 text-brand-red" />
+                Jugador que anota
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {isLocked ? (
+                <div className={[
+                  'flex h-10 w-full items-center rounded-lg border px-3 text-sm',
+                  scorerId ? 'bg-muted/40 font-medium' : 'bg-muted/20 text-muted-foreground italic',
+                ].join(' ')}>
+                  {scorerId
+                    ? (selectedScorerName ?? 'Jugador seleccionado')
+                    : 'Sin selección'}
+                </div>
+              ) : (
+                <select
+                  value={scorerId}
+                  onChange={(e) => setScorerId(e.target.value)}
+                  className="h-10 w-full rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red/40"
                 >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              {statusBadge(!!prediction?.predicted_outcome, prediction?.outcome_points)}
-              {pointsBadge(prediction?.outcome_points)}
-            </div>
-          </CardContent>
-        </Card>
+                  <option value="">Seleccionar jugador...</option>
+                  <optgroup label={match.home_team?.name_es ?? 'Local'}>
+                    {homePlayers.map((player) => (
+                      <option key={player.id} value={player.id}>
+                        {player.shirt_number ? `${player.shirt_number} · ` : ''}{player.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label={match.away_team?.name_es ?? 'Visitante'}>
+                    {awayPlayers.map((player) => (
+                      <option key={player.id} value={player.id}>
+                        {player.shirt_number ? `${player.shirt_number} · ` : ''}{player.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              )}
+              {players.length === 0 && !isLocked && (
+                <p className="text-xs text-muted-foreground">El admin aún no cargó jugadores.</p>
+              )}
+              {isFinished && (
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs text-muted-foreground">
+                    {prediction?.predicted_scorer_id ? 'Goleador predicho' : 'Sin predicción'}
+                  </span>
+                  <Badge variant={prediction?.scorer_points > 0 ? 'default' : 'secondary'}>
+                    {prediction?.scorer_points ?? 0} pts
+                  </Badge>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Goal className="h-4 w-4 text-brand-red" />
-              Jugador que anota
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <select
-              value={scorerId}
-              disabled={isLocked}
-              onChange={(event) => setScorerId(event.target.value)}
-              className="h-10 w-full rounded-lg border bg-background px-3 text-sm"
-            >
-              <option value="">Seleccionar jugador...</option>
-              <optgroup label={match.home_team?.name_es ?? 'Local'}>
-                {homePlayers.map((player) => (
-                  <option key={player.id} value={player.id}>
-                    {player.shirt_number ? `${player.shirt_number} · ` : ''}{player.name}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label={match.away_team?.name_es ?? 'Visitante'}>
-                {awayPlayers.map((player) => (
-                  <option key={player.id} value={player.id}>
-                    {player.shirt_number ? `${player.shirt_number} · ` : ''}{player.name}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-            {players.length === 0 && <p className="text-xs text-muted-foreground">El admin aún no cargó jugadores para estos equipos.</p>}
-            <div className="flex items-center justify-between gap-2">
-              {statusBadge(!!prediction?.predicted_scorer_id, prediction?.scorer_points)}
-              {pointsBadge(prediction?.scorer_points)}
-            </div>
-          </CardContent>
-        </Card>
+          {/* Marcador exacto */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Medal className="h-4 w-4 text-brand-red" />
+                Marcador exacto
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                <Input
+                  disabled={isLocked}
+                  type="number"
+                  min={0}
+                  max={20}
+                  value={homeScore}
+                  onChange={(e) => setHomeScore(e.target.value)}
+                  className={[
+                    'h-14 text-center text-2xl font-bold tabular-nums',
+                    isLocked ? 'bg-muted/30' : '',
+                  ].join(' ')}
+                  placeholder="0"
+                />
+                <span className="text-xl font-bold text-muted-foreground">-</span>
+                <Input
+                  disabled={isLocked}
+                  type="number"
+                  min={0}
+                  max={20}
+                  value={awayScore}
+                  onChange={(e) => setAwayScore(e.target.value)}
+                  className={[
+                    'h-14 text-center text-2xl font-bold tabular-nums',
+                    isLocked ? 'bg-muted/30' : '',
+                  ].join(' ')}
+                  placeholder="0"
+                />
+              </div>
+              {isFinished && (
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs text-muted-foreground">
+                    {prediction?.predicted_home_score != null ? 'Marcador predicho' : 'Sin predicción'}
+                  </span>
+                  <Badge variant={prediction?.exact_score_points > 0 ? 'default' : 'secondary'}>
+                    {prediction?.exact_score_points ?? 0} pts
+                    {prediction?.is_exact_score ? ' · exacto' : ''}
+                  </Badge>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Medal className="h-4 w-4 text-brand-red" />
-              Marcador exacto
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-              <Input disabled={isLocked} type="number" min={0} max={20} value={homeScore} onChange={(event) => setHomeScore(event.target.value)} className="h-10 text-center" />
-              <span className="text-muted-foreground">-</span>
-              <Input disabled={isLocked} type="number" min={0} max={20} value={awayScore} onChange={(event) => setAwayScore(event.target.value)} className="h-10 text-center" />
+        {/* Resumen de puntos totales (partidos finalizados) */}
+        {isFinished && prediction && (
+          <div className={[
+            'flex items-center justify-between rounded-xl border px-5 py-4 shadow-sm',
+            (prediction.points_earned ?? 0) > 0
+              ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30'
+              : 'border-border bg-muted/30',
+          ].join(' ')}>
+            <div>
+              <p className={[
+                'font-semibold',
+                (prediction.points_earned ?? 0) > 0 ? 'text-emerald-800 dark:text-emerald-300' : 'text-muted-foreground',
+              ].join(' ')}>
+                {(prediction.points_earned ?? 0) > 0 ? '¡Sumaste puntos!' : 'Sin puntos esta vez'}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Resultado {prediction.outcome_points > 0 ? '✓' : '✗'} ·
+                Goleador {prediction.scorer_points > 0 ? '✓' : '✗'} ·
+                Marcador {prediction.exact_score_points > 0 ? '✓' : '✗'}
+              </p>
             </div>
-            <div className="flex items-center justify-between gap-2">
-              {statusBadge(prediction?.predicted_home_score !== null && prediction?.predicted_home_score !== undefined, prediction?.exact_score_points)}
-              {pointsBadge(prediction?.exact_score_points)}
-            </div>
-          </CardContent>
-        </Card>
+            <span className={[
+              'text-3xl font-extrabold tabular-nums',
+              (prediction.points_earned ?? 0) > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground',
+            ].join(' ')}>
+              +{prediction.points_earned ?? 0} pts
+            </span>
+          </div>
+        )}
+
+        {/* Botón guardar — solo si puede editar */}
+        {!isLocked && (
+          <Button
+            disabled={saving || !hasAnything}
+            onClick={() => setShowConfirmModal(true)}
+            className="w-full bg-brand-red text-white hover:bg-red-700 h-12 text-base font-semibold"
+          >
+            {saving ? 'Guardando...' : 'Confirmar predicción'}
+          </Button>
+        )}
       </div>
 
-      {!isLocked && (
-        <Button
-          disabled={saving || (!outcome && !scorerId && homeScore === '' && awayScore === '')}
-          onClick={savePrediction}
-          className="w-full bg-brand-red text-white hover:bg-red-700 h-11 text-base font-semibold"
-        >
-          {saving ? 'Guardando predicción...' : 'Guardar predicción'}
-        </Button>
-      )}
-    </div>
+      {/* Modal de confirmación */}
+      <Modal
+        open={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        title="¿Confirmás tu predicción?"
+        className="max-w-md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Revisá tu pronóstico antes de confirmar.{' '}
+            <span className="font-semibold text-foreground">
+              Una vez confirmado no podrás modificarlo.
+            </span>
+          </p>
+
+          {/* Partido */}
+          <div className="rounded-lg bg-muted/40 px-4 py-3 text-center text-sm font-semibold">
+            {match.home_team?.name_es} vs {match.away_team?.name_es}
+          </div>
+
+          {/* Resumen de predicción */}
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2.5">
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Target className="h-4 w-4" />
+                Resultado
+              </span>
+              {outcome ? (
+                <span className="font-semibold text-foreground">{outcomeLabel}</span>
+              ) : (
+                <span className="italic text-muted-foreground/60">Sin selección</span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2.5">
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Goal className="h-4 w-4" />
+                Goleador
+              </span>
+              {selectedScorerName ? (
+                <span className="font-semibold text-foreground">{selectedScorerName}</span>
+              ) : (
+                <span className="italic text-muted-foreground/60">Sin selección</span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border px-3 py-2.5">
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Medal className="h-4 w-4" />
+                Marcador exacto
+              </span>
+              {homeScore !== '' && awayScore !== '' ? (
+                <span className="font-bold tabular-nums text-foreground">
+                  {homeScore} - {awayScore}
+                </span>
+              ) : (
+                <span className="italic text-muted-foreground/60">Sin selección</span>
+              )}
+            </div>
+          </div>
+
+          {/* Advertencia */}
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            Una vez confirmada, tu predicción queda bloqueada y no podrás editarla.
+          </div>
+
+          {/* Acciones */}
+          <div className="flex gap-3 pt-1">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setShowConfirmModal(false)}
+            >
+              Volver a editar
+            </Button>
+            <Button
+              className="flex-1 bg-brand-red text-white hover:bg-red-700 font-semibold"
+              onClick={confirmSave}
+            >
+              Confirmar
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </>
   )
 }
