@@ -1,11 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Swords, Trophy, Lock, Save, AlertTriangle, ChevronRight, CheckCircle2 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import {
+  Swords, Trophy, Lock, Save, AlertTriangle, CheckCircle2, ChevronDown, Star,
+} from 'lucide-react'
 import { TeamFlag } from '@/components/team-flag'
 import { toast } from 'sonner'
-import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
+import {
+  getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId,
+} from '@/lib/auth-client'
 
 interface Team {
   id: string
@@ -15,74 +18,172 @@ interface Team {
 }
 
 const STAGES = [
-  { key: 'round_of_32',  label: 'Ronda de 32',   short: 'R32', slots: 16, points: 2 },
-  { key: 'round_of_16',  label: 'Octavos',        short: 'R16', slots: 8,  points: 3 },
-  { key: 'quarterfinal', label: 'Cuartos',         short: 'QF',  slots: 4,  points: 5 },
-  { key: 'semifinal',    label: 'Semifinales',     short: 'SF',  slots: 2,  points: 8 },
-  { key: 'final',        label: 'Final',           short: 'F',   slots: 1,  points: 15 },
+  {
+    key: 'round_of_32',
+    label: 'Ronda de 32',
+    short: 'R32',
+    slots: 16,
+    points: 2,
+    nextLabel: '16 equipos avanzan a Octavos',
+    headerCls: 'bg-slate-600 text-white',
+    ringCls: 'ring-slate-400',
+    accentCls: 'text-slate-600 dark:text-slate-400',
+    borderCls: 'border-slate-300 dark:border-slate-600',
+    gridCols: 'grid-cols-2 sm:grid-cols-4',
+  },
+  {
+    key: 'round_of_16',
+    label: 'Octavos de Final',
+    short: 'R16',
+    slots: 8,
+    points: 3,
+    nextLabel: '8 equipos avanzan a Cuartos',
+    headerCls: 'bg-blue-600 text-white',
+    ringCls: 'ring-blue-400',
+    accentCls: 'text-blue-600 dark:text-blue-400',
+    borderCls: 'border-blue-300 dark:border-blue-600',
+    gridCols: 'grid-cols-2 sm:grid-cols-4',
+  },
+  {
+    key: 'quarterfinal',
+    label: 'Cuartos de Final',
+    short: 'QF',
+    slots: 4,
+    points: 5,
+    nextLabel: '4 equipos avanzan a Semis',
+    headerCls: 'bg-violet-600 text-white',
+    ringCls: 'ring-violet-500',
+    accentCls: 'text-violet-600 dark:text-violet-400',
+    borderCls: 'border-violet-300 dark:border-violet-600',
+    gridCols: 'grid-cols-2 sm:grid-cols-4',
+  },
+  {
+    key: 'semifinal',
+    label: 'Semifinales',
+    short: 'SF',
+    slots: 2,
+    points: 8,
+    nextLabel: '2 finalistas',
+    headerCls: 'bg-orange-500 text-white',
+    ringCls: 'ring-orange-400',
+    accentCls: 'text-orange-600 dark:text-orange-400',
+    borderCls: 'border-orange-300 dark:border-orange-600',
+    gridCols: 'grid-cols-1 sm:grid-cols-2',
+  },
+  {
+    key: 'final',
+    label: 'Gran Final',
+    short: 'F',
+    slots: 1,
+    points: 15,
+    nextLabel: undefined,
+    headerCls: 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white',
+    ringCls: 'ring-yellow-400',
+    accentCls: 'text-yellow-600 dark:text-yellow-400',
+    borderCls: 'border-yellow-400 dark:border-yellow-500',
+    gridCols: 'grid-cols-1',
+  },
 ]
 
+/* ─── Slot card ─────────────────────────────────────────── */
 function SlotCard({
-  label,
+  num,
   selectedTeam,
   availableTeams,
   onSelect,
   locked,
-  isChampion,
+  ringCls,
+  isChampion = false,
 }: {
-  label: string
+  num: number
   selectedTeam: Team | undefined
   availableTeams: Team[]
-  onSelect: (teamId: string) => void
+  onSelect: (id: string) => void
   locked: boolean
+  ringCls: string
   isChampion?: boolean
 }) {
+  const hasSel = !!selectedTeam
   return (
-    <div className={`relative rounded-xl border bg-card p-2 shadow-sm transition-all ${isChampion ? 'ring-2 ring-brand-gold' : ''}`}>
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      {locked ? (
-        <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${selectedTeam ? 'bg-muted/40' : 'bg-muted/20'}`}>
-          {selectedTeam ? (
-            <>
-              <TeamFlag code={selectedTeam.flag_emoji} label={selectedTeam.name_es} />
-              <span className="flex-1 truncate text-xs font-semibold">{selectedTeam.name_es}</span>
-              {isChampion && <Trophy className="h-4 w-4 text-brand-gold shrink-0" />}
-            </>
-          ) : (
-            <span className="text-xs text-muted-foreground italic">Sin selección</span>
-          )}
-          <Lock className="h-3 w-3 shrink-0 text-muted-foreground/40" />
-        </div>
-      ) : (
-        <>
-          <select
-            value={selectedTeam?.id ?? ''}
-            onChange={(e) => onSelect(e.target.value)}
-            disabled={availableTeams.length === 0}
-            className="h-9 w-full rounded-lg border bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-red/40 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <option value="">
-              {availableTeams.length === 0 ? 'Primero elegí ronda anterior' : 'Elegir equipo...'}
-            </option>
-            {availableTeams.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.flag_emoji} {t.name_es}
+    <div
+      className={[
+        'relative rounded-xl border bg-card shadow-sm transition-all duration-200',
+        hasSel ? `ring-2 ${ringCls}` : '',
+        isChampion ? 'ring-2 ring-yellow-400 shadow-yellow-200 dark:shadow-yellow-900' : '',
+      ].join(' ')}
+    >
+      {/* Slot number */}
+      <span className="absolute -top-2.5 -left-2.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground ring-1 ring-border">
+        {num}
+      </span>
+
+      <div className={isChampion ? 'p-4' : 'p-2.5'}>
+        {locked ? (
+          <div className="flex items-center gap-2">
+            {hasSel ? (
+              <>
+                <TeamFlag code={selectedTeam!.flag_emoji} label={selectedTeam!.name_es} />
+                <span className="flex-1 truncate text-xs font-semibold">{selectedTeam!.name_es}</span>
+                {isChampion && <Trophy className="h-4 w-4 shrink-0 text-yellow-500" />}
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground italic">Sin selección</span>
+            )}
+            <Lock className="h-3 w-3 shrink-0 text-muted-foreground/40" />
+          </div>
+        ) : (
+          <>
+            <select
+              value={selectedTeam?.id ?? ''}
+              onChange={(e) => onSelect(e.target.value)}
+              disabled={availableTeams.length === 0}
+              className={[
+                'w-full rounded-lg border bg-background px-2 text-xs',
+                'focus:outline-none focus:ring-2 focus:ring-offset-0',
+                'disabled:opacity-40 disabled:cursor-not-allowed',
+                isChampion ? 'h-10 text-sm' : 'h-8',
+              ].join(' ')}
+            >
+              <option value="">
+                {availableTeams.length === 0 ? '← Elegí la ronda anterior' : 'Elegir equipo...'}
               </option>
-            ))}
-          </select>
-          {selectedTeam && (
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <TeamFlag code={selectedTeam.flag_emoji} label={selectedTeam.name_es} />
-              <span className="truncate text-[10px] font-semibold text-muted-foreground">{selectedTeam.name_es}</span>
-              {isChampion && <Trophy className="h-3 w-3 text-brand-gold shrink-0" />}
-            </div>
-          )}
-        </>
-      )}
+              {availableTeams.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.flag_emoji} {t.name_es}
+                </option>
+              ))}
+            </select>
+
+            {hasSel && (
+              <div className="mt-2 flex items-center gap-1.5">
+                <TeamFlag code={selectedTeam!.flag_emoji} label={selectedTeam!.name_es} />
+                <span className={['truncate font-semibold text-muted-foreground', isChampion ? 'text-sm' : 'text-[10px]'].join(' ')}>
+                  {selectedTeam!.name_es}
+                </span>
+                {isChampion && <Trophy className="h-3.5 w-3.5 shrink-0 text-yellow-500" />}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
 
+/* ─── Funnel connector ──────────────────────────────────── */
+function FunnelArrow({ label, count, accentCls }: { label: string; count: number; accentCls: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1 py-2">
+      <ChevronDown className={`h-5 w-5 ${accentCls}`} />
+      <span className={`text-[11px] font-semibold ${accentCls}`}>
+        {label}
+      </span>
+      <div className={`h-px w-16 ${accentCls.replace('text-', 'bg-').replace('dark:text-', 'dark:bg-')} opacity-30`} />
+    </div>
+  )
+}
+
+/* ─── Main page ─────────────────────────────────────────── */
 export default function BracketPage() {
   const [teams, setTeams] = useState<Team[]>([])
   const [predictions, setPredictions] = useState<Record<string, string>>({})
@@ -115,10 +216,7 @@ export default function BracketPage() {
             const map: Record<string, string> = {}
             let locked = false
             for (const pred of (p ?? [])) {
-              if (pred.stage === 'meta' && pred.slot_key === 'locked') {
-                locked = true
-                continue
-              }
+              if (pred.stage === 'meta' && pred.slot_key === 'locked') { locked = true; continue }
               map[`${pred.stage}:${pred.slot_key}`] = pred.team_id ?? ''
             }
             setPredictions(map)
@@ -133,16 +231,13 @@ export default function BracketPage() {
 
   const teamMap = new Map(teams.map((t) => [t.id, t]))
 
-  /** Returns teams available for a given stage (cascaded from previous stage) */
   function getAvailableTeams(stageIndex: number): Team[] {
     if (stageIndex === 0) return teams
-    const prevStage = STAGES[stageIndex - 1]
-    const slotKeys = Array.from({ length: prevStage.slots }, (_, i) => `${prevStage.key}-${i + 1}`)
-    const selectedIds = slotKeys
-      .map((sk) => predictions[`${prevStage.key}:${sk}`])
+    const prev = STAGES[stageIndex - 1]
+    const ids = Array.from({ length: prev.slots }, (_, i) => `${prev.key}-${i + 1}`)
+      .map((sk) => predictions[`${prev.key}:${sk}`])
       .filter(Boolean)
-    const uniqueIds = Array.from(new Set(selectedIds))
-    return uniqueIds.map((id) => teamMap.get(id)).filter((t): t is Team => !!t)
+    return Array.from(new Set(ids)).map((id) => teamMap.get(id)).filter((t): t is Team => !!t)
   }
 
   async function handleSelect(stage: string, slotKey: string, teamId: string) {
@@ -151,24 +246,21 @@ export default function BracketPage() {
 
     const key = `${stage}:${slotKey}`
     const oldTeamId = predictions[key]
-
-    // Build new predictions with cascade clearing
     const newPredictions = { ...predictions, [key]: teamId }
     const toUpsert: { stage: string; slot_key: string; team_id: string | null }[] = [
       { stage, slot_key: slotKey, team_id: teamId || null },
     ]
 
-    // If old team changed, cascade-clear downstream slots that used it
     if (oldTeamId && oldTeamId !== teamId) {
       const stageIdx = STAGES.findIndex((s) => s.key === stage)
       for (let i = stageIdx + 1; i < STAGES.length; i++) {
-        const nextStage = STAGES[i]
-        const nextSlotKeys = Array.from({ length: nextStage.slots }, (_, j) => `${nextStage.key}-${j + 1}`)
-        for (const sk of nextSlotKeys) {
-          const k = `${nextStage.key}:${sk}`
+        const next = STAGES[i]
+        for (let j = 1; j <= next.slots; j++) {
+          const sk = `${next.key}-${j}`
+          const k = `${next.key}:${sk}`
           if (newPredictions[k] === oldTeamId) {
             newPredictions[k] = ''
-            toUpsert.push({ stage: nextStage.key, slot_key: sk, team_id: null })
+            toUpsert.push({ stage: next.key, slot_key: sk, team_id: null })
           }
         }
       }
@@ -179,7 +271,7 @@ export default function BracketPage() {
     const authed = createAuthedClient(token)
     const { error } = await authed.from('bracket_predictions').upsert(
       toUpsert.map((r) => ({ user_id: userId, stage: r.stage, slot_key: r.slot_key, team_id: r.team_id })),
-      { onConflict: 'user_id, stage, slot_key' }
+      { onConflict: 'user_id, stage, slot_key' },
     )
     setIsSaving(false)
     if (error) toast.error(error.message)
@@ -191,7 +283,7 @@ export default function BracketPage() {
     const authed = createAuthedClient(token)
     const { error } = await authed.from('bracket_predictions').upsert(
       { user_id: userId, stage: 'meta', slot_key: 'locked', team_id: null },
-      { onConflict: 'user_id, stage, slot_key' }
+      { onConflict: 'user_id, stage, slot_key' },
     )
     setIsSaving(false)
     if (error) {
@@ -199,59 +291,63 @@ export default function BracketPage() {
     } else {
       setIsLocked(true)
       setConfirmLock(false)
-      toast.success('¡Cuadro eliminatorio guardado y bloqueado!')
+      toast.success('¡Cuadro bloqueado!')
     }
   }
 
   const totalSlots = STAGES.reduce((s, st) => s + st.slots, 0)
   const filledSlots = Object.values(predictions).filter(Boolean).length
   const completePct = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0
-
-  if (loading) return (
-    <div className="space-y-5">
-      <div className="h-24 animate-pulse rounded-2xl bg-muted/60" />
-      <div className="h-96 animate-pulse rounded-xl bg-muted/60" />
-    </div>
-  )
-
   const champion = teamMap.get(predictions['final:final-1'] ?? '')
 
+  if (loading) {
+    return (
+      <div className="space-y-4 max-w-4xl mx-auto">
+        <div className="h-28 animate-pulse rounded-2xl bg-muted/60" />
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="h-40 animate-pulse rounded-xl bg-muted/40" style={{ opacity: 1 - i * 0.15 }} />
+        ))}
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-5 sm:space-y-7">
-      {/* Header */}
+    <div className="mx-auto max-w-4xl space-y-5">
+
+      {/* ── Header ── */}
       <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-red text-white shadow-sm">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-red text-white shadow-sm">
               <Swords className="h-5 w-5" />
             </div>
             <div>
               <h1 className="font-bebas text-3xl tracking-wide sm:text-4xl">Cuadro Eliminatorio</h1>
               <p className="text-sm text-muted-foreground">
                 {isLocked
-                  ? '🔒 Tu predicción está confirmada y bloqueada'
-                  : 'Predecí el camino hasta el campeón · Cada ronda suma puntos'}
+                  ? '🔒 Tu predicción está confirmada'
+                  : 'Predecí quién avanza en cada ronda · Empezá por arriba'}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:flex-col sm:items-end">
-            <div className="text-2xl font-extrabold tabular-nums text-brand-red">{filledSlots}/{totalSlots}</div>
-            <div className="text-xs text-muted-foreground">predicciones</div>
+          <div className="flex items-baseline gap-1.5 sm:flex-col sm:items-end">
+            <span className="text-3xl font-extrabold tabular-nums brand-red">{filledSlots}</span>
+            <span className="text-sm text-muted-foreground">/ {totalSlots} predicciones</span>
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="mt-4 space-y-1">
-          <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted">
+        {/* Progress */}
+        <div className="mt-4 space-y-1.5">
+          <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-brand-red transition-all duration-500"
+              className="h-full rounded-full bg-brand-red transition-all duration-700"
               style={{ width: `${completePct}%` }}
             />
           </div>
-          <div className="flex justify-between text-[10px] text-muted-foreground">
+          <div className="flex justify-between text-[11px] text-muted-foreground">
             <span>{completePct}% completado</span>
             {isLocked && (
-              <span className="flex items-center gap-1 text-emerald-600 font-semibold">
+              <span className="flex items-center gap-1 font-semibold text-emerald-600">
                 <Lock className="h-2.5 w-2.5" /> Bloqueado
               </span>
             )}
@@ -259,44 +355,43 @@ export default function BracketPage() {
         </div>
       </div>
 
-      {/* Save / Lock section */}
+      {/* ── Lock / save banner ── */}
       {!isLocked && (
         <div className={`rounded-xl border p-4 shadow-sm ${confirmLock ? 'border-amber-300 bg-amber-50 dark:bg-amber-950/20' : 'bg-card'}`}>
           {!confirmLock ? (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold">¿Listo para confirmar tu cuadro?</p>
-                <p className="text-xs text-muted-foreground">Una vez guardado, no podrás modificar tus predicciones.</p>
+                <p className="text-xs text-muted-foreground">Una vez guardado no podrás modificar tus predicciones.</p>
               </div>
               <button
                 onClick={() => setConfirmLock(true)}
                 disabled={isSaving || filledSlots === 0}
-                className="flex shrink-0 items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex shrink-0 items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-red/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Save className="h-4 w-4" />
-                Guardar y bloquear
+                <Save className="h-4 w-4" /> Guardar y bloquear
               </button>
             </div>
           ) : (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
                 <div>
                   <p className="text-sm font-bold text-amber-800 dark:text-amber-400">¿Confirmar bloqueo?</p>
-                  <p className="text-xs text-amber-700 dark:text-amber-500">Esta acción es irreversible. Tu cuadro quedará fijo y no podrás cambiarlo.</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-500">Esta acción es irreversible.</p>
                 </div>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setConfirmLock(false)}
-                  className="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+                  className="rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleLockConfirmed}
                   disabled={isSaving}
-                  className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white transition-all hover:bg-amber-700 disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-amber-700 disabled:opacity-50"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   {isSaving ? 'Guardando...' : 'Sí, confirmar'}
@@ -307,123 +402,149 @@ export default function BracketPage() {
         </div>
       )}
 
-      {/* Points guide */}
-      <div className="flex flex-wrap gap-2 text-xs">
+      {/* ── Points guide chips ── */}
+      <div className="flex flex-wrap justify-center gap-2">
         {STAGES.map((s) => (
-          <div key={s.key} className="flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 shadow-sm">
-            <span className="font-bold text-brand-red">{s.short}</span>
-            <span className="text-muted-foreground">{s.label}</span>
-            <Badge variant="secondary" className="ml-0.5 text-[10px]">{s.points} pts</Badge>
+          <div
+            key={s.key}
+            className="flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs shadow-sm"
+          >
+            <span className={`h-2 w-2 rounded-full ${s.headerCls.split(' ')[0]}`} />
+            <span className="font-semibold">{s.label}</span>
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+              {s.points} pts
+            </span>
           </div>
         ))}
       </div>
 
-      {/* Cascading note */}
-      {!isLocked && (
-        <div className="flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-950/20 dark:text-blue-300">
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-          <span>
-            <strong>Selección en cascada:</strong> Cada ronda solo muestra los equipos que elegiste en la ronda anterior.
-            Empezá por la <strong>Ronda de 32</strong> y avanzá hasta el campeón.
-          </span>
-        </div>
-      )}
+      {/* ── Stage funnel ── */}
+      <div className="space-y-0">
+        {STAGES.map((stage, stageIdx) => {
+          const slotKeys = Array.from({ length: stage.slots }, (_, i) => `${stage.key}-${i + 1}`)
+          const available = getAvailableTeams(stageIdx)
+          const filled = slotKeys.filter((sk) => predictions[`${stage.key}:${sk}`]).length
+          const isLastStage = stageIdx === STAGES.length - 1
 
-      {/* Bracket grid — horizontal scroll on mobile */}
-      <div className="overflow-x-auto pb-4">
-        <div className="flex min-w-max gap-2 items-start">
-          {STAGES.map((stage, stageIdx) => {
-            const slotKeys = Array.from({ length: stage.slots }, (_, i) => `${stage.key}-${i + 1}`)
-            const availableForStage = getAvailableTeams(stageIdx)
+          return (
+            <div key={stage.key}>
+              {/* Stage card */}
+              <div className={`rounded-2xl border overflow-hidden shadow-sm ${isLastStage ? 'ring-2 ring-yellow-400/60' : ''}`}>
 
-            return (
-              <div key={stage.key} className="flex flex-col gap-2" style={{ width: '180px' }}>
                 {/* Stage header */}
-                <div className={`rounded-lg px-3 py-2 text-center text-xs font-bold uppercase tracking-wider ${
-                  stage.key === 'final'
-                    ? 'bg-brand-gold text-white'
-                    : 'bg-muted text-muted-foreground'
-                }`}>
-                  {stage.label}
-                  <span className="ml-1 font-normal opacity-70">· {stage.points}pts</span>
+                <div className={`${stage.headerCls} px-4 py-3 flex items-center justify-between`}>
+                  <div className="flex items-center gap-2">
+                    {isLastStage && <Trophy className="h-5 w-5 shrink-0" />}
+                    <span className="font-bold tracking-wide">{stage.label}</span>
+                    <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold">
+                      {stage.points} pts c/u
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[12px] font-semibold">
+                    <span className={`rounded-full px-2 py-0.5 ${filled === stage.slots ? 'bg-white/30' : 'bg-white/10'}`}>
+                      {filled}/{stage.slots}
+                    </span>
+                    {filled === stage.slots && <CheckCircle2 className="h-4 w-4" />}
+                  </div>
                 </div>
 
-                {/* Availability hint */}
-                {stageIdx > 0 && !isLocked && (
-                  <div className="text-center text-[10px] text-muted-foreground">
-                    {availableForStage.length} equipo{availableForStage.length !== 1 ? 's' : ''} disponible{availableForStage.length !== 1 ? 's' : ''}
+                {/* Hint for cascade */}
+                {stageIdx > 0 && !isLocked && available.length === 0 && (
+                  <div className={`border-b px-4 py-2 text-[11px] font-medium ${stage.accentCls} bg-muted/30`}>
+                    ← Primero completá la ronda anterior para habilitar estas selecciones
+                  </div>
+                )}
+                {stageIdx > 0 && available.length > 0 && !isLocked && (
+                  <div className="border-b bg-muted/20 px-4 py-1.5 text-[11px] text-muted-foreground">
+                    {available.length} equipo{available.length !== 1 ? 's' : ''} disponible{available.length !== 1 ? 's' : ''} para esta ronda
                   </div>
                 )}
 
-                {/* Slots */}
-                <div className="flex flex-1 flex-col gap-2">
-                  {slotKeys.map((slotKey, slotIdx) => {
-                    const key = `${stage.key}:${slotKey}`
-                    const selectedId = predictions[key] ?? ''
-                    const selectedTeam = teamMap.get(selectedId)
-                    const isChampion = stage.key === 'final' && slotIdx === 0
-
-                    const slotLabel =
-                      isChampion ? '🏆 Campeón'
-                      : stage.key === 'final' ? 'Final'
-                      : `${stage.short} ${slotIdx + 1}`
-
-                    return (
-                      <SlotCard
-                        key={slotKey}
-                        label={slotLabel}
-                        selectedTeam={selectedTeam}
-                        availableTeams={availableForStage}
-                        onSelect={(teamId) => handleSelect(stage.key, slotKey, teamId)}
-                        locked={isLocked}
-                        isChampion={isChampion}
-                      />
-                    )
-                  })}
+                {/* Slots grid */}
+                <div className={`bg-card p-4 ${isLastStage ? 'flex justify-center' : ''}`}>
+                  <div className={`grid gap-3 w-full ${stage.gridCols} ${isLastStage ? 'max-w-xs' : ''}`}>
+                    {slotKeys.map((slotKey, idx) => {
+                      const key = `${stage.key}:${slotKey}`
+                      const selectedTeam = teamMap.get(predictions[key] ?? '')
+                      const isChampion = isLastStage && idx === 0
+                      return (
+                        <SlotCard
+                          key={slotKey}
+                          num={idx + 1}
+                          selectedTeam={selectedTeam}
+                          availableTeams={available}
+                          onSelect={(id) => handleSelect(stage.key, slotKey, id)}
+                          locked={isLocked}
+                          ringCls={stage.ringCls}
+                          isChampion={isChampion}
+                        />
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
-            )
-          })}
 
-          {/* Champion callout */}
-          <div className="flex flex-col justify-center self-center" style={{ width: '100px', marginLeft: '4px' }}>
-            <div className={`rounded-xl border-2 p-3 text-center transition-all ${
-              champion ? 'border-brand-gold bg-brand-gold/10' : 'border-muted bg-muted/20'
-            }`}>
-              <Trophy className={`mx-auto mb-2 h-8 w-8 ${champion ? 'text-brand-gold' : 'text-muted-foreground/30'}`} />
-              <p className={`text-xs font-extrabold uppercase tracking-wide ${champion ? 'text-brand-gold' : 'text-muted-foreground'}`}>
-                Campeón
-              </p>
-              {champion ? (
-                <div className="mt-2 flex flex-col items-center gap-1">
-                  <TeamFlag code={champion.flag_emoji} label={champion.name_es} className="h-5 w-7" />
-                  <span className="text-center text-[10px] font-semibold leading-tight">{champion.name_es}</span>
-                </div>
-              ) : (
-                <p className="mt-2 text-[10px] text-muted-foreground">Sin elegir</p>
+              {/* Funnel arrow between stages */}
+              {stage.nextLabel && (
+                <FunnelArrow
+                  label={stage.nextLabel}
+                  count={stage.slots}
+                  accentCls={STAGES[stageIdx + 1]?.accentCls ?? 'text-muted-foreground'}
+                />
               )}
-              {isLocked && <Lock className="mx-auto mt-2 h-3.5 w-3.5 text-muted-foreground/40" />}
             </div>
-          </div>
-        </div>
+          )
+        })}
       </div>
 
-      {/* Points breakdown */}
+      {/* ── Champion showcase ── */}
+      <div className={`rounded-2xl border-2 p-6 text-center shadow-lg transition-all ${
+        champion
+          ? 'border-yellow-400 bg-gradient-to-b from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/20'
+          : 'border-muted bg-muted/20'
+      }`}>
+        <Trophy className={`mx-auto mb-3 h-12 w-12 ${champion ? 'text-yellow-500' : 'text-muted-foreground/30'}`} />
+        <h2 className={`font-bebas text-2xl tracking-widest ${champion ? 'text-yellow-600 dark:text-yellow-400' : 'text-muted-foreground'}`}>
+          Tu Campeón del Mundo
+        </h2>
+        {champion ? (
+          <div className="mt-4 flex flex-col items-center gap-2">
+            <TeamFlag code={champion.flag_emoji} label={champion.name_es} className="h-10 w-14" />
+            <p className="text-xl font-extrabold">{champion.name_es}</p>
+            <p className="text-sm text-muted-foreground">{champion.code} · 15 pts si acertás</p>
+            {isLocked && (
+              <div className="mt-2 flex items-center gap-1.5 rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">
+                <Lock className="h-3 w-3" /> Predicción bloqueada
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Completá la Gran Final para ver tu campeón
+          </p>
+        )}
+      </div>
+
+      {/* ── Points explanation ── */}
       <div className="rounded-xl border bg-card p-4 shadow-sm">
-        <h2 className="mb-3 text-sm font-semibold">¿Cómo se puntúa el cuadro?</h2>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="mb-3 flex items-center gap-2">
+          <Star className="h-4 w-4 text-brand-gold" />
+          <h2 className="text-sm font-semibold">¿Cómo se puntúa?</h2>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           {STAGES.map((s) => (
             <div key={s.key} className="rounded-lg bg-muted/40 px-3 py-2.5 text-center">
-              <div className="text-2xl font-extrabold text-brand-red">{s.points}</div>
-              <div className="text-xs text-muted-foreground">pts · {s.label}</div>
+              <div className={`text-2xl font-extrabold ${s.accentCls}`}>{s.points}</div>
+              <div className="mt-0.5 text-[10px] text-muted-foreground">{s.label}</div>
             </div>
           ))}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          Cada equipo que acertás que avanza a esa ronda suma los puntos indicados. El campeón vale{' '}
-          <span className="font-bold text-brand-gold">15 pts</span>.
+          Cada equipo que acertás que avanza a esa ronda suma los puntos indicados.
+          El campeón vale <span className="font-bold text-yellow-600">15 pts</span>.
         </p>
       </div>
+
     </div>
   )
 }

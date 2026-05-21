@@ -78,6 +78,10 @@
 .brand-gold { color: #F4C300; }
 .bg-brand-red { background-color: #C8102E; }
 .bg-brand-gold { background-color: #F4C300; }
+.text-brand-red { color: #C8102E; }
+.text-brand-gold { color: #F4C300; }
+.ring-brand-red { --tw-ring-color: #C8102E; }
+.ring-brand-gold { --tw-ring-color: #F4C300; }
 .font-bebas { font-family: 'Bebas Neue', sans-serif; }
 
 ::-webkit-scrollbar { width: 6px; }
