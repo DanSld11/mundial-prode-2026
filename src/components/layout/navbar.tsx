@@ -8,6 +8,7 @@ import {
   Trophy,
   LayoutDashboard,
   Users,
+  BarChart3,
   CalendarDays,
   Target,
   Table2,
@@ -29,9 +30,18 @@ const navItems = [
   { href: '/dashboard/predicciones', label: 'Predicciones', icon: Target },
   { href: '/dashboard/bracket', label: 'Bracket', icon: Swords },
   { href: '/dashboard/tabla', label: 'Tabla', icon: Table2 },
+  { href: '/dashboard/estadisticas', label: 'Stats', icon: BarChart3 },
 ]
 
-const bottomNavItems = navItems
+// Bottom nav shows most important 6 items
+const bottomNavItems = [
+  { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
+  { href: '/dashboard/fixture', label: 'Fixture', icon: CalendarDays },
+  { href: '/dashboard/predicciones', label: 'Pred.', icon: Target },
+  { href: '/dashboard/bracket', label: 'Bracket', icon: Swords },
+  { href: '/dashboard/tabla', label: 'Tabla', icon: Table2 },
+  { href: '/dashboard/estadisticas', label: 'Stats', icon: BarChart3 },
+]
 
 export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()

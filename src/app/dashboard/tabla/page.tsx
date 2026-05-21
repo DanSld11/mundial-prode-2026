@@ -1,21 +1,29 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Table2, Medal } from 'lucide-react'
+import { createAnonClient } from '@/lib/auth-client'
+import { cacheGet, cacheSet } from '@/lib/local-cache'
+
+const CACHE_KEY = 'tabla:leaderboard'
 
 export default function TablaPage() {
   const [entries, setEntries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const cached = cacheGet<any[]>(CACHE_KEY)
+    if (cached) { setEntries(cached); setLoading(false) }
+
+    const supabase = createAnonClient()
     supabase.from('leaderboard').select('*').order('position').then(({ data }) => {
-      setEntries(data ?? [])
+      const d = data ?? []
+      setEntries(d)
       setLoading(false)
+      cacheSet(CACHE_KEY, d, 2 * 60_000) // 2 min cache
     })
   }, [])
 

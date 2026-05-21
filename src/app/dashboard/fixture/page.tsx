@@ -8,6 +8,10 @@ import { CalendarDays, MapPin } from 'lucide-react'
 import { TeamFlag } from '@/components/team-flag'
 import { formatPeruDateLabel, formatPeruTime, peruDateKey } from '@/lib/peru-time'
 import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
+import { cacheGet, cacheSet } from '@/lib/local-cache'
+
+const CACHE_KEY_MATCHES = 'fixture:matches'
+const CACHE_KEY_PREDS = 'fixture:predictions'
 
 export default function FixturePage() {
   const [matches, setMatches] = useState<any[]>([])
@@ -15,19 +19,35 @@ export default function FixturePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Show cached data immediately (optimistic)
+    const cachedMatches = cacheGet<any[]>(CACHE_KEY_MATCHES)
+    const cachedPreds = cacheGet<any[]>(CACHE_KEY_PREDS)
+    if (cachedMatches) { setMatches(cachedMatches); setLoading(false) }
+    if (cachedPreds) setPredictions(cachedPreds)
+
+    // Always fetch fresh in background
     const supabase = createAnonClient()
     supabase.from('matches')
       .select('*, home_team:teams!matches_home_team_id_fkey(name_es,flag_emoji,code), away_team:teams!matches_away_team_id_fkey(name_es,flag_emoji,code)')
       .eq('stage', 'group')
       .order('match_date', { ascending: true })
-      .then(({ data }) => { setMatches(data ?? []); setLoading(false) })
+      .then(({ data }) => {
+        const m = data ?? []
+        setMatches(m)
+        setLoading(false)
+        cacheSet(CACHE_KEY_MATCHES, m)
+      })
 
     const token = getAccessToken()
     if (token) {
       const s = createAuthedClient(token)
       getCurrentUserId(token).then((userId) => {
         if (userId) {
-          s.from('predictions').select('*').eq('user_id', userId).then(({ data: p }) => setPredictions(p ?? []))
+          s.from('predictions').select('*').eq('user_id', userId).then(({ data: p }) => {
+            const preds = p ?? []
+            setPredictions(preds)
+            cacheSet(CACHE_KEY_PREDS, preds, 60_000) // predictions cache: 1 min only
+          })
         }
       })
     }

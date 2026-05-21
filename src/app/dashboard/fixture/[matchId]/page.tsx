@@ -6,12 +6,14 @@ import { useParams } from 'next/navigation'
 import {
   ArrowLeft,
   AlertCircle,
+  BarChart3,
   CheckCircle2,
   Goal,
   Lock,
   Medal,
   ShieldCheck,
   Target,
+  Users,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -39,6 +41,12 @@ export default function MatchPredictionPage() {
   const [awayScore, setAwayScore] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [matchStats, setMatchStats] = useState<{
+    total: number
+    outcomes: { home: number; draw: number; away: number }
+    scorers: { id: string; name: string; count: number }[]
+    exactScores: number
+  } | null>(null)
 
   const supabase = useMemo(() => createAnonClient(), [])
 
@@ -87,6 +95,14 @@ export default function MatchPredictionPage() {
       }
 
       setLoading(false)
+
+      // Load aggregate stats (only if match is finished)
+      if (matchData?.status === 'finished') {
+        fetch(`/api/match-stats/${matchId}`)
+          .then((r) => r.json())
+          .then((data) => { if (!data.error) setMatchStats(data) })
+          .catch(() => {})
+      }
     }
     load()
   }, [matchId, supabase])
@@ -429,6 +445,72 @@ export default function MatchPredictionPage() {
           >
             {saving ? 'Guardando...' : 'Confirmar predicción'}
           </Button>
+        )}
+
+        {/* Estadísticas agregadas — solo partidos finalizados */}
+        {isFinished && matchStats && matchStats.total > 0 && (
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <BarChart3 className="h-4 w-4 text-brand-red" />
+                ¿Qué predijeron todos?
+                <span className="ml-auto text-xs font-normal text-muted-foreground flex items-center gap-1">
+                  <Users className="h-3 w-3" />{matchStats.total} predicciones
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Resultado predicho */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Resultado</p>
+                {(['home', 'draw', 'away'] as const).map((key) => {
+                  const count = matchStats.outcomes[key] ?? 0
+                  const pct = matchStats.total > 0 ? Math.round((count / matchStats.total) * 100) : 0
+                  const label = key === 'home' ? match.home_team?.name_es : key === 'away' ? match.away_team?.name_es : 'Empate'
+                  return (
+                    <div key={key} className="flex items-center gap-2 text-sm">
+                      <span className="w-32 shrink-0 truncate text-muted-foreground">{label}</span>
+                      <div className="flex-1 overflow-hidden rounded-full bg-muted h-2">
+                        <div
+                          className="h-2 rounded-full bg-brand-red transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="w-12 shrink-0 text-right font-semibold tabular-nums">{pct}%</span>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Goleadores más elegidos */}
+              {matchStats.scorers.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Goleadores más elegidos</p>
+                  {matchStats.scorers.map((s) => {
+                    const pct = Math.round((s.count / matchStats.total) * 100)
+                    return (
+                      <div key={s.id} className="flex items-center gap-2 text-sm">
+                        <span className="w-32 shrink-0 truncate text-muted-foreground">{s.name}</span>
+                        <div className="flex-1 overflow-hidden rounded-full bg-muted h-2">
+                          <div
+                            className="h-2 rounded-full bg-brand-red/60 transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="w-12 shrink-0 text-right font-semibold tabular-nums">{pct}%</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Marcadores exactos */}
+              <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-sm">
+                <span className="text-muted-foreground">Acertaron el marcador exacto</span>
+                <span className="font-bold">{matchStats.exactScores} / {matchStats.total}</span>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
 
