@@ -2,43 +2,69 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 
-type Theme = 'light' | 'dark'
+type Theme = 'light' | 'dark' | 'system'
+type ResolvedTheme = 'light' | 'dark'
 
 interface ThemeContextType {
   theme: Theme
+  resolved: ResolvedTheme
+  setTheme: (t: Theme) => void
   toggleTheme: () => void
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'dark',
+  theme: 'system',
+  resolved: 'dark',
+  setTheme: () => {},
   toggleTheme: () => {},
 })
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('dark')
+  const [theme, setThemeState] = useState<Theme>('system')
+  const [resolved, setResolved] = useState<ResolvedTheme>('dark')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
     const saved = localStorage.getItem('theme') as Theme | null
-    if (saved) {
-      setTheme(saved)
-    }
+    setThemeState(saved ?? 'system')
   }, [])
 
   useEffect(() => {
-    if (mounted) {
-      document.documentElement.classList.toggle('dark', theme === 'dark')
-      localStorage.setItem('theme', theme)
+    if (!mounted) return
+
+    const applyTheme = (t: Theme) => {
+      let r: ResolvedTheme
+      if (t === 'system') {
+        r = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      } else {
+        r = t
+      }
+      setResolved(r)
+      document.documentElement.classList.toggle('dark', r === 'dark')
+    }
+
+    applyTheme(theme)
+
+    if (theme === 'system') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)')
+      const handler = () => applyTheme('system')
+      mq.addEventListener('change', handler)
+      return () => mq.removeEventListener('change', handler)
     }
   }, [theme, mounted])
 
+  function setTheme(t: Theme) {
+    setThemeState(t)
+    localStorage.setItem('theme', t)
+  }
+
   function toggleTheme() {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
+    setTheme(resolved === 'dark' ? 'light' : 'dark')
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, resolved, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   )

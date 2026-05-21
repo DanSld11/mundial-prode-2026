@@ -19,7 +19,25 @@ export default function TablaPage() {
     })
   }, [])
 
-  if (loading) return <div className="py-20 text-center text-muted-foreground text-sm">Cargando tabla...</div>
+  if (loading) return (
+    <div className="space-y-5 sm:space-y-7">
+      <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5 animate-pulse">
+        <div className="flex items-center gap-3">
+          <div className="h-11 w-11 rounded-xl bg-muted/60" />
+          <div className="space-y-2"><div className="h-5 w-40 rounded bg-muted/60" /><div className="h-3 w-32 rounded bg-muted/60" /></div>
+        </div>
+      </div>
+      <div className="mx-auto max-w-4xl rounded-xl border bg-card shadow-sm overflow-hidden">
+        {[1,2,3,4,5,6,7,8].map(i => (
+          <div key={i} className="flex items-center gap-3 border-b px-4 py-3 animate-pulse">
+            <div className="h-7 w-7 rounded-full bg-muted/60" />
+            <div className="h-4 flex-1 max-w-[160px] rounded bg-muted/60" />
+            <div className="ml-auto h-5 w-14 rounded bg-muted/60" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-5 sm:space-y-7">
@@ -53,25 +71,37 @@ export default function TablaPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {entries.map((e) => (
-                  <TableRow key={e.id}>
+                {entries.map((e, idx) => (
+                  <TableRow
+                    key={e.id}
+                    className="transition-colors"
+                    style={{ animationDelay: `${idx * 40}ms` }}
+                  >
                     <TableCell>
-                      {e.position === 1 ? <Medal className="h-5 w-5 text-yellow-500" /> :
+                      {e.position === 1 ? <Medal className="h-5 w-5 text-yellow-500 drop-shadow" /> :
                        e.position === 2 ? <Medal className="h-5 w-5 text-gray-400" /> :
                        e.position === 3 ? <Medal className="h-5 w-5 text-amber-700" /> :
-                       <span className="text-muted-foreground">{e.position}</span>}
+                       <span className="text-muted-foreground font-mono">{e.position}</span>}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-brand-red flex items-center justify-center text-white text-xs font-bold">
+                        <div className="w-7 h-7 rounded-full bg-brand-red flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
                           {e.username?.charAt(0).toUpperCase()}
                         </div>
-                        <span className="font-medium text-sm">{e.username}</span>
+                        <span className="font-semibold text-sm">{e.username}</span>
+                        {idx === 0 && <span className="ml-1 text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide">líder</span>}
                       </div>
                     </TableCell>
-                    <TableCell className="text-center font-bold text-lg tabular-nums">{e.total_points}</TableCell>
-                    <TableCell className="text-center hidden sm:table-cell tabular-nums">{e.predictions_correct}</TableCell>
-                    <TableCell className="text-center hidden sm:table-cell tabular-nums">{e.exact_scores}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex h-7 min-w-[2.5rem] items-center justify-center rounded-full px-2 text-sm font-bold tabular-nums ${
+                        idx === 0 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300' :
+                        idx === 1 ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' :
+                        idx === 2 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' :
+                        'bg-muted text-muted-foreground'
+                      }`}>{e.total_points}</span>
+                    </TableCell>
+                    <TableCell className="text-center hidden sm:table-cell tabular-nums text-sm">{e.predictions_correct}</TableCell>
+                    <TableCell className="text-center hidden sm:table-cell tabular-nums text-sm">{e.exact_scores}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

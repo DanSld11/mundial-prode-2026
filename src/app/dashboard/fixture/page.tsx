@@ -33,7 +33,35 @@ export default function FixturePage() {
     }
   }, [])
 
-  if (loading) return <div className="py-20 text-center text-muted-foreground text-sm">Cargando fixture...</div>
+  if (loading) return (
+    <div className="space-y-5 sm:space-y-7">
+      <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5 animate-pulse">
+        <div className="flex items-center gap-3">
+          <div className="h-11 w-11 rounded-xl bg-muted/60" />
+          <div className="space-y-2"><div className="h-5 w-28 rounded bg-muted/60" /><div className="h-3 w-48 rounded bg-muted/60" /></div>
+        </div>
+      </div>
+      <div className="mx-auto max-w-5xl space-y-6">
+        {[1,2,3].map(d => (
+          <div key={d} className="space-y-2">
+            <div className="h-4 w-32 rounded bg-muted/60 animate-pulse" />
+            {[1,2,3].map(m => (
+              <div key={m} className="rounded-xl border bg-card p-4 shadow-sm animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="h-5 w-12 rounded-md bg-muted/60" />
+                  <div className="flex flex-1 items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 justify-end"><div className="h-4 w-24 rounded bg-muted/60" /><div className="h-5 w-7 rounded bg-muted/60" /></div>
+                    <div className="h-5 w-16 rounded-md bg-muted/60" />
+                    <div className="flex items-center gap-2 flex-1"><div className="h-5 w-7 rounded bg-muted/60" /><div className="h-4 w-24 rounded bg-muted/60" /></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 
   const predictionsMap = new Map(predictions.map((p: any) => [p.match_id, p]))
   const matchesByDate: Record<string, any[]> = {}
