@@ -7,8 +7,25 @@ import { SEED_PLAYERS } from '@/lib/seed-players'
 import { revalidatePath } from 'next/cache'
 import type { Team } from '@/types'
 
-export async function seedTeamsAction() {
+async function assertAdmin() {
   const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return false
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  return profile?.role === 'admin'
+}
+
+export async function seedTeamsAction() {
+  if (!await assertAdmin()) return { error: 'Sin permisos de administrador' }
+
+  const supabase = createServiceRoleClient()
 
   await supabase.from('teams').delete().neq('id', '00000000-0000-0000-0000-000000000000')
 
@@ -34,7 +51,9 @@ export async function seedTeamsAction() {
 }
 
 export async function seedMatchesAction() {
-  const supabase = await createServerSupabaseClient()
+  if (!await assertAdmin()) return { error: 'Sin permisos de administrador' }
+
+  const supabase = createServiceRoleClient()
 
   const { data: teamsData, error: teamsError } = await supabase.from('teams').select('id, code')
   if (teamsError || !teamsData) {
@@ -80,6 +99,8 @@ export async function seedMatchesAction() {
 }
 
 export async function seedPlayersAction() {
+  if (!await assertAdmin()) return { error: 'Sin permisos de administrador' }
+
   const adminClient = createServiceRoleClient()
 
   // Fetch all teams to build code → id map
@@ -126,6 +147,8 @@ export async function seedPlayersAction() {
 }
 
 export async function updateMatchResultAction(formData: FormData) {
+  if (!await assertAdmin()) return { error: 'Sin permisos de administrador' }
+
   const matchId = formData.get('match_id') as string
   const homeScore = parseInt(formData.get('home_score') as string)
   const awayScore = parseInt(formData.get('away_score') as string)
@@ -135,17 +158,15 @@ export async function updateMatchResultAction(formData: FormData) {
     return { error: 'Datos inválidos' }
   }
 
-  let supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
   let adminClient: ReturnType<typeof createServiceRoleClient>
 
   try {
-    supabase = await createServerSupabaseClient()
     adminClient = createServiceRoleClient()
   } catch (e: any) {
     return { error: e.message }
   }
 
-  const { data: match } = await supabase
+  const { data: match } = await adminClient
     .from('matches')
     .select('home_team_id, away_team_id')
     .eq('id', matchId)
@@ -285,6 +306,8 @@ async function calculatePointsFallback(
 }
 
 export async function recalculateAllPointsAction() {
+  if (!await assertAdmin()) return { error: 'Sin permisos de administrador' }
+
   let adminClient: ReturnType<typeof createServiceRoleClient>
   try {
     adminClient = createServiceRoleClient()
