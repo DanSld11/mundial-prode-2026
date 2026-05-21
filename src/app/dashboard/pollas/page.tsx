@@ -1,6 +1,6 @@
 import { getMyPools } from './actions'
 import { getWalletData } from '../wallet/actions'
-import { CreatePoolModal, JoinPoolModal } from './PollaModals'
+import { CreatePoolModal, JoinPoolModal, HowItWorksCard } from './PollaModals'
 import { Trophy, Users, Gem, Lock, ChevronRight, PartyPopper } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -46,6 +46,9 @@ export default async function PollasPage() {
           <CreatePoolModal balance={balance} />
         </div>
       </div>
+
+      {/* Cómo funciona */}
+      <HowItWorksCard />
 
       {/* Lista de pollas */}
       {pools.length === 0 ? (

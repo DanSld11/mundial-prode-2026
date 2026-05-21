@@ -137,6 +137,15 @@ export default function AdminPage() {
         </Card>
         <Card>
           <CardHeader>
+            <CardTitle className="text-base">📊 Pronósticos</CardTitle>
+            <CardDescription>Cargar resultados de grupos y premios especiales.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <a href="/admin/pronosticos"><Button variant="outline" size="sm">Gestionar</Button></a>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
             <CardTitle className="text-base">Recalcular puntos</CardTitle>
             <CardDescription>Repara predicciones después de editar resultados o goleadores.</CardDescription>
           </CardHeader>
