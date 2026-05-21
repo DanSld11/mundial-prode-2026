@@ -10,12 +10,23 @@ import { createBrowserClient } from '@supabase/ssr'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-// ── Client-side (usar en componentes con 'use client') ──
+// ── Client-side singleton (usar en componentes con 'use client') ──
+let _browserInstance: ReturnType<typeof createBrowserClient> | null = null
 export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  if (typeof window === 'undefined') {
+    // Should not be called server-side; return a fresh one for safety
+    return createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    )
+  }
+  if (!_browserInstance) {
+    _browserInstance = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    )
+  }
+  return _browserInstance
 }
 
 // ── Server-side (usar en Server Components y API routes) ──

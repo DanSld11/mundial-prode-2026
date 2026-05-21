@@ -1,14 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { getAccessToken, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 
-function getAccessToken() {
-  return document.cookie.split('; ').find(r => r.startsWith('sb-access-token='))?.split('=')[1]
-}
 
 interface PredictionFormProps {
   matchId: string
@@ -33,11 +30,11 @@ export function PredictionForm({ matchId, homeTeamName, awayTeamName, existingPr
 
     setLoading(true)
     try {
-      const s = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { autoRefreshToken: false, persistSession: false } })
-      const { data: { user } } = await s.auth.getUser(token)
-      if (!user) { toast.error('No autenticado'); setLoading(false); return }
+      const uid = await getCurrentUserId(token)
+      if (!uid) { toast.error('No autenticado'); setLoading(false); return }
+      const s = createAuthedClient(token)
 
-      const { data: match } = await s.from('matches').select('predictions_locked, home_team_id, away_team_id').eq('id', matchId).single()
+      const { data: match } = await (s.from('matches') as any).select('predictions_locked, home_team_id, away_team_id').eq('id', matchId).single()
       if (!match || match.predictions_locked) { toast.error('Predicciones cerradas'); setLoading(false); return }
 
       let predictedWinnerId = null
@@ -46,8 +43,8 @@ export function PredictionForm({ matchId, homeTeamName, awayTeamName, existingPr
       if (hs > as) predictedWinnerId = match.home_team_id
       else if (as > hs) predictedWinnerId = match.away_team_id
 
-      const { error } = await s.from('predictions').upsert({
-        user_id: user.id, match_id: matchId,
+      const { error } = await (s.from('predictions') as any).upsert({
+        user_id: uid, match_id: matchId,
         predicted_home_score: hs, predicted_away_score: as,
         predicted_winner_id: predictedWinnerId,
       }, { onConflict: 'user_id,match_id' })

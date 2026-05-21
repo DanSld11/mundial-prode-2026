@@ -76,15 +76,15 @@ export default function BracketPage() {
     getCurrentUserId(t).then(uid => {
       if (!uid) { setLoading(false); return }
       setUserId(uid)
-      authed.from('bracket_predictions').select('stage, slot_key, team_id').eq('user_id', uid).then(({ data: p }) => {
+      // Lock state stored in localStorage (the 'meta' stage violates the DB CHECK constraint)
+      const locked = localStorage.getItem(`bracket_locked_${uid}`) === '1'
+      setIsLocked(locked)
+      ;(authed.from('bracket_predictions') as any).select('stage, slot_key, team_id').eq('user_id', uid).then(({ data: p }: { data: any[] | null }) => {
         const map: Record<string, string> = {}
-        let locked = false
         for (const pred of (p ?? [])) {
-          if (pred.stage === 'meta' && pred.slot_key === 'locked') { locked = true; continue }
           map[`${pred.stage}:${pred.slot_key}`] = pred.team_id ?? ''
         }
         setPredictions(map)
-        setIsLocked(locked)
         setLoading(false)
       })
     })
@@ -169,17 +169,12 @@ export default function BracketPage() {
     if (error) toast.error(error.message)
   }
 
-  async function handleLockConfirmed() {
-    if (!token || !userId) return
-    setIsSaving(true)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (createAuthedClient(token).from('bracket_predictions') as any).upsert(
-      { user_id: userId, stage: 'meta', slot_key: 'locked', team_id: null },
-      { onConflict: 'user_id,stage,slot_key' },
-    )
-    setIsSaving(false)
-    if (error) toast.error(error.message)
-    else { setIsLocked(true); setConfirmLock(false); toast.success('¡Cuadro bloqueado!') }
+  function handleLockConfirmed() {
+    if (!userId) return
+    localStorage.setItem(`bracket_locked_${userId}`, '1')
+    setIsLocked(true)
+    setConfirmLock(false)
+    toast.success('¡Cuadro bloqueado!')
   }
 
   const totalSlots   = STAGES.reduce((s, st) => s + st.slots, 0)
