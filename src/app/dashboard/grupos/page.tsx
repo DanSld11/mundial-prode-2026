@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ShieldCheck, Trophy, Users } from 'lucide-react'
 import { TeamFlag } from '@/components/team-flag'
 import { buildGroupStandings } from '@/lib/group-standings'
+import { createAnonClient } from '@/lib/auth-client'
 import type { Match, Team } from '@/types'
 
 const groups = ['A','B','C','D','E','F','G','H','I','J','K','L'] as const
@@ -17,7 +17,7 @@ export default function GruposPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const supabase = createAnonClient()
     Promise.all([
       supabase.from('teams').select('*').order('group_name').order('name_es'),
       supabase
@@ -31,12 +31,22 @@ export default function GruposPage() {
     })
   }, [])
 
-  if (loading) return <div className="py-20 text-center text-muted-foreground text-sm">Cargando grupos...</div>
+  if (loading) return (
+    <div className="space-y-5">
+      <div className="h-20 animate-pulse rounded-2xl bg-muted/60" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-52 animate-pulse rounded-xl bg-muted/60" />
+        ))}
+      </div>
+    </div>
+  )
 
   const totalTeams = teams.length
 
   return (
     <div className="space-y-5 sm:space-y-7">
+      {/* Header */}
       <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
@@ -50,7 +60,10 @@ export default function GruposPage() {
               </p>
             </div>
           </div>
-          <Badge variant="outline" className="w-fit shrink-0 text-xs">{totalTeams}/48 cargados</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">{totalTeams}/48 equipos</Badge>
+            <Badge variant="secondary" className="text-xs">12 grupos</Badge>
+          </div>
         </div>
       </div>
 
@@ -61,32 +74,41 @@ export default function GruposPage() {
           <p className="text-sm text-muted-foreground/60 mt-1">Ejecutá el seed desde el panel de admin.</p>
         </div>
       ) : (
-        <div className="mx-auto grid max-w-6xl gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mx-auto grid max-w-7xl gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {groups.map((g) => {
             const groupTeams = teams.filter((t) => t.group_name === g) as Team[]
             const groupMatches = matches.filter((m) => m.group_name === g) as Match[]
             const standings = buildGroupStandings(groupTeams, groupMatches)
+            const playedMatches = groupMatches.filter(m => m.status === 'finished').length
+            const totalGroupMatches = 6 // 4 teams × 3 games / 2
+
             return (
               <Card key={g} className="overflow-hidden border shadow-sm transition-shadow hover:shadow-md">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b bg-muted/30 px-4 py-3">
-                  <CardTitle className="text-base font-semibold">Grupo {g}</CardTitle>
-                  <Badge variant="secondary" className="text-xs">{standings.length}</Badge>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base font-bold">Grupo {g}</CardTitle>
+                    <span className="text-[10px] text-muted-foreground">{playedMatches}/{totalGroupMatches} partidos</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Top 2 clasifica</span>
+                  </div>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/20 text-[10px] uppercase text-muted-foreground">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
                         <tr>
-                          <th className="w-8 px-2 py-2 text-left">#</th>
-                          <th className="min-w-32 px-2 py-2 text-left">País</th>
-                          <th className="px-1 py-2 text-center">PJ</th>
-                          <th className="hidden px-1 py-2 text-center sm:table-cell">PG</th>
-                          <th className="hidden px-1 py-2 text-center sm:table-cell">PE</th>
-                          <th className="hidden px-1 py-2 text-center sm:table-cell">PP</th>
-                          <th className="hidden px-1 py-2 text-center md:table-cell">GF</th>
-                          <th className="hidden px-1 py-2 text-center md:table-cell">GC</th>
-                          <th className="px-1 py-2 text-center">DG</th>
-                          <th className="px-2 py-2 text-center">Pts</th>
+                          <th className="w-6 px-2 py-2 text-center">#</th>
+                          <th className="min-w-[120px] px-2 py-2 text-left">Selección</th>
+                          <th className="w-7 px-1 py-2 text-center" title="Partidos jugados">PJ</th>
+                          <th className="w-7 px-1 py-2 text-center" title="Ganados">PG</th>
+                          <th className="w-7 px-1 py-2 text-center" title="Empatados">PE</th>
+                          <th className="w-7 px-1 py-2 text-center" title="Perdidos">PP</th>
+                          <th className="w-7 px-1 py-2 text-center" title="Goles a favor">GF</th>
+                          <th className="w-7 px-1 py-2 text-center" title="Goles en contra">GC</th>
+                          <th className="w-7 px-1 py-2 text-center" title="Diferencia de goles">DG</th>
+                          <th className="w-8 px-2 py-2 text-center font-bold" title="Puntos">Pts</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
@@ -94,46 +116,84 @@ export default function GruposPage() {
                           const team = standing.team
                           const qualifies = index < 2
                           return (
-                            <tr key={team.id} className={qualifies ? 'bg-emerald-50/70 dark:bg-emerald-950/20' : undefined}>
-                              <td className="px-2 py-2 align-middle">
-                                <div className="flex items-center gap-1">
-                                  <span className="text-xs font-bold tabular-nums">{index + 1}</span>
-                                  {qualifies && <ShieldCheck className="h-3 w-3 text-emerald-600" />}
-                                </div>
+                            <tr
+                              key={team.id}
+                              className={[
+                                'transition-colors',
+                                qualifies
+                                  ? 'bg-emerald-50/60 dark:bg-emerald-950/20'
+                                  : 'hover:bg-muted/20',
+                              ].join(' ')}
+                            >
+                              <td className="px-2 py-2 text-center align-middle">
+                                <span className={`text-xs font-bold tabular-nums ${qualifies ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                                  {index + 1}
+                                </span>
                               </td>
                               <td className="px-2 py-2 align-middle">
-                                <div className="flex min-w-0 items-center gap-2">
-                                  <TeamFlag code={team.flag_emoji} label={team.name_es} className="h-4 w-6 shrink-0" />
+                                <div className="flex min-w-0 items-center gap-1.5">
+                                  <TeamFlag code={team.flag_emoji} label={team.name_es} className="h-3.5 w-5 shrink-0" />
                                   <div className="min-w-0">
-                                    <p className="truncate text-xs font-semibold">{team.name_es}</p>
-                                    <p className="text-[10px] uppercase text-muted-foreground">{team.code}</p>
+                                    <p className="truncate text-xs font-semibold leading-tight">{team.name_es}</p>
+                                    <p className="text-[9px] uppercase text-muted-foreground leading-tight">{team.code}</p>
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-1 py-2 text-center text-xs tabular-nums">{standing.played}</td>
-                              <td className="hidden px-1 py-2 text-center text-xs tabular-nums sm:table-cell">{standing.won}</td>
-                              <td className="hidden px-1 py-2 text-center text-xs tabular-nums sm:table-cell">{standing.drawn}</td>
-                              <td className="hidden px-1 py-2 text-center text-xs tabular-nums sm:table-cell">{standing.lost}</td>
-                              <td className="hidden px-1 py-2 text-center text-xs tabular-nums md:table-cell">{standing.goalsFor}</td>
-                              <td className="hidden px-1 py-2 text-center text-xs tabular-nums md:table-cell">{standing.goalsAgainst}</td>
-                              <td className="px-1 py-2 text-center text-xs tabular-nums">{standing.goalDifference}</td>
-                              <td className="px-2 py-2 text-center text-sm font-extrabold tabular-nums">{standing.points}</td>
+                              <td className="px-1 py-2 text-center tabular-nums">{standing.played}</td>
+                              <td className="px-1 py-2 text-center tabular-nums text-emerald-700 dark:text-emerald-400 font-medium">{standing.won}</td>
+                              <td className="px-1 py-2 text-center tabular-nums text-muted-foreground">{standing.drawn}</td>
+                              <td className="px-1 py-2 text-center tabular-nums text-red-600 dark:text-red-400">{standing.lost}</td>
+                              <td className="px-1 py-2 text-center tabular-nums">{standing.goalsFor}</td>
+                              <td className="px-1 py-2 text-center tabular-nums text-muted-foreground">{standing.goalsAgainst}</td>
+                              <td className={`px-1 py-2 text-center tabular-nums font-semibold ${
+                                standing.goalDifference > 0 ? 'text-emerald-600 dark:text-emerald-400' :
+                                standing.goalDifference < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
+                              }`}>
+                                {standing.goalDifference > 0 ? '+' : ''}{standing.goalDifference}
+                              </td>
+                              <td className="px-2 py-2 text-center">
+                                <span className={`font-extrabold tabular-nums text-sm ${qualifies ? 'text-emerald-700 dark:text-emerald-300' : ''}`}>
+                                  {standing.points}
+                                </span>
+                              </td>
                             </tr>
                           )
                         })}
+                        {standings.length === 0 && (
+                          <tr>
+                            <td colSpan={10} className="px-4 py-6 text-center text-sm text-muted-foreground">
+                              Sin equipos cargados.
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
-                  <div className="border-t bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
-                    <span className="font-medium text-emerald-700 dark:text-emerald-400">Top 2</span> clasifica a la siguiente fase.
-                  </div>
-                  {standings.length === 0 && (
-                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">Grupo sin equipos cargados.</div>
-                  )}
                 </CardContent>
               </Card>
             )
           })}
+        </div>
+      )}
+
+      {/* Legend */}
+      {totalTeams > 0 && (
+        <div className="mx-auto max-w-7xl rounded-xl border bg-card px-4 py-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded-sm bg-emerald-100 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800" />
+              <span>Clasifica a la siguiente fase</span>
+            </div>
+            <div className="flex items-center gap-1 gap-x-3 flex-wrap">
+              <span><strong>PJ</strong> = Partidos jugados</span>
+              <span><strong>PG</strong> = Ganados</span>
+              <span><strong>PE</strong> = Empatados</span>
+              <span><strong>PP</strong> = Perdidos</span>
+              <span><strong>GF/GC</strong> = Goles a favor/contra</span>
+              <span><strong>DG</strong> = Diferencia de goles</span>
+              <span><strong>Pts</strong> = Puntos</span>
+            </div>
+          </div>
         </div>
       )}
     </div>

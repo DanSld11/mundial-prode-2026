@@ -28,9 +28,9 @@ const navItems = [
   { href: '/dashboard/grupos', label: 'Grupos', icon: Users },
   { href: '/dashboard/fixture', label: 'Fixture', icon: CalendarDays },
   { href: '/dashboard/predicciones', label: 'Predicciones', icon: Target },
-  { href: '/dashboard/bracket', label: 'Bracket', icon: Swords },
+  { href: '/dashboard/bracket', label: 'Eliminatorias', icon: Swords },
   { href: '/dashboard/tabla', label: 'Tabla', icon: Table2 },
-  { href: '/dashboard/estadisticas', label: 'Stats', icon: BarChart3 },
+  { href: '/dashboard/estadisticas', label: 'Estadísticas', icon: BarChart3 },
 ]
 
 // Bottom nav shows most important 6 items
@@ -38,9 +38,9 @@ const bottomNavItems = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
   { href: '/dashboard/fixture', label: 'Fixture', icon: CalendarDays },
   { href: '/dashboard/predicciones', label: 'Pred.', icon: Target },
-  { href: '/dashboard/bracket', label: 'Bracket', icon: Swords },
+  { href: '/dashboard/bracket', label: 'Elim.', icon: Swords },
   { href: '/dashboard/tabla', label: 'Tabla', icon: Table2 },
-  { href: '/dashboard/estadisticas', label: 'Stats', icon: BarChart3 },
+  { href: '/dashboard/estadisticas', label: 'Estad.', icon: BarChart3 },
 ]
 
 export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
@@ -211,7 +211,7 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
                 )}
               >
                 <item.icon className="h-4 w-4" />
-                <span className="max-w-full truncate">{item.label === 'Predicciones' ? 'Pred.' : item.label}</span>
+                <span className="max-w-full truncate">{item.label}</span>
               </Link>
             )
           })}

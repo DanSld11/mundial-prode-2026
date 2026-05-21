@@ -25,10 +25,12 @@ interface PlayerPickerProps {
   placeholder?: string
 }
 
-const POSITION_ORDER = ['GK', 'DEF', 'MID', 'DEL']
+const POSITION_ORDER = ['ARQ', 'DEF', 'MED', 'DEL']
 const POSITION_LABELS: Record<string, string> = {
-  GK: 'Porteros',
+  ARQ: 'Arqueros',
+  GK:  'Arqueros',
   DEF: 'Defensas',
+  MED: 'Mediocampistas',
   MID: 'Mediocampistas',
   DEL: 'Delanteros',
 }
@@ -211,12 +213,12 @@ export function PlayerPicker({
                       <span className="flex-1 truncate text-left">{p.name}</span>
                       {p.position && (
                         <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${
-                          p.position === 'GK'  ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
+                          p.position === 'GK'  || p.position === 'ARQ' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
                           p.position === 'DEF' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
-                          p.position === 'MID' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                          p.position === 'MID' || p.position === 'MED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
                           'bg-brand-red/10 text-brand-red'
                         }`}>
-                          {p.position}
+                          {p.position === 'GK' ? 'ARQ' : p.position === 'MID' ? 'MED' : p.position}
                         </span>
                       )}
                     </button>
