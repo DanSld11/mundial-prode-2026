@@ -2,32 +2,48 @@
 
 import { createServerSupabaseClient } from '@/lib/supabase'
 import { createServiceRoleClient } from '@/lib/server-client'
+import { revalidatePath } from 'next/cache'
 
-export async function resetUserPasswordAction(userId: string, newPassword: string) {
-  // 1. Verificar que quien llama sea admin
+async function assertAdmin() {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'No autenticado' }
+  if (!user) return null
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  return profile?.role === 'admin' ? user : null
+}
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') return { error: 'Sin permisos de administrador' }
-
-  // 2. Validar contraseña mínima
-  if (!newPassword || newPassword.length < 6) {
+export async function resetUserPasswordAction(userId: string, newPassword: string) {
+  if (!await assertAdmin()) return { error: 'Sin permisos de administrador' }
+  if (!newPassword || newPassword.length < 6)
     return { error: 'La contraseña debe tener al menos 6 caracteres' }
-  }
 
-  // 3. Cambiar contraseña con service role (bypasa RLS)
+  const admin = createServiceRoleClient()
+  const { error } = await admin.auth.admin.updateUserById(userId, { password: newPassword })
+  if (error) return { error: error.message }
+  return { success: true }
+}
+
+export async function disableUserAction(userId: string) {
+  if (!await assertAdmin()) return { error: 'Sin permisos de administrador' }
+
+  const admin = createServiceRoleClient()
+  // ban_duration: very long period = effectively disabled
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    ban_duration: '876000h', // 100 años
+  })
+  if (error) return { error: error.message }
+  revalidatePath('/admin/usuarios')
+  return { success: true }
+}
+
+export async function enableUserAction(userId: string) {
+  if (!await assertAdmin()) return { error: 'Sin permisos de administrador' }
+
   const admin = createServiceRoleClient()
   const { error } = await admin.auth.admin.updateUserById(userId, {
-    password: newPassword,
+    ban_duration: 'none',
   })
-
   if (error) return { error: error.message }
+  revalidatePath('/admin/usuarios')
   return { success: true }
 }
