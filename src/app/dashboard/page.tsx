@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
 import { ArrowRight, CalendarDays, Medal, Shield, Target, Trophy, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TeamFlag } from '@/components/team-flag'
 import { formatPeruShortDateTime } from '@/lib/peru-time'
+import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
 
 const quickLinks = [
   { href: '/dashboard/grupos', title: 'Grupos', description: 'Ver las 48 selecciones', icon: Users },
@@ -24,7 +24,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const supabase = createAnonClient()
 
     Promise.all([
       supabase.from('teams').select('id, name_es, code, flag_emoji, group_name').order('group_name').order('name_es'),
@@ -41,14 +41,12 @@ export default function DashboardPage() {
       setLoading(false)
     })
 
-    const token = document.cookie.split('; ').find((row) => row.startsWith('sb-access-token='))?.split('=')[1]
+    const token = getAccessToken()
     if (token) {
-      const authClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-        auth: { autoRefreshToken: false, persistSession: false },
-      })
-      authClient.auth.getUser(token).then(({ data }) => {
-        if (!data.user) return
-        authClient.from('profiles').select('role').eq('id', data.user.id).single().then(({ data: profile }) => {
+      const authClient = createAuthedClient(token)
+      getCurrentUserId(token).then((userId) => {
+        if (!userId) return
+        authClient.from('profiles').select('role').eq('id', userId).single().then(({ data: profile }) => {
           setIsAdmin(profile?.role === 'admin')
         })
       })
@@ -67,7 +65,7 @@ export default function DashboardPage() {
         <div className="grid gap-0 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="p-5 sm:p-7 lg:p-8">
             <Badge className="mb-4 bg-brand-red text-white hover:bg-brand-red">Copa Mundial FIFA 2026</Badge>
-            <h1 className="max-w-2xl text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
+            <h1 className="max-w-2xl font-bebas text-4xl tracking-wide sm:text-5xl lg:text-6xl">
               Tu centro de predicciones del Mundial
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
@@ -164,23 +162,26 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {['A', 'B', 'J'].map((group) => (
-                <div key={group} className="rounded-xl border p-3">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h3 className="font-semibold">Grupo {group}</h3>
-                    <Badge variant="secondary">4</Badge>
+              {Array.from(new Set(teams.map((t) => t.group_name))).slice(0, 3).map((group) => {
+                const groupTeams = teams.filter((team) => team.group_name === group)
+                return (
+                  <div key={group} className="rounded-xl border p-3">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="font-semibold">Grupo {group}</h3>
+                      <Badge variant="secondary">{groupTeams.length}</Badge>
+                    </div>
+                    <div className="space-y-2">
+                      {groupTeams.map((team) => (
+                        <div key={team.id} className="flex items-center gap-2 text-sm">
+                          <TeamFlag code={team.flag_emoji} label={team.name_es} />
+                          <span className="min-w-0 flex-1 truncate font-medium">{team.name_es}</span>
+                          <span className="font-mono text-xs text-muted-foreground">{team.code}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    {teams.filter((team) => team.group_name === group).map((team) => (
-                      <div key={team.id} className="flex items-center gap-2 text-sm">
-                        <TeamFlag code={team.flag_emoji} label={team.name_es} />
-                        <span className="min-w-0 flex-1 truncate font-medium">{team.name_es}</span>
-                        <span className="font-mono text-xs text-muted-foreground">{team.code}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>

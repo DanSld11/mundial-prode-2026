@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
 import { cn } from '@/lib/utils'
+import { getAccessToken, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
 import {
   Trophy,
   LayoutDashboard,
@@ -31,34 +31,33 @@ const navItems = [
   { href: '/dashboard/tabla', label: 'Tabla', icon: Table2 },
 ]
 
-const bottomNavItems = navItems.filter((item) => item.href !== '/dashboard/bracket')
+const bottomNavItems = navItems
 
 export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [detectedAdmin, setDetectedAdmin] = useState(isAdmin)
+  const [username, setUsername] = useState('')
   const showAdmin = isAdmin || detectedAdmin
 
   useEffect(() => {
     if (isAdmin) return
 
-    const token = document.cookie.split('; ').find((row) => row.startsWith('sb-access-token='))?.split('=')[1]
+    const token = getAccessToken()
     if (!token) return
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-
-    supabase.auth.getUser(token).then(({ data }) => {
-      if (!data.user) return
+    const supabase = createAuthedClient(token)
+    getCurrentUserId(token).then((userId) => {
+      if (!userId) return
       supabase
         .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
+        .select('role, username')
+        .eq('id', userId)
         .single()
-        .then(({ data: profile }) => setDetectedAdmin(profile?.role === 'admin'))
+        .then(({ data: profile }) => {
+          setDetectedAdmin(profile?.role === 'admin')
+          if (profile?.username) setUsername(profile.username)
+        })
     })
   }, [isAdmin])
 
@@ -129,7 +128,9 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
             </form>
             <Link href="/dashboard/perfil" aria-label="Perfil">
               <Avatar className="h-7 w-7">
-                <AvatarFallback className="bg-brand-red text-white text-xs font-bold">P</AvatarFallback>
+                <AvatarFallback className="bg-brand-red text-white text-xs font-bold">
+                  {username ? username.charAt(0).toUpperCase() : '?'}
+                </AvatarFallback>
               </Avatar>
             </Link>
           </div>
@@ -187,7 +188,7 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
       </nav>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t bg-card/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-12px_30px_rgba(0,0,0,0.08)] backdrop-blur min-[920px]:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
+        <div className="mx-auto grid max-w-md grid-cols-6 gap-1">
           {bottomNavItems.map((item) => {
             const active = pathname === item.href
             return (

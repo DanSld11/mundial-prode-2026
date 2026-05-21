@@ -163,7 +163,17 @@ const GROUPS_FIXTURE: Record<string, Array<{home:string,away:string,date:string,
   ],
 }
 
+function isAuthorized(request: Request): boolean {
+  const secret = process.env.ADMIN_SECRET
+  if (!secret) return false
+  return request.headers.get('x-admin-secret') === secret
+}
+
 export async function GET(request: Request) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+  }
+
   const action = new URL(request.url).searchParams.get('action')
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY

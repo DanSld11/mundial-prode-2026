@@ -1,16 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { toast } from 'sonner'
+import { getAccessToken, createAuthedClient } from '@/lib/auth-client'
 import { Lock, UserRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-
-function getAccessToken() {
-  return document.cookie.split('; ').find((row) => row.startsWith('sb-access-token='))?.split('=')[1]
-}
 
 export default function PerfilPage() {
   const [userId, setUserId] = useState('')
@@ -24,14 +20,7 @@ export default function PerfilPage() {
   const [token, setToken] = useState<string | null>(null)
   const [tokenChecked, setTokenChecked] = useState(false)
 
-  const supabase = useMemo(() => createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      auth: { autoRefreshToken: false, persistSession: false },
-      global: token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
-    }
-  ), [token])
+  const supabase = useMemo(() => token ? createAuthedClient(token) : createAuthedClient(''), [token])
 
   useEffect(() => {
     setToken(getAccessToken() ?? null)

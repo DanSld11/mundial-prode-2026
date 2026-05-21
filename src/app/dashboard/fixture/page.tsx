@@ -2,16 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { CalendarDays, MapPin } from 'lucide-react'
 import { TeamFlag } from '@/components/team-flag'
 import { formatPeruDateLabel, formatPeruTime, peruDateKey } from '@/lib/peru-time'
-
-function getAccessToken() {
-  return document.cookie.split('; ').find(r => r.startsWith('sb-access-token='))?.split('=')[1]
-}
+import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
 
 export default function FixturePage() {
   const [matches, setMatches] = useState<any[]>([])
@@ -19,7 +15,7 @@ export default function FixturePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const supabase = createAnonClient()
     supabase.from('matches')
       .select('*, home_team:teams!matches_home_team_id_fkey(name_es,flag_emoji,code), away_team:teams!matches_away_team_id_fkey(name_es,flag_emoji,code)')
       .eq('stage', 'group')
@@ -28,13 +24,10 @@ export default function FixturePage() {
 
     const token = getAccessToken()
     if (token) {
-      const s = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-        auth: { autoRefreshToken: false, persistSession: false },
-        global: { headers: { Authorization: `Bearer ${token}` } },
-      })
-      s.auth.getUser(token).then(({ data }) => {
-        if (data.user) {
-          s.from('predictions').select('*').eq('user_id', data.user.id).then(({ data: p }) => setPredictions(p ?? []))
+      const s = createAuthedClient(token)
+      getCurrentUserId(token).then((userId) => {
+        if (userId) {
+          s.from('predictions').select('*').eq('user_id', userId).then(({ data: p }) => setPredictions(p ?? []))
         }
       })
     }
@@ -58,7 +51,7 @@ export default function FixturePage() {
             <CalendarDays className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Fixture</h1>
+            <h1 className="font-bebas text-3xl tracking-wide sm:text-4xl">Fixture</h1>
             <p className="text-sm text-muted-foreground">Fase de grupos oficial · 11-27 junio 2026 · Hora Perú</p>
           </div>
         </div>

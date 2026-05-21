@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
 import { ArrowLeft, AlertCircle, CheckCircle2, Goal, Medal, Target } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,10 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { TeamFlag } from '@/components/team-flag'
 import { formatPeruLongDateTime } from '@/lib/peru-time'
-
-function getAccessToken() {
-  return document.cookie.split('; ').find((row) => row.startsWith('sb-access-token='))?.split('=')[1]
-}
+import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
 
 export default function MatchPredictionPage() {
   const params = useParams<{ matchId: string }>()
@@ -25,7 +21,7 @@ export default function MatchPredictionPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
   const [outcome, setOutcome] = useState('')
   const [scorerId, setScorerId] = useState('')
   const [homeScore, setHomeScore] = useState('')
@@ -33,22 +29,7 @@ export default function MatchPredictionPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
-  const supabase = useMemo(() => createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  ), [])
-
-  function createAuthedClient(token: string) {
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        auth: { autoRefreshToken: false, persistSession: false },
-        global: { headers: { Authorization: `Bearer ${token}` } },
-      }
-    )
-  }
+  const supabase = useMemo(() => createAnonClient(), [])
 
   useEffect(() => {
     async function load() {
@@ -76,13 +57,13 @@ export default function MatchPredictionPage() {
       if (token) {
         setAccessToken(token)
         const authedSupabase = createAuthedClient(token)
-        const { data: userData } = await authedSupabase.auth.getUser(token)
-        if (userData.user) {
-          setUserId(userData.user.id)
+        const userId = await getCurrentUserId(token)
+        if (userId) {
+          setUserId(userId)
           const { data: predictionData } = await authedSupabase
             .from('predictions')
             .select('*')
-            .eq('user_id', userData.user.id)
+            .eq('user_id', userId)
             .eq('match_id', matchId)
             .single()
           if (predictionData) {
@@ -106,7 +87,7 @@ export default function MatchPredictionPage() {
   const homePlayers = players.filter((player) => player.team_id === match?.home_team_id)
   const awayPlayers = players.filter((player) => player.team_id === match?.away_team_id)
 
-  async function savePrediction(kind: 'outcome' | 'scorer' | 'score') {
+  async function savePrediction() {
     setErrorMessage('')
     setSuccessMessage('')
 
@@ -125,33 +106,19 @@ export default function MatchPredictionPage() {
       return
     }
 
-    setSaving(kind)
+    setSaving(true)
 
     const nextPrediction = {
       user_id: userId,
       match_id: matchId,
-      predicted_outcome: prediction?.predicted_outcome ?? null,
-      predicted_winner_id: prediction?.predicted_winner_id ?? null,
-      predicted_scorer_id: prediction?.predicted_scorer_id ?? null,
-      predicted_home_score: prediction?.predicted_home_score ?? null,
-      predicted_away_score: prediction?.predicted_away_score ?? null,
-    }
-
-    if (kind === 'outcome') {
-      nextPrediction.predicted_outcome = outcome || null
-      nextPrediction.predicted_winner_id =
+      predicted_outcome: outcome || null,
+      predicted_winner_id:
         outcome === 'home' ? match.home_team_id :
         outcome === 'away' ? match.away_team_id :
-        null
-    }
-
-    if (kind === 'scorer') {
-      nextPrediction.predicted_scorer_id = scorerId || null
-    }
-
-    if (kind === 'score') {
-      nextPrediction.predicted_home_score = homeScore === '' ? null : parseInt(homeScore)
-      nextPrediction.predicted_away_score = awayScore === '' ? null : parseInt(awayScore)
+        null,
+      predicted_scorer_id: scorerId || null,
+      predicted_home_score: homeScore === '' ? null : parseInt(homeScore),
+      predicted_away_score: awayScore === '' ? null : parseInt(awayScore),
     }
 
     const authedSupabase = createAuthedClient(accessToken)
@@ -167,7 +134,7 @@ export default function MatchPredictionPage() {
       setPrediction(data)
       setSuccessMessage('Predicción guardada correctamente.')
     }
-    setSaving(null)
+    setSaving(false)
   }
 
   function pointsBadge(points: number | undefined) {
@@ -257,9 +224,6 @@ export default function MatchPredictionPage() {
               {statusBadge(!!prediction?.predicted_outcome, prediction?.outcome_points)}
               {pointsBadge(prediction?.outcome_points)}
             </div>
-            <Button disabled={isLocked || !outcome || saving === 'outcome'} onClick={() => savePrediction('outcome')} className="w-full bg-brand-red text-white hover:bg-red-700">
-              {saving === 'outcome' ? 'Guardando...' : 'Guardar resultado'}
-            </Button>
           </CardContent>
         </Card>
 
@@ -298,9 +262,6 @@ export default function MatchPredictionPage() {
               {statusBadge(!!prediction?.predicted_scorer_id, prediction?.scorer_points)}
               {pointsBadge(prediction?.scorer_points)}
             </div>
-            <Button disabled={isLocked || !scorerId || saving === 'scorer'} onClick={() => savePrediction('scorer')} className="w-full bg-brand-red text-white hover:bg-red-700">
-              {saving === 'scorer' ? 'Guardando...' : 'Guardar goleador'}
-            </Button>
           </CardContent>
         </Card>
 
@@ -321,12 +282,19 @@ export default function MatchPredictionPage() {
               {statusBadge(prediction?.predicted_home_score !== null && prediction?.predicted_home_score !== undefined, prediction?.exact_score_points)}
               {pointsBadge(prediction?.exact_score_points)}
             </div>
-            <Button disabled={isLocked || homeScore === '' || awayScore === '' || saving === 'score'} onClick={() => savePrediction('score')} className="w-full bg-brand-red text-white hover:bg-red-700">
-              {saving === 'score' ? 'Guardando...' : 'Guardar marcador'}
-            </Button>
           </CardContent>
         </Card>
       </div>
+
+      {!isLocked && (
+        <Button
+          disabled={saving || (!outcome && !scorerId && homeScore === '' && awayScore === '')}
+          onClick={savePrediction}
+          className="w-full bg-brand-red text-white hover:bg-red-700 h-11 text-base font-semibold"
+        >
+          {saving ? 'Guardando predicción...' : 'Guardar predicción'}
+        </Button>
+      )}
     </div>
   )
 }

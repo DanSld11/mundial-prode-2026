@@ -1,15 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Target, CheckCircle2, Trophy, Clock } from 'lucide-react'
 import { TeamFlag } from '@/components/team-flag'
-
-function getAccessToken() {
-  return document.cookie.split('; ').find(r => r.startsWith('sb-access-token='))?.split('=')[1]
-}
+import { getAccessToken, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
 
 export default function PrediccionesPage() {
   const [predictions, setPredictions] = useState<any[]>([])
@@ -18,17 +14,16 @@ export default function PrediccionesPage() {
   useEffect(() => {
     const token = getAccessToken()
     if (!token) { setLoading(false); return }
-    const s = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-      auth: { autoRefreshToken: false, persistSession: false },
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    })
-    s.auth.getUser(token).then(({ data }) => {
-      if (data.user) {
+    const s = createAuthedClient(token)
+    getCurrentUserId(token).then((userId) => {
+      if (userId) {
         s.from('predictions')
           .select('*, predicted_scorer:players(name,shirt_number), match:matches(*, home_team:teams!matches_home_team_id_fkey(name_es,flag_emoji,code), away_team:teams!matches_away_team_id_fkey(name_es,flag_emoji,code))')
-          .eq('user_id', data.user.id)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false })
           .then(({ data: p }) => { setPredictions(p ?? []); setLoading(false) })
+      } else {
+        setLoading(false)
       }
     })
   }, [])

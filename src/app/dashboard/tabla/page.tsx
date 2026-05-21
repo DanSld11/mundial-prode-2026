@@ -29,7 +29,7 @@ export default function TablaPage() {
             <Table2 className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Tabla de Posiciones</h1>
+            <h1 className="font-bebas text-3xl tracking-wide sm:text-4xl">Tabla de Posiciones</h1>
             <p className="text-sm text-muted-foreground">Ranking de jugadores</p>
           </div>
         </div>

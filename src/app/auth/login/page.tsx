@@ -19,10 +19,10 @@ export default function LoginPage() {
     const fd = new FormData(e.currentTarget)
 
     try {
-      const res = await fetch('https://anbfhgkaaaqvjeiwtojp.supabase.co/auth/v1/token?grant_type=password', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`, {
         method: 'POST',
         headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuYmZoZ2thYWFxdmplaXd0b2pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjg1OTksImV4cCI6MjA5NDcwNDU5OX0.rsfIrfuYdpLxdR2OlfU0k4Ddf0h4sHmyM6Nj48IDSlc',
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email: fd.get('email'), password: fd.get('password') }),
@@ -39,8 +39,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-10">
-      <div className="absolute inset-x-0 top-0 h-40 border-b bg-card" />
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 dark:bg-background px-4 py-10">
+      <div className="absolute inset-x-0 top-0 h-40 border-b bg-card dark:bg-card" />
       <Card className="relative w-full max-w-sm border shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-2">
