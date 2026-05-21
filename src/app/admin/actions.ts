@@ -3,6 +3,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase'
 import { createServiceRoleClient } from '@/lib/server-client'
 import { SEED_TEAMS, generateGroupMatches } from '@/lib/seed-data'
+import { SEED_PLAYERS } from '@/lib/seed-players'
 import { revalidatePath } from 'next/cache'
 import type { Team } from '@/types'
 
@@ -76,6 +77,52 @@ export async function seedMatchesAction() {
   revalidatePath('/dashboard/fixture')
   revalidatePath('/dashboard/grupos')
   return { success: true, count: matchesToInsert.length }
+}
+
+export async function seedPlayersAction() {
+  const adminClient = createServiceRoleClient()
+
+  // Fetch all teams to build code → id map
+  const { data: teamsData, error: teamsError } = await adminClient
+    .from('teams')
+    .select('id, code')
+
+  if (teamsError || !teamsData || teamsData.length === 0) {
+    return { error: 'Primero cargá los 48 equipos con el botón "48 Equipos".' }
+  }
+
+  const teamMap = new Map<string, string>(teamsData.map((t: any) => [t.code, t.id]))
+
+  // Remove existing players to avoid duplicates
+  await adminClient.from('players').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+
+  // Build insert payload
+  const playersToInsert = SEED_PLAYERS.map((p) => {
+    const teamId = teamMap.get(p.team_code)
+    if (!teamId) {
+      console.warn(`Team code not found: ${p.team_code}`)
+      return null
+    }
+    return {
+      team_id: teamId,
+      name: p.name,
+      shirt_number: p.shirt_number,
+      position: p.position,
+      active: true,
+    }
+  }).filter(Boolean)
+
+  const CHUNK = 200
+  let inserted = 0
+  for (let i = 0; i < playersToInsert.length; i += CHUNK) {
+    const { error } = await adminClient.from('players').insert(playersToInsert.slice(i, i + CHUNK))
+    if (error) return { error: error.message }
+    inserted += Math.min(CHUNK, playersToInsert.length - i)
+  }
+
+  revalidatePath('/admin/jugadores')
+  revalidatePath('/dashboard/fixture')
+  return { success: true, count: inserted }
 }
 
 export async function updateMatchResultAction(formData: FormData) {

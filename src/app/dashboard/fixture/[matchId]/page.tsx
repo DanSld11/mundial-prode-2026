@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
+import { PlayerPicker } from '@/components/ui/player-picker'
 import { TeamFlag } from '@/components/team-flag'
 import { formatPeruLongDateTime } from '@/lib/peru-time'
 import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
@@ -336,38 +337,13 @@ export default function MatchPredictionPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {isLocked ? (
-                <div className={[
-                  'flex h-10 w-full items-center rounded-lg border px-3 text-sm',
-                  scorerId ? 'bg-muted/40 font-medium' : 'bg-muted/20 text-muted-foreground italic',
-                ].join(' ')}>
-                  {scorerId
-                    ? (selectedScorerName ?? 'Jugador seleccionado')
-                    : 'Sin selección'}
-                </div>
-              ) : (
-                <select
-                  value={scorerId}
-                  onChange={(e) => setScorerId(e.target.value)}
-                  className="h-10 w-full rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red/40"
-                >
-                  <option value="">Seleccionar jugador...</option>
-                  <optgroup label={match.home_team?.name_es ?? 'Local'}>
-                    {homePlayers.map((player) => (
-                      <option key={player.id} value={player.id}>
-                        {player.shirt_number ? `${player.shirt_number} · ` : ''}{player.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label={match.away_team?.name_es ?? 'Visitante'}>
-                    {awayPlayers.map((player) => (
-                      <option key={player.id} value={player.id}>
-                        {player.shirt_number ? `${player.shirt_number} · ` : ''}{player.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-              )}
+              <PlayerPicker
+                players={players}
+                value={scorerId}
+                onChange={(id) => !isLocked && setScorerId(id)}
+                disabled={isLocked}
+                placeholder="Buscar goleador..."
+              />
               {players.length === 0 && !isLocked && (
                 <p className="text-xs text-muted-foreground">El admin aún no cargó jugadores.</p>
               )}

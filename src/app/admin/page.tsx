@@ -5,13 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { seedTeamsAction, seedMatchesAction, recalculateAllPointsAction } from './actions'
+import { seedTeamsAction, seedMatchesAction, seedPlayersAction, recalculateAllPointsAction } from './actions'
 import { createAnonClient } from '@/lib/auth-client'
 import { formatPeruLongDateTime } from '@/lib/peru-time'
 
 export default function AdminPage() {
   const [loadingTeams, setLoadingTeams] = useState(false)
   const [loadingMatches, setLoadingMatches] = useState(false)
+  const [loadingPlayers, setLoadingPlayers] = useState(false)
   const [loadingRecalc, setLoadingRecalc] = useState(false)
   const [recentMatches, setRecentMatches] = useState<any[]>([])
 
@@ -42,6 +43,14 @@ export default function AdminPage() {
     setLoadingMatches(false)
   }
 
+  async function seedPlayers() {
+    setLoadingPlayers(true)
+    const result = await seedPlayersAction()
+    if (result.error) toast.error(result.error)
+    else toast.success(`¡${result.count} jugadores de los 48 planteles cargados!`)
+    setLoadingPlayers(false)
+  }
+
   async function recalculatePoints() {
     setLoadingRecalc(true)
     const result = await recalculateAllPointsAction()
@@ -63,12 +72,21 @@ export default function AdminPage() {
             <CardTitle className="text-base">Datos del Mundial</CardTitle>
             <CardDescription>Cargar equipos y fixture oficial.</CardDescription>
           </CardHeader>
-          <CardContent className="flex gap-2">
+          <CardContent className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={seedTeams} disabled={loadingTeams}>
               {loadingTeams ? 'Cargando...' : '48 Equipos'}
             </Button>
             <Button variant="outline" size="sm" onClick={seedMatches} disabled={loadingMatches}>
               {loadingMatches ? 'Cargando...' : '72 Partidos'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={seedPlayers}
+              disabled={loadingPlayers}
+              className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400"
+            >
+              {loadingPlayers ? 'Cargando planteles...' : '🌍 ~700 Jugadores'}
             </Button>
           </CardContent>
         </Card>
