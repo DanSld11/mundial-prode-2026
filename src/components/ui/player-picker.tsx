@@ -10,12 +10,7 @@ interface Player {
   name: string
   shirt_number?: number | null
   position?: string | null
-  team?: {
-    id: string
-    name_es: string
-    code: string
-    flag_emoji: string
-  } | null
+  team?: { id: string; name_es: string; code: string; flag_emoji: string } | null
 }
 
 interface PlayerPickerProps {
@@ -26,19 +21,19 @@ interface PlayerPickerProps {
   placeholder?: string
 }
 
-function positionBadgeClass(pos: string | null | undefined) {
-  if (!pos) return 'bg-muted text-muted-foreground'
-  const p = pos.toUpperCase()
+function posBadge(pos: string | null | undefined) {
+  const p = (pos ?? '').toUpperCase()
   if (p === 'GK' || p === 'ARQ') return 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
   if (p === 'DEF') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
   if (p === 'MID' || p === 'MED') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-  return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+  if (p === 'DEL' || p === 'FWD') return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+  return 'bg-muted text-muted-foreground'
 }
-function positionLabel(pos: string | null | undefined) {
-  if (!pos) return ''
-  const p = pos.toUpperCase()
+function posLabel(pos: string | null | undefined) {
+  const p = (pos ?? '').toUpperCase()
   if (p === 'GK') return 'ARQ'
   if (p === 'MID') return 'MED'
+  if (p === 'FWD') return 'DEL'
   return p
 }
 
@@ -49,227 +44,195 @@ export function PlayerPicker({
   disabled = false,
   placeholder = 'Buscar goleador...',
 }: PlayerPickerProps) {
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
+  const [open, setOpen]       = useState(false)
+  const [query, setQuery]     = useState('')
   const [mounted, setMounted] = useState(false)
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, openUp: false })
+  const [coords, setCoords]   = useState({ top: 0, bottom: 0, left: 0, width: 0, openUp: false })
 
-  const triggerRef = useRef<HTMLButtonElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const triggerRef  = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)   // ref on the PORTAL div
+  const inputRef    = useRef<HTMLInputElement>(null)
 
   useEffect(() => { setMounted(true) }, [])
 
-  // Close on outside click or scroll
+  // Close on outside click — check BOTH trigger and dropdown refs
   useEffect(() => {
     if (!open) return
-    function close(e: Event) {
-      if (triggerRef.current?.contains(e.target as Node)) return
+    function handlePointerDown(e: PointerEvent) {
+      const target = e.target as Node
+      if (triggerRef.current?.contains(target))  return  // clicked trigger → toggle handles it
+      if (dropdownRef.current?.contains(target)) return  // clicked inside dropdown → keep open
       setOpen(false)
       setQuery('')
     }
-    document.addEventListener('pointerdown', close)
-    document.addEventListener('scroll', close, true)
-    return () => {
-      document.removeEventListener('pointerdown', close)
-      document.removeEventListener('scroll', close, true)
-    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
   }, [open])
 
+  // Auto-focus search when dropdown opens
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 30)
+    if (open) setTimeout(() => inputRef.current?.focus(), 40)
   }, [open])
 
-  function calculateCoords() {
+  function computeCoords() {
     if (!triggerRef.current) return
     const rect = triggerRef.current.getBoundingClientRect()
-    const viewportH = window.innerHeight
-    const spaceBelow = viewportH - rect.bottom
-    const spaceAbove = rect.top
-    const dropdownH = 320
-    const openUp = spaceBelow < dropdownH + 20 && spaceAbove > spaceBelow
+    const vh   = window.innerHeight
+    const vw   = window.innerWidth
+    const maxH = 340
+    const openUp = rect.bottom + maxH + 8 > vh && rect.top > maxH
 
-    // Ensure dropdown doesn't go off-screen left/right
-    const dropW = Math.max(rect.width, 280)
-    const leftRaw = rect.left
-    const left = Math.min(leftRaw, window.innerWidth - dropW - 8)
+    const rawLeft = rect.left
+    const width   = Math.max(rect.width, 300)
+    const left    = Math.min(rawLeft, vw - width - 8)
 
     setCoords({
-      top: openUp ? rect.top - 4 : rect.bottom + 4,
-      left: Math.max(8, left),
-      width: dropW,
+      top:    rect.bottom + 4,          // distance from top of viewport (used when !openUp)
+      bottom: vh - rect.top + 4,        // distance from bottom of viewport (used when openUp)
+      left:   Math.max(8, left),
+      width,
       openUp,
     })
   }
 
   function handleToggle() {
     if (disabled) return
-    if (!open) {
-      calculateCoords()
-      setOpen(true)
-    } else {
+    if (open) {
       setOpen(false)
       setQuery('')
+    } else {
+      computeCoords()
+      setOpen(true)
     }
   }
 
-  // Filter
-  const normalise = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  const q = normalise(query)
-  const filtered = q
-    ? players.filter(
-        (p) =>
-          normalise(p.name).includes(q) ||
-          normalise(p.team?.name_es ?? '').includes(q) ||
-          normalise(p.team?.code ?? '').includes(q),
+  // Filter helpers
+  const norm  = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  const q     = norm(query)
+  const list  = q
+    ? players.filter(p =>
+        norm(p.name).includes(q) ||
+        norm(p.team?.name_es ?? '').includes(q) ||
+        norm(p.team?.code ?? '').includes(q)
       )
     : players
 
-  // Group by team when not searching
+  // Grouping
   type Group = { label: string; flag?: string; players: Player[] }
-  let groups: Group[] = []
-
+  let groups: Group[]
   if (!q) {
-    const teamOrder: string[] = []
+    const order: string[] = []
     const byTeam: Record<string, Player[]> = {}
-    for (const p of filtered) {
-      const key = p.team?.name_es ?? 'Sin equipo'
-      if (!byTeam[key]) { byTeam[key] = []; teamOrder.push(key) }
-      byTeam[key].push(p)
+    for (const p of list) {
+      const k = p.team?.name_es ?? 'Sin equipo'
+      if (!byTeam[k]) { byTeam[k] = []; order.push(k) }
+      byTeam[k].push(p)
     }
-    groups = teamOrder.map((teamName) => ({
-      label: teamName,
-      flag: byTeam[teamName][0]?.team?.flag_emoji,
-      players: byTeam[teamName].sort((a, b) => (a.shirt_number ?? 99) - (b.shirt_number ?? 99)),
+    groups = order.map(k => ({
+      label:   k,
+      flag:    byTeam[k][0]?.team?.flag_emoji,
+      players: byTeam[k].sort((a, b) => (a.shirt_number ?? 99) - (b.shirt_number ?? 99)),
     }))
   } else {
-    groups = [{ label: '', players: filtered }]
+    groups = [{ label: '', players: list }]
   }
 
-  const selected = players.find((p) => p.id === value)
+  const selected = players.find(p => p.id === value)
 
-  function select(id: string) {
-    onChange(id)
-    setOpen(false)
-    setQuery('')
-  }
-
-  function clear(e: React.MouseEvent) {
-    e.stopPropagation()
-    onChange('')
-    setQuery('')
-  }
+  function pick(id: string) { onChange(id); setOpen(false); setQuery('') }
+  function clear(e: React.MouseEvent) { e.stopPropagation(); onChange(''); setQuery('') }
 
   const Chevron = coords.openUp ? ChevronUp : ChevronDown
 
-  // Dropdown rendered via portal so it's never clipped by parent overflow
-  const dropdown =
-    mounted && open
-      ? createPortal(
-          <div
-            style={{
-              position: 'fixed',
-              top: coords.openUp ? undefined : coords.top,
-              bottom: coords.openUp ? window.innerHeight - coords.top : undefined,
-              left: coords.left,
-              width: coords.width,
-              zIndex: 99999,
-            }}
-            className="overflow-hidden rounded-xl border bg-card shadow-2xl"
-          >
-            {/* Search bar */}
-            <div className="flex items-center gap-2 border-b bg-card px-3 py-2.5">
-              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Nombre, equipo o código..."
-                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
-              />
-              {query ? (
-                <button onClick={() => setQuery('')} className="rounded-full p-0.5 hover:bg-muted">
-                  <X className="h-3.5 w-3.5 text-muted-foreground" />
-                </button>
-              ) : (
-                <span className="text-[10px] text-muted-foreground">{players.length} jugadores</span>
-              )}
-            </div>
+  // Portal dropdown
+  const portal = mounted && open ? createPortal(
+    <div
+      ref={dropdownRef}
+      style={{
+        position: 'fixed',
+        top:    coords.openUp ? undefined  : coords.top,
+        bottom: coords.openUp ? coords.bottom : undefined,
+        left:   coords.left,
+        width:  coords.width,
+        zIndex: 99999,
+        maxHeight: '340px',
+      }}
+      className="flex flex-col overflow-hidden rounded-xl border bg-card shadow-2xl"
+    >
+      {/* Search bar */}
+      <div className="flex shrink-0 items-center gap-2 border-b bg-card px-3 py-2.5">
+        <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Nombre, equipo o código..."
+          className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+        />
+        {query
+          ? <button onClick={() => setQuery('')} className="shrink-0 rounded-full p-0.5 hover:bg-muted"><X className="h-3.5 w-3.5 text-muted-foreground" /></button>
+          : <span className="shrink-0 text-[10px] text-muted-foreground">{players.length} jugadores</span>
+        }
+      </div>
 
-            {/* Clear selection */}
-            {value && (
-              <button
-                type="button"
-                onClick={() => select('')}
-                className="flex w-full items-center gap-2 border-b px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50"
-              >
-                <X className="h-3.5 w-3.5 shrink-0" />
-                Quitar selección
-              </button>
-            )}
+      {/* Clear option */}
+      {value && (
+        <button
+          type="button"
+          onClick={() => pick('')}
+          className="flex shrink-0 w-full items-center gap-2 border-b px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50"
+        >
+          <X className="h-3.5 w-3.5 shrink-0" /> Quitar selección
+        </button>
+      )}
 
-            {/* Results */}
-            <div className="max-h-72 overflow-y-auto overscroll-contain">
-              {filtered.length === 0 ? (
-                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  Sin resultados para &ldquo;{query}&rdquo;
+      {/* Results — scrollable */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        {list.length === 0
+          ? <div className="px-4 py-8 text-center text-sm text-muted-foreground">Sin resultados para &ldquo;{query}&rdquo;</div>
+          : groups.map(group => (
+            <div key={group.label || '_q'}>
+              {group.label && (
+                <div className="sticky top-0 z-10 flex items-center gap-2 bg-muted/90 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground backdrop-blur">
+                  {group.flag && <TeamFlag code={group.flag} label={group.label} />}
+                  <span className="flex-1">{group.label}</span>
+                  <span className="font-normal normal-case opacity-60">{group.players.length} jug.</span>
                 </div>
-              ) : (
-                groups.map((group) => (
-                  <div key={group.label || '_search'}>
-                    {group.label && (
-                      <div className="sticky top-0 z-10 flex items-center gap-2 bg-muted/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground backdrop-blur">
-                        {group.flag && <TeamFlag code={group.flag} label={group.label} />}
-                        <span>{group.label}</span>
-                        <span className="ml-auto font-normal normal-case text-muted-foreground/60">
-                          {group.players.length} jug.
-                        </span>
-                      </div>
-                    )}
-                    {group.players.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => select(p.id)}
-                        className={[
-                          'flex w-full items-center gap-3 px-3 py-2.5 text-sm transition-colors hover:bg-muted/60 active:bg-muted',
-                          p.id === value ? 'bg-red-50 dark:bg-red-950/30' : '',
-                        ].join(' ')}
-                      >
-                        {/* Number badge */}
-                        <span className="w-6 shrink-0 text-right font-mono text-xs text-muted-foreground">
-                          {p.shirt_number != null ? `#${p.shirt_number}` : ''}
-                        </span>
-
-                        {/* Name — full, no truncation */}
-                        <span className={['flex-1 text-left font-medium', p.id === value ? 'brand-red font-semibold' : ''].join(' ')}>
-                          {p.name}
-                        </span>
-
-                        {/* Position badge */}
-                        {p.position && (
-                          <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${positionBadgeClass(p.position)}`}>
-                            {positionLabel(p.position)}
-                          </span>
-                        )}
-
-                        {/* Selected tick */}
-                        {p.id === value && (
-                          <span className="shrink-0 text-[11px] font-bold brand-red">✓</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                ))
               )}
+              {group.players.map(p => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onPointerDown={e => { e.preventDefault(); pick(p.id) }}
+                  className={[
+                    'flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/60 active:bg-muted',
+                    p.id === value ? 'bg-red-50 dark:bg-red-950/30' : '',
+                  ].join(' ')}
+                >
+                  <span className="w-7 shrink-0 text-right font-mono text-xs text-muted-foreground">
+                    {p.shirt_number != null ? `#${p.shirt_number}` : ''}
+                  </span>
+                  <span className={['flex-1 font-medium', p.id === value ? 'font-semibold brand-red' : ''].join(' ')}>
+                    {p.name}
+                  </span>
+                  {p.position && (
+                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${posBadge(p.position)}`}>
+                      {posLabel(p.position)}
+                    </span>
+                  )}
+                  {p.id === value && <span className="shrink-0 text-[11px] font-bold brand-red">✓</span>}
+                </button>
+              ))}
             </div>
-          </div>,
-          document.body,
-        )
-      : null
+          ))
+        }
+      </div>
+    </div>,
+    document.body,
+  ) : null
 
   return (
     <div className="relative">
-      {/* Trigger button */}
       <button
         ref={triggerRef}
         type="button"
@@ -283,9 +246,7 @@ export function PlayerPicker({
       >
         {selected ? (
           <>
-            {selected.team && (
-              <TeamFlag code={selected.team.flag_emoji} label={selected.team.name_es} />
-            )}
+            {selected.team && <TeamFlag code={selected.team.flag_emoji} label={selected.team.name_es} />}
             {selected.shirt_number != null && (
               <span className="shrink-0 font-mono text-xs text-muted-foreground">#{selected.shirt_number}</span>
             )}
@@ -296,10 +257,7 @@ export function PlayerPicker({
               </span>
             )}
             {!disabled && (
-              <span
-                onClick={clear}
-                className="ml-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full hover:bg-muted"
-              >
+              <span onClick={clear} className="ml-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full hover:bg-muted">
                 <X className="h-3 w-3 text-muted-foreground" />
               </span>
             )}
@@ -312,8 +270,7 @@ export function PlayerPicker({
           </>
         )}
       </button>
-
-      {dropdown}
+      {portal}
     </div>
   )
 }
