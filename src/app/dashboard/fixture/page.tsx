@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { CalendarDays, MapPin } from 'lucide-react'
+import { CalendarDays, MapPin, Wifi } from 'lucide-react'
 import { TeamFlag } from '@/components/team-flag'
 import { formatPeruDateLabel, formatPeruTime, peruDateKey } from '@/lib/peru-time'
 import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
@@ -17,6 +17,7 @@ export default function FixturePage() {
   const [matches, setMatches] = useState<any[]>([])
   const [predictions, setPredictions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [liveIndicator, setLiveIndicator] = useState(false)
 
   useEffect(() => {
     // Show cached data immediately (optimistic)
@@ -25,18 +26,22 @@ export default function FixturePage() {
     if (cachedMatches) { setMatches(cachedMatches); setLoading(false) }
     if (cachedPreds) setPredictions(cachedPreds)
 
-    // Always fetch fresh in background
     const supabase = createAnonClient()
-    supabase.from('matches')
-      .select('*, home_team:teams!matches_home_team_id_fkey(name_es,flag_emoji,code), away_team:teams!matches_away_team_id_fkey(name_es,flag_emoji,code)')
-      .eq('stage', 'group')
-      .order('match_date', { ascending: true })
-      .then(({ data }) => {
-        const m = data ?? []
-        setMatches(m)
-        setLoading(false)
-        cacheSet(CACHE_KEY_MATCHES, m)
-      })
+
+    function refreshMatches() {
+      return supabase.from('matches')
+        .select('*, home_team:teams!matches_home_team_id_fkey(name_es,flag_emoji,code), away_team:teams!matches_away_team_id_fkey(name_es,flag_emoji,code)')
+        .eq('stage', 'group')
+        .order('match_date', { ascending: true })
+        .then(({ data }) => {
+          const m = data ?? []
+          setMatches(m)
+          setLoading(false)
+          cacheSet(CACHE_KEY_MATCHES, m)
+        })
+    }
+
+    refreshMatches()
 
     const token = getAccessToken()
     if (token) {
@@ -46,11 +51,22 @@ export default function FixturePage() {
           s.from('predictions').select('*').eq('user_id', userId).then(({ data: p }) => {
             const preds = p ?? []
             setPredictions(preds)
-            cacheSet(CACHE_KEY_PREDS, preds, 60_000) // predictions cache: 1 min only
+            cacheSet(CACHE_KEY_PREDS, preds, 60_000)
           })
         }
       })
     }
+
+    // Realtime: refresh when any match result is updated
+    const channel = supabase
+      .channel('fixture-realtime')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches' }, () => {
+        setLiveIndicator(true)
+        refreshMatches().then(() => setTimeout(() => setLiveIndicator(false), 2000))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   if (loading) return (
@@ -99,7 +115,13 @@ export default function FixturePage() {
             <CalendarDays className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="font-bebas text-3xl tracking-wide sm:text-4xl">Fixture</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="font-bebas text-3xl tracking-wide sm:text-4xl">Fixture</h1>
+              <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold transition-all ${liveIndicator ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-muted text-muted-foreground'}`}>
+                <Wifi className="h-2.5 w-2.5" />
+                {liveIndicator ? 'Actualizando...' : 'En vivo'}
+              </span>
+            </div>
             <p className="text-sm text-muted-foreground">Fase de grupos oficial · 11-27 junio 2026 · Hora Perú</p>
           </div>
         </div>

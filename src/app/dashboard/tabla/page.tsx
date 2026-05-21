@@ -4,27 +4,51 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Table2, Medal } from 'lucide-react'
+import { Table2, Medal, Wifi } from 'lucide-react'
 import { createAnonClient } from '@/lib/auth-client'
 import { cacheGet, cacheSet } from '@/lib/local-cache'
 
 const CACHE_KEY = 'tabla:leaderboard'
 
+async function fetchLeaderboard(supabase: ReturnType<typeof createAnonClient>) {
+  const { data } = await supabase.from('leaderboard').select('*').order('position')
+  return data ?? []
+}
+
 export default function TablaPage() {
   const [entries, setEntries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [liveIndicator, setLiveIndicator] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   useEffect(() => {
     const cached = cacheGet<any[]>(CACHE_KEY)
     if (cached) { setEntries(cached); setLoading(false) }
 
     const supabase = createAnonClient()
-    supabase.from('leaderboard').select('*').order('position').then(({ data }) => {
-      const d = data ?? []
+
+    fetchLeaderboard(supabase).then((d) => {
       setEntries(d)
       setLoading(false)
-      cacheSet(CACHE_KEY, d, 2 * 60_000) // 2 min cache
+      setLastUpdated(new Date())
+      cacheSet(CACHE_KEY, d, 2 * 60_000)
     })
+
+    // Realtime: subscribe to profile point changes
+    const channel = supabase
+      .channel('leaderboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        setLiveIndicator(true)
+        fetchLeaderboard(supabase).then((d) => {
+          setEntries(d)
+          setLastUpdated(new Date())
+          cacheSet(CACHE_KEY, d, 2 * 60_000)
+          setTimeout(() => setLiveIndicator(false), 2000)
+        })
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   if (loading) return (
@@ -54,9 +78,17 @@ export default function TablaPage() {
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-red text-white shadow-sm">
             <Table2 className="h-5 w-5" />
           </div>
-          <div>
-            <h1 className="font-bebas text-3xl tracking-wide sm:text-4xl">Tabla de Posiciones</h1>
-            <p className="text-sm text-muted-foreground">Ranking de jugadores</p>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="font-bebas text-3xl tracking-wide sm:text-4xl">Tabla de Posiciones</h1>
+              <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold transition-all ${liveIndicator ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-muted text-muted-foreground'}`}>
+                <Wifi className="h-2.5 w-2.5" />
+                {liveIndicator ? 'Actualizando...' : 'En vivo'}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {lastUpdated ? `Actualizado ${lastUpdated.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}` : 'Ranking de jugadores'}
+            </p>
           </div>
         </div>
       </div>
