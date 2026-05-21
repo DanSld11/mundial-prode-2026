@@ -50,7 +50,7 @@ export function PredictionForm({ matchId, homeTeamName, awayTeamName, existingPr
         user_id: user.id, match_id: matchId,
         predicted_home_score: hs, predicted_away_score: as,
         predicted_winner_id: predictedWinnerId,
-      }, { onConflict: 'user_id, match_id' })
+      }, { onConflict: 'user_id,match_id' })
 
       if (error) toast.error(error.message)
       else { toast.success('Predicción guardada'); setTimeout(() => window.location.reload(), 600) }

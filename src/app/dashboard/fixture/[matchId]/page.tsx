@@ -61,7 +61,10 @@ export default function MatchPredictionPage() {
         .single()
       setMatch(matchData)
 
-      const teamIds = [matchData?.home_team_id, matchData?.away_team_id].filter(Boolean)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const md = matchData as any
+      if (!md) { setLoading(false); return }
+      const teamIds = [md.home_team_id, md.away_team_id].filter(Boolean) as string[]
       if (teamIds.length) {
         const { data: playersData } = await supabase
           .from('players')
@@ -80,12 +83,13 @@ export default function MatchPredictionPage() {
         const uid = await getCurrentUserId(token)
         if (uid) {
           setUserId(uid)
-          const { data: predictionData } = await authedSupabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: predictionData } = await (authedSupabase as any)
             .from('predictions')
             .select('*')
             .eq('user_id', uid)
             .eq('match_id', matchId)
-            .single()
+            .single() as { data: any }
           if (predictionData) {
             setPrediction(predictionData)
             setOutcome(predictionData.predicted_outcome ?? '')
@@ -181,7 +185,7 @@ export default function MatchPredictionPage() {
     const authedSupabase = createAuthedClient(accessToken)
     const { data, error } = await authedSupabase
       .from('predictions')
-      .upsert(nextPrediction, { onConflict: 'user_id, match_id' })
+      .upsert(nextPrediction, { onConflict: 'user_id,match_id' })
       .select()
       .single()
 

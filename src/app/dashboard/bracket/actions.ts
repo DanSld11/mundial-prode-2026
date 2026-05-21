@@ -27,7 +27,7 @@ export async function saveBracketPredictionAction(formData: FormData) {
       stage,
       slot_key: slotKey,
       team_id: teamId || null,
-    }, { onConflict: 'user_id, stage, slot_key' })
+    }, { onConflict: 'user_id,stage,slot_key' })
 
   if (error) {
     return { error: error.message }

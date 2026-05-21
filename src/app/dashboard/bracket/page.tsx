@@ -118,6 +118,7 @@ export default function BracketPage() {
       if (!token || !userId) toast.error('Iniciá sesión para guardar.')
       return
     }
+    const uid      = userId  // capture non-null for TS narrowing
     const key      = `${stageKey}:${slotKey}`
     const oldId    = predictions[key]
     const next     = { ...predictions, [key]: teamId }
@@ -142,9 +143,10 @@ export default function BracketPage() {
 
     setPredictions(next)
     setIsSaving(true)
-    const { error } = await createAuthedClient(token).from('bracket_predictions').upsert(
-      toUpsert.map(r => ({ user_id: userId, stage: r.stage, slot_key: r.slot_key, team_id: r.team_id })),
-      { onConflict: 'user_id, stage, slot_key' },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (createAuthedClient(token).from('bracket_predictions') as any).upsert(
+      toUpsert.map(r => ({ user_id: uid, stage: r.stage, slot_key: r.slot_key, team_id: r.team_id })),
+      { onConflict: 'user_id,stage,slot_key' },
     )
     setIsSaving(false)
     if (error) toast.error(error.message)
@@ -153,9 +155,10 @@ export default function BracketPage() {
   async function handleLockConfirmed() {
     if (!token || !userId) return
     setIsSaving(true)
-    const { error } = await createAuthedClient(token).from('bracket_predictions').upsert(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (createAuthedClient(token).from('bracket_predictions') as any).upsert(
       { user_id: userId, stage: 'meta', slot_key: 'locked', team_id: null },
-      { onConflict: 'user_id, stage, slot_key' },
+      { onConflict: 'user_id,stage,slot_key' },
     )
     setIsSaving(false)
     if (error) toast.error(error.message)

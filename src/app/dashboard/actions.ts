@@ -54,7 +54,7 @@ export async function savePredictionAction(formData: FormData) {
       predicted_home_score: homeScore,
       predicted_away_score: awayScore,
       predicted_winner_id: predictedWinnerId,
-    }, { onConflict: 'user_id, match_id' })
+    }, { onConflict: 'user_id,match_id' })
 
   if (error) {
     return { error: error.message }

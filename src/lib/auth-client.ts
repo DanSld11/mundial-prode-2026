@@ -5,27 +5,39 @@ export function getAccessToken(): string | null {
   return document.cookie.split('; ').find((row) => row.startsWith('sb-access-token='))?.split('=')[1] ?? null
 }
 
+// Module-level singletons — avoids "Multiple GoTrueClient instances" warning
+let _anonInstance: ReturnType<typeof createClient> | null = null
+const _authedInstances = new Map<string, ReturnType<typeof createClient>>()
+
 export function createAnonClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  if (!_anonInstance) {
+    _anonInstance = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    )
+  }
+  return _anonInstance
 }
 
 export function createAuthedClient(token: string) {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      auth: { autoRefreshToken: false, persistSession: false },
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    }
-  )
+  if (!_authedInstances.has(token)) {
+    _authedInstances.set(
+      token,
+      createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          auth: { autoRefreshToken: false, persistSession: false },
+          global: { headers: { Authorization: `Bearer ${token}` } },
+        },
+      ),
+    )
+  }
+  return _authedInstances.get(token)!
 }
 
 export async function getCurrentUserId(token: string): Promise<string | null> {
-  const client = createAuthedClient(token)
-  const { data } = await client.auth.getUser(token)
+  const { data } = await createAuthedClient(token).auth.getUser(token)
   return data.user?.id ?? null
 }
