@@ -13,21 +13,22 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: 'system',
-  resolved: 'dark',
+  theme: 'light',
+  resolved: 'light',
   setTheme: () => {},
   toggleTheme: () => {},
 })
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('system')
-  const [resolved, setResolved] = useState<ResolvedTheme>('dark')
+  const [theme, setThemeState] = useState<Theme>('light')
+  const [resolved, setResolved] = useState<ResolvedTheme>('light')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
     const saved = localStorage.getItem('theme') as Theme | null
-    setThemeState(saved ?? 'system')
+    // Si no hay preferencia guardada, usamos 'light' por defecto
+    setThemeState(saved ?? 'light')
   }, [])
 
   useEffect(() => {

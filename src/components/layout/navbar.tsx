@@ -17,11 +17,14 @@ import {
   Menu,
   Shield,
   UserRound,
+  Sun,
+  Moon,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
+import { useTheme } from '@/components/theme-provider'
 
 const navItems = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
@@ -45,6 +48,7 @@ const bottomNavItems = [
 
 export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()
+  const { resolved, toggleTheme } = useTheme()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [detectedAdmin, setDetectedAdmin] = useState(isAdmin)
   const [username, setUsername] = useState('')
@@ -136,6 +140,19 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
                 <span>Salir</span>
               </Button>
             </form>
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              aria-label={resolved === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+              title={resolved === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-secondary-foreground"
+            >
+              {resolved === 'dark'
+                ? <Sun className="h-4 w-4" />
+                : <Moon className="h-4 w-4" />}
+            </button>
+
             <Link href="/dashboard/perfil" aria-label="Perfil">
               <Avatar className="h-7 w-7">
                 <AvatarFallback className="bg-brand-red text-white text-xs font-bold">
@@ -186,6 +203,14 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
                 <UserRound className="h-4 w-4" />
                 Perfil
               </Link>
+              <button
+                onClick={() => { toggleTheme(); setMobileOpen(false) }}
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary"
+              >
+                {resolved === 'dark'
+                  ? <><Sun className="h-4 w-4" /> Modo claro</>
+                  : <><Moon className="h-4 w-4" /> Modo oscuro</>}
+              </button>
               <form action="/auth/logout" method="post">
                 <button className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary">
                   <LogOut className="h-4 w-4" />

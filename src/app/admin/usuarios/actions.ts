@@ -1,14 +1,25 @@
 'use server'
 
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { cookies } from 'next/headers'
 import { createServiceRoleClient } from '@/lib/server-client'
 import { revalidatePath } from 'next/cache'
 
 async function assertAdmin() {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // Lee el JWT del cookie no-httpOnly que el login route setea
+  const cookieStore = await cookies()
+  const token = cookieStore.get('sb-access-token')?.value
+  if (!token) return null
+
+  const admin = createServiceRoleClient()
+  const { data: { user } } = await admin.auth.getUser(token)
   if (!user) return null
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
   return profile?.role === 'admin' ? user : null
 }
 
