@@ -38,42 +38,42 @@ export default async function PoolDetailPage({ params }: { params: { poolId: str
       </Link>
 
       {/* ── Header card ── */}
-      <div className="rounded-2xl border bg-gradient-to-br from-brand-red to-red-700 p-5 shadow-lg">
+      <div className="rounded-2xl border bg-gradient-to-br from-brand-red to-red-700 p-5 shadow-lg text-white">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="font-bold text-xl leading-tight text-white">{pool.name}</h1>
+            <h1 className="font-bold text-xl leading-tight">{pool.name}</h1>
             {pool.description && (
-              <p className="text-sm text-white/75 mt-1 leading-relaxed">{pool.description}</p>
+              <p className="text-sm text-white/80 mt-1 leading-relaxed">{pool.description}</p>
             )}
-            <span className={`mt-2 inline-block rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${statusCfg.cls}`}>
+            <span className="mt-2 inline-block rounded-full border border-white/30 bg-white/15 px-2.5 py-0.5 text-[10px] font-semibold text-white">
               {statusCfg.label}
             </span>
           </div>
 
           {/* Invite code box */}
-          <div className="shrink-0 rounded-xl bg-white/15 border border-white/20 px-3 py-2 text-center backdrop-blur-sm">
-            <p className="text-[10px] text-white/60 font-medium mb-0.5 uppercase tracking-wider">Código</p>
-            <p className="font-bold text-lg tracking-[0.15em] text-white">{pool.invite_code}</p>
+          <div className="shrink-0 rounded-xl bg-white/15 border border-white/25 px-3 py-2 text-center">
+            <p className="text-[10px] text-white/80 font-medium mb-0.5 uppercase tracking-wider">Código</p>
+            <p className="font-bold text-lg tracking-[0.15em]">{pool.invite_code}</p>
             <CopyCodeButton code={pool.invite_code} />
           </div>
         </div>
 
         {/* Stats row */}
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <div className="rounded-xl bg-white/10 border border-white/10 p-3 text-center">
-            <Users className="h-4 w-4 mx-auto mb-1 text-white/60" />
-            <p className="font-bold text-lg text-white">{members.length}</p>
-            <p className="text-[10px] text-white/60">jugadores</p>
+          <div className="rounded-xl bg-white/10 border border-white/15 p-3 text-center">
+            <Users className="h-4 w-4 mx-auto mb-1 text-white/70" />
+            <p className="font-bold text-lg">{members.length}</p>
+            <p className="text-[10px] text-white/80">jugadores</p>
           </div>
-          <div className="rounded-xl bg-white/10 border border-white/10 p-3 text-center">
-            <Gem className="h-4 w-4 mx-auto mb-1 text-white/60" />
-            <p className="font-bold text-lg text-white">{entryFee.toLocaleString()}</p>
-            <p className="text-[10px] text-white/60">entrada</p>
+          <div className="rounded-xl bg-white/10 border border-white/15 p-3 text-center">
+            <Gem className="h-4 w-4 mx-auto mb-1 text-white/70" />
+            <p className="font-bold text-lg">{entryFee.toLocaleString()}</p>
+            <p className="text-[10px] text-white/80">entrada</p>
           </div>
-          <div className="rounded-xl bg-yellow-400/20 border border-yellow-400/20 p-3 text-center">
+          <div className="rounded-xl bg-white/10 border border-white/15 p-3 text-center">
             <Trophy className="h-4 w-4 mx-auto mb-1 text-yellow-300" />
             <p className="font-bold text-lg text-yellow-200">{pot.toLocaleString()}</p>
-            <p className="text-[10px] text-yellow-300/70">pozo total</p>
+            <p className="text-[10px] text-white/80">pozo total</p>
           </div>
         </div>
       </div>
