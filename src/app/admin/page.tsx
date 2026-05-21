@@ -102,10 +102,10 @@ export default function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Usuarios</CardTitle>
-            <CardDescription>Ver jugadores registrados.</CardDescription>
+            <CardDescription>Ver jugadores y resetear contraseñas.</CardDescription>
           </CardHeader>
           <CardContent>
-            <a href="/admin/usuarios"><Button variant="outline" size="sm">Ver lista</Button></a>
+            <a href="/admin/usuarios"><Button variant="outline" size="sm">Gestionar</Button></a>
           </CardContent>
         </Card>
         <Card>
