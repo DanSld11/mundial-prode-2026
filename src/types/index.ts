@@ -108,6 +108,62 @@ export interface BracketPrediction {
   team?: Team
 }
 
+// ── Wallet ──────────────────────────────────────────────
+export interface Wallet {
+  user_id: string
+  balance: number
+  total_deposited: number
+  total_wagered: number
+  total_won: number
+  updated_at: string
+}
+
+export type TransactionType = 'deposit' | 'pool_entry' | 'pool_prize' | 'refund' | 'admin_adjustment'
+
+export interface WalletTransaction {
+  id: string
+  user_id: string
+  amount: number
+  balance_after: number
+  type: TransactionType
+  description: string | null
+  pool_id: string | null
+  created_at: string
+}
+
+// ── Pollas (grupos de apuesta) ───────────────────────────
+export type PoolStatus = 'open' | 'active' | 'finished' | 'paid'
+
+export interface Pool {
+  id: string
+  name: string
+  description: string | null
+  invite_code: string
+  created_by: string
+  entry_fee: number
+  max_participants: number | null
+  prize_1st: number
+  prize_2nd: number
+  prize_3rd: number
+  status: PoolStatus
+  created_at: string
+  updated_at: string
+  // joined
+  creator?: { username: string }
+  member_count?: number
+}
+
+export interface PoolMember {
+  pool_id: string
+  user_id: string
+  joined_at: string
+  final_position: number | null
+  prize_earned: number
+  paid_out: boolean
+  // joined
+  profile?: { username: string; total_points: number; avatar_url: string | null }
+}
+
 export interface LeaderboardEntry {
   id: string
   username: string

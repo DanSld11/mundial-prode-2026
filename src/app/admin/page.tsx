@@ -128,6 +128,15 @@ export default function AdminPage() {
         </Card>
         <Card>
           <CardHeader>
+            <CardTitle className="text-base">💰 Wallet & Pollas</CardTitle>
+            <CardDescription>Dar coins a usuarios y gestionar grupos de apuesta.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <a href="/admin/wallet"><Button variant="outline" size="sm">Gestionar</Button></a>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
             <CardTitle className="text-base">Recalcular puntos</CardTitle>
             <CardDescription>Repara predicciones después de editar resultados o goleadores.</CardDescription>
           </CardHeader>

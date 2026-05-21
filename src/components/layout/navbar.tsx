@@ -19,6 +19,7 @@ import {
   UserRound,
   Sun,
   Moon,
+  Gem,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,7 @@ const navItems = [
   { href: '/dashboard/fixture', label: 'Fixture', icon: CalendarDays },
   { href: '/dashboard/predicciones', label: 'Predicciones', icon: Target },
   { href: '/dashboard/bracket', label: 'Eliminatorias', icon: Swords },
+  { href: '/dashboard/pollas', label: 'Pollas', icon: Trophy },
   { href: '/dashboard/tabla', label: 'Tabla', icon: Table2 },
   { href: '/dashboard/estadisticas', label: 'Estadísticas', icon: BarChart3 },
 ]
@@ -41,9 +43,9 @@ const bottomNavItems = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
   { href: '/dashboard/fixture', label: 'Fixture', icon: CalendarDays },
   { href: '/dashboard/predicciones', label: 'Pred.', icon: Target },
-  { href: '/dashboard/bracket', label: 'Elim.', icon: Swords },
+  { href: '/dashboard/pollas', label: 'Pollas', icon: Trophy },
   { href: '/dashboard/tabla', label: 'Tabla', icon: Table2 },
-  { href: '/dashboard/estadisticas', label: 'Estad.', icon: BarChart3 },
+  { href: '/dashboard/wallet', label: 'Wallet', icon: Gem },
 ]
 
 export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
