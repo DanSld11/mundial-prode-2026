@@ -6,7 +6,19 @@ import { TeamFlag } from '@/components/team-flag'
 import { toast } from 'sonner'
 import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
 
-interface Team { id: string; name_es: string; flag_emoji: string; code: string }
+interface Team { id: string; name_es: string; flag_emoji: string; code: string; group_name?: string }
+
+/* R32 card number → groups whose teams are eligible (null = all 48) */
+const R32_GROUPS: Record<number, string[] | null> = {
+  1: ['A', 'B'],
+  2: ['C', 'D'],
+  3: ['E', 'F'],
+  4: ['G', 'H'],
+  5: ['I', 'J'],
+  6: ['K', 'L'],
+  7: null, // mejores 3ros — cualquier grupo
+  8: null,
+}
 
 /* ─── Stage definitions ──────────────────────────────────── */
 const STAGES = [
@@ -58,7 +70,7 @@ export default function BracketPage() {
   useEffect(() => {
     const t = getAccessToken()
     setToken(t)
-    createAnonClient().from('teams').select('id, name_es, flag_emoji, code').order('name_es').then(({ data }) => setTeams(data ?? []))
+    createAnonClient().from('teams').select('id, name_es, flag_emoji, code, group_name').order('group_name').then(({ data }) => setTeams(data ?? []))
     if (!t) { setLoading(false); return }
     const authed = createAuthedClient(t)
     getCurrentUserId(t).then(uid => {
@@ -91,6 +103,8 @@ export default function BracketPage() {
     const stage = STAGES[stageIndex]
 
     if (stageIndex === 0) {
+      const cardNum      = Math.ceil(slotIndex / 2)
+      const allowedGroups = R32_GROUPS[cardNum] ?? null
       const thisKey = `${stage.key}-${slotIndex}`
       const used = new Set(
         Array.from({ length: stage.slots }, (_, i) => `${stage.key}-${i + 1}`)
@@ -98,7 +112,10 @@ export default function BracketPage() {
           .map(sk => predictions[`${stage.key}:${sk}`])
           .filter(Boolean),
       )
-      return teams.filter(t => !used.has(t.id))
+      const pool = allowedGroups
+        ? teams.filter(t => allowedGroups.includes(t.group_name ?? ''))
+        : teams
+      return pool.filter(t => !used.has(t.id))
     }
 
     // Parent slots in previous stage: (2S−1) and (2S)
@@ -456,6 +473,11 @@ export default function BracketPage() {
                     // Advance label: winner of this card → next stage llave cardNum
                     const advanceLabel = nextStage ? `Ganador → ${nextStage.short} Llave ${cardNum}` : ''
 
+                    // Group label shown in R32 card headers
+                    const groupLabel = si === 0
+                      ? (R32_GROUPS[cardNum] ? `Grupos ${R32_GROUPS[cardNum]!.join(' · ')}` : 'Mejores 3ros')
+                      : null
+
                     return (
                       <div
                         key={`${leftSlotKey}-${rightSlotKey}`}
@@ -463,9 +485,16 @@ export default function BracketPage() {
                       >
                         {/* Card header */}
                         <div className="flex items-center justify-between rounded-t-2xl border-b bg-muted/30 px-4 py-2">
-                          <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                            Llave {cardNum}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                              Llave {cardNum}
+                            </span>
+                            {groupLabel && (
+                              <span className="rounded-full bg-slate-200 dark:bg-slate-700 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                                {groupLabel}
+                              </span>
+                            )}
+                          </div>
                           {bothDone
                             ? <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600"><CheckCircle2 className="h-3 w-3" /> Completa</span>
                             : <span className="text-[10px] text-muted-foreground">{[leftId, rightId].filter(Boolean).length}/2 elegidos</span>
