@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { recalculateAllPointsAction } from './actions'
+import { seedTeamsAction, seedMatchesAction, recalculateAllPointsAction } from './actions'
 
 export default function AdminPage() {
   const [loadingTeams, setLoadingTeams] = useState(false)
@@ -13,23 +13,17 @@ export default function AdminPage() {
 
   async function seedTeams() {
     setLoadingTeams(true)
-    try {
-      const res = await fetch('/api/seed?action=teams')
-      const data = await res.json()
-      if (data.error) toast.error(data.error)
-      else toast.success(`Insertados: ${data.count}/48 equipos${data.errors ? ' (con errores)' : ''}`)
-    } catch (e: any) { toast.error(e.message) }
+    const result = await seedTeamsAction()
+    if (result.error) toast.error(result.error)
+    else toast.success(`Insertados ${result.count} equipos`)
     setLoadingTeams(false)
   }
 
   async function seedMatches() {
     setLoadingMatches(true)
-    try {
-      const res = await fetch('/api/seed?action=matches')
-      const data = await res.json()
-      if (data.error) toast.error(data.error)
-      else toast.success(`Insertados: ${data.count}/72 partidos${data.errors ? ' (con errores)' : ''}`)
-    } catch (e: any) { toast.error(e.message) }
+    const result = await seedMatchesAction()
+    if (result.error) toast.error(result.error)
+    else toast.success(`Insertados ${result.count} partidos`)
     setLoadingMatches(false)
   }
 

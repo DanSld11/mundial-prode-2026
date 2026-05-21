@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerSupabaseClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/server-client'
 import { SEED_TEAMS, generateGroupMatches } from '@/lib/seed-data'
 import { revalidatePath } from 'next/cache'
 import type { Team } from '@/types'
@@ -78,8 +79,6 @@ export async function seedMatchesAction() {
 }
 
 export async function updateMatchResultAction(formData: FormData) {
-  const supabase = await createServerSupabaseClient()
-
   const matchId = formData.get('match_id') as string
   const homeScore = parseInt(formData.get('home_score') as string)
   const awayScore = parseInt(formData.get('away_score') as string)
@@ -89,7 +88,16 @@ export async function updateMatchResultAction(formData: FormData) {
     return { error: 'Datos inválidos' }
   }
 
-  // Obtener el partido para saber los equipos
+  let supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
+  let adminClient: ReturnType<typeof createServiceRoleClient>
+
+  try {
+    supabase = await createServerSupabaseClient()
+    adminClient = createServiceRoleClient()
+  } catch (e: any) {
+    return { error: e.message }
+  }
+
   const { data: match } = await supabase
     .from('matches')
     .select('home_team_id, away_team_id')
@@ -100,7 +108,6 @@ export async function updateMatchResultAction(formData: FormData) {
     return { error: 'Partido no encontrado' }
   }
 
-  // Determinar ganador
   let winnerId = null
   let isDraw = false
   if (homeScore > awayScore) {
@@ -111,8 +118,7 @@ export async function updateMatchResultAction(formData: FormData) {
     isDraw = true
   }
 
-  // Actualizar partido
-  const { error: updateError } = await supabase
+  const { error: updateError } = await adminClient
     .from('matches')
     .update({
       home_score: homeScore,
@@ -125,30 +131,34 @@ export async function updateMatchResultAction(formData: FormData) {
     .eq('id', matchId)
 
   if (updateError) {
-    return { error: updateError.message }
+    return { error: `Error actualizando partido: ${updateError.message}` }
   }
 
-  await supabase.from('match_goal_scorers').delete().eq('match_id', matchId)
+  await adminClient.from('match_goal_scorers').delete().eq('match_id', matchId)
 
   if (scorerIds.length > 0) {
-    const { error: scorersError } = await supabase
+    const { error: scorersError } = await adminClient
       .from('match_goal_scorers')
       .insert(scorerIds.map((playerId) => ({ match_id: matchId, player_id: playerId })))
 
     if (scorersError) {
-      return { error: scorersError.message }
+      return { error: `Error guardando goleadores: ${scorersError.message}` }
     }
   }
 
-  // Recalcular puntos
-  const { error: rpcError } = await supabase.rpc('update_match_predictions', {
+  // Calcular puntos usando service role para tener permisos completos
+  const { error: rpcError } = await adminClient.rpc('update_match_predictions', {
     p_match_id: matchId,
     p_home_score: homeScore,
     p_away_score: awayScore,
   })
 
   if (rpcError) {
-    return { error: rpcError.message }
+    // Fallback: calcular puntos directo si el RPC falla
+    const fallbackError = await calculatePointsFallback(adminClient, matchId, homeScore, awayScore)
+    if (fallbackError) {
+      return { error: `Resultado guardado pero error al calcular puntos: ${rpcError.message}` }
+    }
   }
 
   revalidatePath('/admin/partidos')
@@ -159,10 +169,83 @@ export async function updateMatchResultAction(formData: FormData) {
   return { success: true }
 }
 
-export async function recalculateAllPointsAction() {
-  const supabase = await createServerSupabaseClient()
+// Fallback por si el RPC no está disponible: calcula puntos directo con JS
+async function calculatePointsFallback(
+  adminClient: ReturnType<typeof createServiceRoleClient>,
+  matchId: string,
+  homeScore: number,
+  awayScore: number
+): Promise<string | null> {
+  try {
+    const actualOutcome = homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'draw'
 
-  const { data: matches, error } = await supabase
+    const { data: settings } = await adminClient.from('scoring_settings').select('prediction_type, points')
+    const pts = {
+      outcome: settings?.find((s) => s.prediction_type === 'outcome')?.points ?? 1,
+      scorer: settings?.find((s) => s.prediction_type === 'scorer')?.points ?? 2,
+      exact_score: settings?.find((s) => s.prediction_type === 'exact_score')?.points ?? 3,
+    }
+
+    const { data: predictions } = await adminClient
+      .from('predictions')
+      .select('id, user_id, predicted_outcome, predicted_scorer_id, predicted_home_score, predicted_away_score')
+      .eq('match_id', matchId)
+
+    if (!predictions?.length) return null
+
+    const { data: scorers } = await adminClient
+      .from('match_goal_scorers')
+      .select('player_id')
+      .eq('match_id', matchId)
+
+    const scorerSet = new Set((scorers ?? []).map((s) => s.player_id))
+
+    for (const pred of predictions) {
+      const outcomePoints = pred.predicted_outcome === actualOutcome ? pts.outcome : 0
+      const scorerPoints = pred.predicted_scorer_id && scorerSet.has(pred.predicted_scorer_id) ? pts.scorer : 0
+      const exactPoints =
+        pred.predicted_home_score === homeScore && pred.predicted_away_score === awayScore ? pts.exact_score : 0
+      const total = outcomePoints + scorerPoints + exactPoints
+
+      await adminClient
+        .from('predictions')
+        .update({
+          outcome_points: outcomePoints,
+          scorer_points: scorerPoints,
+          exact_score_points: exactPoints,
+          points_earned: total,
+          is_exact_score: exactPoints > 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', pred.id)
+    }
+
+    // Recalcular total de cada usuario afectado
+    const userIds = Array.from(new Set(predictions.map((p) => p.user_id)))
+    for (const userId of userIds) {
+      const { data: userPreds } = await adminClient
+        .from('predictions')
+        .select('points_earned')
+        .eq('user_id', userId)
+      const total = (userPreds ?? []).reduce((sum, p) => sum + (p.points_earned ?? 0), 0)
+      await adminClient.from('profiles').update({ total_points: total, updated_at: new Date().toISOString() }).eq('id', userId)
+    }
+
+    return null
+  } catch (e: any) {
+    return e.message
+  }
+}
+
+export async function recalculateAllPointsAction() {
+  let adminClient: ReturnType<typeof createServiceRoleClient>
+  try {
+    adminClient = createServiceRoleClient()
+  } catch (e: any) {
+    return { error: e.message }
+  }
+
+  const { data: matches, error } = await adminClient
     .from('matches')
     .select('id, home_score, away_score')
     .eq('status', 'finished')
@@ -174,16 +257,24 @@ export async function recalculateAllPointsAction() {
   }
 
   let recalculated = 0
+  let rpcAvailable = true
 
   for (const match of matches ?? []) {
-    const { error: rpcError } = await supabase.rpc('update_match_predictions', {
-      p_match_id: match.id,
-      p_home_score: match.home_score,
-      p_away_score: match.away_score,
-    })
+    if (rpcAvailable) {
+      const { error: rpcError } = await adminClient.rpc('update_match_predictions', {
+        p_match_id: match.id,
+        p_home_score: match.home_score,
+        p_away_score: match.away_score,
+      })
 
-    if (rpcError) {
-      return { error: rpcError.message }
+      if (rpcError) {
+        rpcAvailable = false
+        const fallbackError = await calculatePointsFallback(adminClient, match.id, match.home_score, match.away_score)
+        if (fallbackError) return { error: fallbackError }
+      }
+    } else {
+      const fallbackError = await calculatePointsFallback(adminClient, match.id, match.home_score, match.away_score)
+      if (fallbackError) return { error: fallbackError }
     }
 
     recalculated += 1
