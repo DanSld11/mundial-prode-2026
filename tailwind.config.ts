@@ -10,6 +10,8 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        'brand-red':  '#C8102E',
+        'brand-gold': '#F4C300',
         background: 'var(--background)',
         foreground: 'var(--foreground)',
         card: {
