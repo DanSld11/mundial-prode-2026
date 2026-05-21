@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Search, X, ChevronDown } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { Search, X, ChevronDown, ChevronUp } from 'lucide-react'
 import { TeamFlag } from '@/components/team-flag'
 
 interface Player {
@@ -19,20 +20,26 @@ interface Player {
 
 interface PlayerPickerProps {
   players: Player[]
-  value: string            // selected player id
+  value: string
   onChange: (id: string) => void
   disabled?: boolean
   placeholder?: string
 }
 
-const POSITION_ORDER = ['ARQ', 'DEF', 'MED', 'DEL']
-const POSITION_LABELS: Record<string, string> = {
-  ARQ: 'Arqueros',
-  GK:  'Arqueros',
-  DEF: 'Defensas',
-  MED: 'Mediocampistas',
-  MID: 'Mediocampistas',
-  DEL: 'Delanteros',
+function positionBadgeClass(pos: string | null | undefined) {
+  if (!pos) return 'bg-muted text-muted-foreground'
+  const p = pos.toUpperCase()
+  if (p === 'GK' || p === 'ARQ') return 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+  if (p === 'DEF') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+  if (p === 'MID' || p === 'MED') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+  return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+}
+function positionLabel(pos: string | null | undefined) {
+  if (!pos) return ''
+  const p = pos.toUpperCase()
+  if (p === 'GK') return 'ARQ'
+  if (p === 'MID') return 'MED'
+  return p
 }
 
 export function PlayerPicker({
@@ -40,49 +47,88 @@ export function PlayerPicker({
   value,
   onChange,
   disabled = false,
-  placeholder = 'Buscar jugador...',
+  placeholder = 'Buscar goleador...',
 }: PlayerPickerProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, openUp: false })
+
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const selected = players.find((p) => p.id === value)
+  useEffect(() => { setMounted(true) }, [])
 
-  // Close on outside click
+  // Close on outside click or scroll
   useEffect(() => {
-    function onPointerDown(e: PointerEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-        setQuery('')
-      }
+    if (!open) return
+    function close(e: Event) {
+      if (triggerRef.current?.contains(e.target as Node)) return
+      setOpen(false)
+      setQuery('')
     }
-    document.addEventListener('pointerdown', onPointerDown)
-    return () => document.removeEventListener('pointerdown', onPointerDown)
-  }, [])
-
-  // Auto-focus input when opened
-  useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 10)
+    document.addEventListener('pointerdown', close)
+    document.addEventListener('scroll', close, true)
+    return () => {
+      document.removeEventListener('pointerdown', close)
+      document.removeEventListener('scroll', close, true)
+    }
   }, [open])
 
-  // Filter players by query
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 30)
+  }, [open])
+
+  function calculateCoords() {
+    if (!triggerRef.current) return
+    const rect = triggerRef.current.getBoundingClientRect()
+    const viewportH = window.innerHeight
+    const spaceBelow = viewportH - rect.bottom
+    const spaceAbove = rect.top
+    const dropdownH = 320
+    const openUp = spaceBelow < dropdownH + 20 && spaceAbove > spaceBelow
+
+    // Ensure dropdown doesn't go off-screen left/right
+    const dropW = Math.max(rect.width, 280)
+    const leftRaw = rect.left
+    const left = Math.min(leftRaw, window.innerWidth - dropW - 8)
+
+    setCoords({
+      top: openUp ? rect.top - 4 : rect.bottom + 4,
+      left: Math.max(8, left),
+      width: dropW,
+      openUp,
+    })
+  }
+
+  function handleToggle() {
+    if (disabled) return
+    if (!open) {
+      calculateCoords()
+      setOpen(true)
+    } else {
+      setOpen(false)
+      setQuery('')
+    }
+  }
+
+  // Filter
   const normalise = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
   const q = normalise(query)
   const filtered = q
-    ? players.filter((p) =>
-        normalise(p.name).includes(q) ||
-        normalise(p.team?.name_es ?? '').includes(q) ||
-        normalise(p.team?.code ?? '').includes(q)
+    ? players.filter(
+        (p) =>
+          normalise(p.name).includes(q) ||
+          normalise(p.team?.name_es ?? '').includes(q) ||
+          normalise(p.team?.code ?? '').includes(q),
       )
     : players
 
-  // Group by team when not searching; group by position when searching
+  // Group by team when not searching
   type Group = { label: string; flag?: string; players: Player[] }
   let groups: Group[] = []
 
   if (!q) {
-    // Group by team — home first (first half), away second (second half)
     const teamOrder: string[] = []
     const byTeam: Record<string, Player[]> = {}
     for (const p of filtered) {
@@ -96,9 +142,10 @@ export function PlayerPicker({
       players: byTeam[teamName].sort((a, b) => (a.shirt_number ?? 99) - (b.shirt_number ?? 99)),
     }))
   } else {
-    // When searching: show one flat list sorted by relevance
-    groups = [{ label: '', players: filtered.sort((a, b) => (a.shirt_number ?? 99) - (b.shirt_number ?? 99)) }]
+    groups = [{ label: '', players: filtered }]
   }
+
+  const selected = players.find((p) => p.id === value)
 
   function select(id: string) {
     onChange(id)
@@ -112,31 +159,147 @@ export function PlayerPicker({
     setQuery('')
   }
 
+  const Chevron = coords.openUp ? ChevronUp : ChevronDown
+
+  // Dropdown rendered via portal so it's never clipped by parent overflow
+  const dropdown =
+    mounted && open
+      ? createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              top: coords.openUp ? undefined : coords.top,
+              bottom: coords.openUp ? window.innerHeight - coords.top : undefined,
+              left: coords.left,
+              width: coords.width,
+              zIndex: 99999,
+            }}
+            className="overflow-hidden rounded-xl border bg-card shadow-2xl"
+          >
+            {/* Search bar */}
+            <div className="flex items-center gap-2 border-b bg-card px-3 py-2.5">
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Nombre, equipo o código..."
+                className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+              />
+              {query ? (
+                <button onClick={() => setQuery('')} className="rounded-full p-0.5 hover:bg-muted">
+                  <X className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+              ) : (
+                <span className="text-[10px] text-muted-foreground">{players.length} jugadores</span>
+              )}
+            </div>
+
+            {/* Clear selection */}
+            {value && (
+              <button
+                type="button"
+                onClick={() => select('')}
+                className="flex w-full items-center gap-2 border-b px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50"
+              >
+                <X className="h-3.5 w-3.5 shrink-0" />
+                Quitar selección
+              </button>
+            )}
+
+            {/* Results */}
+            <div className="max-h-72 overflow-y-auto overscroll-contain">
+              {filtered.length === 0 ? (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  Sin resultados para &ldquo;{query}&rdquo;
+                </div>
+              ) : (
+                groups.map((group) => (
+                  <div key={group.label || '_search'}>
+                    {group.label && (
+                      <div className="sticky top-0 z-10 flex items-center gap-2 bg-muted/80 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground backdrop-blur">
+                        {group.flag && <TeamFlag code={group.flag} label={group.label} />}
+                        <span>{group.label}</span>
+                        <span className="ml-auto font-normal normal-case text-muted-foreground/60">
+                          {group.players.length} jug.
+                        </span>
+                      </div>
+                    )}
+                    {group.players.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => select(p.id)}
+                        className={[
+                          'flex w-full items-center gap-3 px-3 py-2.5 text-sm transition-colors hover:bg-muted/60 active:bg-muted',
+                          p.id === value ? 'bg-red-50 dark:bg-red-950/30' : '',
+                        ].join(' ')}
+                      >
+                        {/* Number badge */}
+                        <span className="w-6 shrink-0 text-right font-mono text-xs text-muted-foreground">
+                          {p.shirt_number != null ? `#${p.shirt_number}` : ''}
+                        </span>
+
+                        {/* Name — full, no truncation */}
+                        <span className={['flex-1 text-left font-medium', p.id === value ? 'brand-red font-semibold' : ''].join(' ')}>
+                          {p.name}
+                        </span>
+
+                        {/* Position badge */}
+                        {p.position && (
+                          <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${positionBadgeClass(p.position)}`}>
+                            {positionLabel(p.position)}
+                          </span>
+                        )}
+
+                        {/* Selected tick */}
+                        {p.id === value && (
+                          <span className="shrink-0 text-[11px] font-bold brand-red">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>,
+          document.body,
+        )
+      : null
+
   return (
-    <div ref={containerRef} className="relative">
-      {/* Trigger */}
+    <div className="relative">
+      {/* Trigger button */}
       <button
+        ref={triggerRef}
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setOpen((o) => !o)}
+        onClick={handleToggle}
         className={[
-          'flex h-10 w-full items-center gap-2 rounded-lg border bg-background px-3 text-sm transition-colors',
-          disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:border-muted-foreground/40',
-          open ? 'border-brand-red ring-2 ring-brand-red/20' : '',
+          'flex h-11 w-full items-center gap-2 rounded-xl border bg-background px-3 text-sm transition-all',
+          disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-muted-foreground/40',
+          open ? 'border-red-400 ring-2 ring-red-200 dark:ring-red-900/40' : 'border-input',
         ].join(' ')}
       >
         {selected ? (
           <>
-            {selected.team && <TeamFlag code={selected.team.flag_emoji} label={selected.team.name_es} />}
+            {selected.team && (
+              <TeamFlag code={selected.team.flag_emoji} label={selected.team.name_es} />
+            )}
             {selected.shirt_number != null && (
-              <span className="shrink-0 font-mono text-xs text-muted-foreground">{selected.shirt_number}</span>
+              <span className="shrink-0 font-mono text-xs text-muted-foreground">#{selected.shirt_number}</span>
             )}
             <span className="flex-1 truncate text-left font-semibold">{selected.name}</span>
             {selected.team && (
-              <span className="shrink-0 text-xs text-muted-foreground">{selected.team.code}</span>
+              <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+                {selected.team.code}
+              </span>
             )}
             {!disabled && (
-              <span onClick={clear} className="ml-1 rounded-full p-0.5 hover:bg-muted">
+              <span
+                onClick={clear}
+                className="ml-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full hover:bg-muted"
+              >
                 <X className="h-3 w-3 text-muted-foreground" />
               </span>
             )}
@@ -145,90 +308,12 @@ export function PlayerPicker({
           <>
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="flex-1 text-left text-muted-foreground">{placeholder}</span>
-            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <Chevron className="h-4 w-4 shrink-0 text-muted-foreground" />
           </>
         )}
       </button>
 
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border bg-card shadow-xl">
-          {/* Search input */}
-          <div className="flex items-center gap-2 border-b px-3 py-2">
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Nombre, equipo..."
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
-            />
-            {query && (
-              <button onClick={() => setQuery('')} className="rounded-full p-0.5 hover:bg-muted">
-                <X className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            )}
-          </div>
-
-          {/* Clear selection option */}
-          {value && (
-            <button
-              type="button"
-              onClick={() => select('')}
-              className="flex w-full items-center gap-2 border-b px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50"
-            >
-              <X className="h-3.5 w-3.5" />
-              Sin goleador
-            </button>
-          )}
-
-          {/* Results */}
-          <div className="max-h-64 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <div className="px-3 py-6 text-center text-sm text-muted-foreground">
-                Sin resultados para "{query}"
-              </div>
-            ) : (
-              groups.map((group) => (
-                <div key={group.label || 'search'}>
-                  {group.label && (
-                    <div className="sticky top-0 flex items-center gap-1.5 bg-muted/60 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground backdrop-blur">
-                      {group.flag && <TeamFlag code={group.flag} label={group.label} />}
-                      {group.label}
-                    </div>
-                  )}
-                  {group.players.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => select(p.id)}
-                      className={[
-                        'flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-muted/50',
-                        p.id === value ? 'bg-brand-red/10 font-semibold text-brand-red' : '',
-                      ].join(' ')}
-                    >
-                      {p.shirt_number != null && (
-                        <span className="w-6 shrink-0 text-right font-mono text-xs text-muted-foreground">{p.shirt_number}</span>
-                      )}
-                      <span className="flex-1 truncate text-left">{p.name}</span>
-                      {p.position && (
-                        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${
-                          p.position === 'GK'  || p.position === 'ARQ' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
-                          p.position === 'DEF' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
-                          p.position === 'MID' || p.position === 'MED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
-                          'bg-brand-red/10 text-brand-red'
-                        }`}>
-                          {p.position === 'GK' ? 'ARQ' : p.position === 'MID' ? 'MED' : p.position}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
+      {dropdown}
     </div>
   )
 }

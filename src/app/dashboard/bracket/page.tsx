@@ -17,168 +17,194 @@ interface Team {
   code: string
 }
 
+/* ─── Stage definitions ───────────────────────────────────── */
 const STAGES = [
   {
-    key: 'round_of_32',
-    label: 'Ronda de 32',
-    short: 'R32',
-    slots: 16,
-    points: 2,
-    nextLabel: '16 equipos avanzan a Octavos',
+    key: 'round_of_32', label: 'Ronda de 32', short: 'R32', slots: 16, points: 2,
+    nextLabel: 'Los 16 ganadores pasan a Octavos',
     headerCls: 'bg-slate-600 text-white',
-    ringCls: 'ring-slate-400',
     accentCls: 'text-slate-600 dark:text-slate-400',
-    borderCls: 'border-slate-300 dark:border-slate-600',
-    gridCols: 'grid-cols-2 sm:grid-cols-4',
+    matchLabel: 'Llave',
   },
   {
-    key: 'round_of_16',
-    label: 'Octavos de Final',
-    short: 'R16',
-    slots: 8,
-    points: 3,
-    nextLabel: '8 equipos avanzan a Cuartos',
+    key: 'round_of_16', label: 'Octavos de Final', short: 'R16', slots: 8, points: 3,
+    nextLabel: 'Los 8 ganadores pasan a Cuartos',
     headerCls: 'bg-blue-600 text-white',
-    ringCls: 'ring-blue-400',
     accentCls: 'text-blue-600 dark:text-blue-400',
-    borderCls: 'border-blue-300 dark:border-blue-600',
-    gridCols: 'grid-cols-2 sm:grid-cols-4',
+    matchLabel: 'Encuentro',
   },
   {
-    key: 'quarterfinal',
-    label: 'Cuartos de Final',
-    short: 'QF',
-    slots: 4,
-    points: 5,
-    nextLabel: '4 equipos avanzan a Semis',
+    key: 'quarterfinal', label: 'Cuartos de Final', short: 'QF', slots: 4, points: 5,
+    nextLabel: 'Los 4 ganadores pasan a Semis',
     headerCls: 'bg-violet-600 text-white',
-    ringCls: 'ring-violet-500',
     accentCls: 'text-violet-600 dark:text-violet-400',
-    borderCls: 'border-violet-300 dark:border-violet-600',
-    gridCols: 'grid-cols-2 sm:grid-cols-4',
+    matchLabel: 'Cuarto',
   },
   {
-    key: 'semifinal',
-    label: 'Semifinales',
-    short: 'SF',
-    slots: 2,
-    points: 8,
-    nextLabel: '2 finalistas',
+    key: 'semifinal', label: 'Semifinales', short: 'SF', slots: 2, points: 8,
+    nextLabel: 'Los 2 finalistas',
     headerCls: 'bg-orange-500 text-white',
-    ringCls: 'ring-orange-400',
     accentCls: 'text-orange-600 dark:text-orange-400',
-    borderCls: 'border-orange-300 dark:border-orange-600',
-    gridCols: 'grid-cols-1 sm:grid-cols-2',
+    matchLabel: 'Semi',
   },
   {
-    key: 'final',
-    label: 'Gran Final',
-    short: 'F',
-    slots: 1,
-    points: 15,
+    key: 'final', label: 'Gran Final', short: 'F', slots: 1, points: 15,
     nextLabel: undefined,
     headerCls: 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white',
-    ringCls: 'ring-yellow-400',
     accentCls: 'text-yellow-600 dark:text-yellow-400',
-    borderCls: 'border-yellow-400 dark:border-yellow-500',
-    gridCols: 'grid-cols-1',
+    matchLabel: 'Final',
   },
 ]
 
-/* ─── Slot card ─────────────────────────────────────────── */
-function SlotCard({
-  num,
-  selectedTeam,
-  availableTeams,
+/* ─── Team select dropdown ────────────────────────────────── */
+function TeamSelect({
+  slotNum,
+  selectedId,
+  available,
   onSelect,
   locked,
-  ringCls,
-  isChampion = false,
+  side,
 }: {
-  num: number
-  selectedTeam: Team | undefined
-  availableTeams: Team[]
+  slotNum: number
+  selectedId: string
+  available: Team[]
   onSelect: (id: string) => void
   locked: boolean
-  ringCls: string
-  isChampion?: boolean
+  side: 'left' | 'right' | 'center'
 }) {
-  const hasSel = !!selectedTeam
+  const team = available.find((t) => t.id === selectedId) ?? null
+  // Also search in full list for locked display
+  const hasSel = !!selectedId
+
+  const alignClass =
+    side === 'left' ? 'text-right' : side === 'right' ? 'text-left' : 'text-center'
+
   return (
-    <div
-      className={[
-        'relative rounded-xl border bg-card shadow-sm transition-all duration-200',
-        hasSel ? `ring-2 ${ringCls}` : '',
-        isChampion ? 'ring-2 ring-yellow-400 shadow-yellow-200 dark:shadow-yellow-900' : '',
-      ].join(' ')}
-    >
-      {/* Slot number */}
-      <span className="absolute -top-2.5 -left-2.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground ring-1 ring-border">
-        {num}
+    <div className={`flex flex-col gap-1 ${side === 'left' ? 'items-end' : side === 'right' ? 'items-start' : 'items-center'}`}>
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Clasificado {slotNum}
       </span>
 
-      <div className={isChampion ? 'p-4' : 'p-2.5'}>
-        {locked ? (
-          <div className="flex items-center gap-2">
-            {hasSel ? (
-              <>
-                <TeamFlag code={selectedTeam!.flag_emoji} label={selectedTeam!.name_es} />
-                <span className="flex-1 truncate text-xs font-semibold">{selectedTeam!.name_es}</span>
-                {isChampion && <Trophy className="h-4 w-4 shrink-0 text-yellow-500" />}
-              </>
-            ) : (
-              <span className="text-xs text-muted-foreground italic">Sin selección</span>
-            )}
-            <Lock className="h-3 w-3 shrink-0 text-muted-foreground/40" />
-          </div>
-        ) : (
-          <>
-            <select
-              value={selectedTeam?.id ?? ''}
-              onChange={(e) => onSelect(e.target.value)}
-              disabled={availableTeams.length === 0}
-              className={[
-                'w-full rounded-lg border bg-background px-2 text-xs',
-                'focus:outline-none focus:ring-2 focus:ring-offset-0',
-                'disabled:opacity-40 disabled:cursor-not-allowed',
-                isChampion ? 'h-10 text-sm' : 'h-8',
-              ].join(' ')}
-            >
-              <option value="">
-                {availableTeams.length === 0 ? '← Elegí la ronda anterior' : 'Elegir equipo...'}
+      {locked ? (
+        <div className={`flex items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2 ${side === 'left' ? 'flex-row-reverse' : ''}`}>
+          {hasSel && team ? (
+            <>
+              <TeamFlag code={team.flag_emoji} label={team.name_es} />
+              <span className="text-sm font-bold">{team.name_es}</span>
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground italic">Sin selección</span>
+          )}
+        </div>
+      ) : (
+        <>
+          <select
+            value={selectedId}
+            onChange={(e) => onSelect(e.target.value)}
+            disabled={available.length === 0}
+            className={[
+              'h-10 min-w-[140px] max-w-[200px] rounded-xl border bg-background px-3 text-sm',
+              'focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-blue-400',
+              'disabled:opacity-40 disabled:cursor-not-allowed',
+              hasSel ? 'font-semibold' : '',
+            ].join(' ')}
+          >
+            <option value="">
+              {available.length === 0 ? '← Ronda anterior' : 'Elegir equipo...'}
+            </option>
+            {available.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.flag_emoji} {t.name_es}
               </option>
-              {availableTeams.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.flag_emoji} {t.name_es}
-                </option>
-              ))}
-            </select>
+            ))}
+          </select>
 
-            {hasSel && (
-              <div className="mt-2 flex items-center gap-1.5">
-                <TeamFlag code={selectedTeam!.flag_emoji} label={selectedTeam!.name_es} />
-                <span className={['truncate font-semibold text-muted-foreground', isChampion ? 'text-sm' : 'text-[10px]'].join(' ')}>
-                  {selectedTeam!.name_es}
-                </span>
-                {isChampion && <Trophy className="h-3.5 w-3.5 shrink-0 text-yellow-500" />}
-              </div>
-            )}
-          </>
-        )}
-      </div>
+          {hasSel && team && (
+            <div className={`flex items-center gap-1.5 ${side === 'left' ? 'flex-row-reverse' : ''}`}>
+              <TeamFlag code={team.flag_emoji} label={team.name_es} />
+              <span className="text-xs font-semibold text-muted-foreground">{team.name_es}</span>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }
 
-/* ─── Funnel connector ──────────────────────────────────── */
-function FunnelArrow({ label, count, accentCls }: { label: string; count: number; accentCls: string }) {
+/* ─── Match card (pair of slots with VS) ─────────────────── */
+function MatchCard({
+  matchNum,
+  matchLabel,
+  leftSlot,
+  rightSlot,
+  leftId,
+  rightId,
+  availableForLeft,
+  availableForRight,
+  onSelectLeft,
+  onSelectRight,
+  locked,
+}: {
+  matchNum: number
+  matchLabel: string
+  leftSlot: number
+  rightSlot: number
+  leftId: string
+  rightId: string
+  availableForLeft: Team[]
+  availableForRight: Team[]
+  onSelectLeft: (id: string) => void
+  onSelectRight: (id: string) => void
+  locked: boolean
+}) {
+  const bothSelected = !!leftId && !!rightId
   return (
-    <div className="flex flex-col items-center gap-1 py-2">
-      <ChevronDown className={`h-5 w-5 ${accentCls}`} />
-      <span className={`text-[11px] font-semibold ${accentCls}`}>
-        {label}
-      </span>
-      <div className={`h-px w-16 ${accentCls.replace('text-', 'bg-').replace('dark:text-', 'dark:bg-')} opacity-30`} />
+    <div className={`rounded-2xl border bg-card shadow-sm transition-all ${bothSelected ? 'ring-1 ring-green-300 dark:ring-green-800' : ''}`}>
+      {/* Match header */}
+      <div className="flex items-center justify-between rounded-t-2xl border-b bg-muted/30 px-4 py-2">
+        <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          {matchLabel} {matchNum}
+        </span>
+        {bothSelected && (
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600">
+            <CheckCircle2 className="h-3 w-3" /> Completo
+          </span>
+        )}
+      </div>
+
+      {/* Teams row */}
+      <div className="flex items-center gap-3 px-4 py-4">
+        {/* Left team */}
+        <div className="flex-1">
+          <TeamSelect
+            slotNum={leftSlot}
+            selectedId={leftId}
+            available={availableForLeft}
+            onSelect={onSelectLeft}
+            locked={locked}
+            side="left"
+          />
+        </div>
+
+        {/* VS separator */}
+        <div className="flex shrink-0 flex-col items-center gap-1">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-muted bg-card text-[11px] font-extrabold text-muted-foreground">
+            VS
+          </div>
+        </div>
+
+        {/* Right team */}
+        <div className="flex-1">
+          <TeamSelect
+            slotNum={rightSlot}
+            selectedId={rightId}
+            available={availableForRight}
+            onSelect={onSelectRight}
+            locked={locked}
+            side="right"
+          />
+        </div>
+      </div>
     </div>
   )
 }
@@ -198,11 +224,9 @@ export default function BracketPage() {
     const t = getAccessToken()
     setToken(t)
     const supabase = createAnonClient()
-
     supabase.from('teams').select('id, name_es, flag_emoji, code').order('name_es').then(({ data }) => {
       setTeams(data ?? [])
     })
-
     if (t) {
       const authed = createAuthedClient(t)
       getCurrentUserId(t).then((uid) => {
@@ -231,13 +255,30 @@ export default function BracketPage() {
 
   const teamMap = new Map(teams.map((t) => [t.id, t]))
 
-  function getAvailableTeams(stageIndex: number): Team[] {
+  /** Base pool for a stage: teams that advanced from the previous stage */
+  function getStagePool(stageIndex: number): Team[] {
     if (stageIndex === 0) return teams
     const prev = STAGES[stageIndex - 1]
     const ids = Array.from({ length: prev.slots }, (_, i) => `${prev.key}-${i + 1}`)
       .map((sk) => predictions[`${prev.key}:${sk}`])
       .filter(Boolean)
     return Array.from(new Set(ids)).map((id) => teamMap.get(id)).filter((t): t is Team => !!t)
+  }
+
+  /**
+   * Available teams for a specific slot = stage pool MINUS teams already
+   * selected in OTHER slots of the same stage (prevents duplicates).
+   */
+  function getAvailableForSlot(stageKey: string, slotKey: string, stageIndex: number): Team[] {
+    const pool = getStagePool(stageIndex)
+    const stage = STAGES[stageIndex]
+    const usedInOtherSlots = new Set(
+      Array.from({ length: stage.slots }, (_, i) => `${stage.key}-${i + 1}`)
+        .filter((sk) => sk !== slotKey)
+        .map((sk) => predictions[`${stage.key}:${sk}`])
+        .filter(Boolean),
+    )
+    return pool.filter((t) => !usedInOtherSlots.has(t.id))
   }
 
   async function handleSelect(stage: string, slotKey: string, teamId: string) {
@@ -251,6 +292,7 @@ export default function BracketPage() {
       { stage, slot_key: slotKey, team_id: teamId || null },
     ]
 
+    // Cascade-clear downstream stages if team changed
     if (oldTeamId && oldTeamId !== teamId) {
       const stageIdx = STAGES.findIndex((s) => s.key === stage)
       for (let i = stageIdx + 1; i < STAGES.length; i++) {
@@ -302,10 +344,10 @@ export default function BracketPage() {
 
   if (loading) {
     return (
-      <div className="space-y-4 max-w-4xl mx-auto">
+      <div className="mx-auto max-w-4xl space-y-4">
         <div className="h-28 animate-pulse rounded-2xl bg-muted/60" />
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="h-40 animate-pulse rounded-xl bg-muted/40" style={{ opacity: 1 - i * 0.15 }} />
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-48 animate-pulse rounded-xl bg-muted/40" style={{ opacity: 1 - i * 0.2 }} />
         ))}
       </div>
     )
@@ -326,7 +368,7 @@ export default function BracketPage() {
               <p className="text-sm text-muted-foreground">
                 {isLocked
                   ? '🔒 Tu predicción está confirmada'
-                  : 'Predecí quién avanza en cada ronda · Empezá por arriba'}
+                  : 'Completá las llaves de cada ronda · Empezá por arriba'}
               </p>
             </div>
           </div>
@@ -367,7 +409,7 @@ export default function BracketPage() {
               <button
                 onClick={() => setConfirmLock(true)}
                 disabled={isSaving || filledSlots === 0}
-                className="flex shrink-0 items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-red/90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex shrink-0 items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save className="h-4 w-4" /> Guardar y bloquear
               </button>
@@ -402,13 +444,10 @@ export default function BracketPage() {
         </div>
       )}
 
-      {/* ── Points guide chips ── */}
+      {/* ── Points guide ── */}
       <div className="flex flex-wrap justify-center gap-2">
         {STAGES.map((s) => (
-          <div
-            key={s.key}
-            className="flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs shadow-sm"
-          >
+          <div key={s.key} className="flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs shadow-sm">
             <span className={`h-2 w-2 rounded-full ${s.headerCls.split(' ')[0]}`} />
             <span className="font-semibold">{s.label}</span>
             <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
@@ -418,111 +457,176 @@ export default function BracketPage() {
         ))}
       </div>
 
-      {/* ── Stage funnel ── */}
-      <div className="space-y-0">
+      {/* ── Duplicate warning note ── */}
+      {!isLocked && (
+        <div className="flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-950/20 dark:text-blue-300">
+          <span className="mt-0.5 shrink-0">ℹ️</span>
+          <span>
+            <strong>Sin repeticiones:</strong> Un equipo solo puede aparecer una vez por ronda.
+            Si ya elegiste un equipo en otra llave, no aparece en las restantes.
+            Empezá por la <strong>Ronda de 32</strong>.
+          </span>
+        </div>
+      )}
+
+      {/* ── Stages ── */}
+      <div className="space-y-6">
         {STAGES.map((stage, stageIdx) => {
+          const pool = getStagePool(stageIdx)
           const slotKeys = Array.from({ length: stage.slots }, (_, i) => `${stage.key}-${i + 1}`)
-          const available = getAvailableTeams(stageIdx)
           const filled = slotKeys.filter((sk) => predictions[`${stage.key}:${sk}`]).length
           const isLastStage = stageIdx === STAGES.length - 1
 
-          return (
-            <div key={stage.key}>
-              {/* Stage card */}
-              <div className={`rounded-2xl border overflow-hidden shadow-sm ${isLastStage ? 'ring-2 ring-yellow-400/60' : ''}`}>
+          // For the final (1 slot), show a special champion picker
+          if (isLastStage) {
+            const slotKey = `${stage.key}-1`
+            const selectedId = predictions[`${stage.key}:${slotKey}`] ?? ''
+            const available = getAvailableForSlot(stage.key, slotKey, stageIdx)
 
+            return (
+              <div key={stage.key}>
                 {/* Stage header */}
-                <div className={`${stage.headerCls} px-4 py-3 flex items-center justify-between`}>
+                <div className={`rounded-t-2xl px-4 py-3 flex items-center justify-between ${stage.headerCls}`}>
                   <div className="flex items-center gap-2">
-                    {isLastStage && <Trophy className="h-5 w-5 shrink-0" />}
+                    <Trophy className="h-5 w-5 shrink-0" />
                     <span className="font-bold tracking-wide">{stage.label}</span>
                     <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold">
-                      {stage.points} pts c/u
+                      {stage.points} pts
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[12px] font-semibold">
-                    <span className={`rounded-full px-2 py-0.5 ${filled === stage.slots ? 'bg-white/30' : 'bg-white/10'}`}>
-                      {filled}/{stage.slots}
-                    </span>
-                    {filled === stage.slots && <CheckCircle2 className="h-4 w-4" />}
-                  </div>
+                  <span className={`text-[12px] font-semibold ${filled === 1 ? 'text-white' : 'text-white/60'}`}>
+                    {filled === 1 ? '✓ Elegido' : 'Sin elegir'}
+                  </span>
                 </div>
 
-                {/* Hint for cascade */}
-                {stageIdx > 0 && !isLocked && available.length === 0 && (
-                  <div className={`border-b px-4 py-2 text-[11px] font-medium ${stage.accentCls} bg-muted/30`}>
-                    ← Primero completá la ronda anterior para habilitar estas selecciones
-                  </div>
-                )}
-                {stageIdx > 0 && available.length > 0 && !isLocked && (
-                  <div className="border-b bg-muted/20 px-4 py-1.5 text-[11px] text-muted-foreground">
-                    {available.length} equipo{available.length !== 1 ? 's' : ''} disponible{available.length !== 1 ? 's' : ''} para esta ronda
-                  </div>
-                )}
+                {/* Champion card */}
+                <div className={`rounded-b-2xl border border-t-0 p-6 text-center shadow-sm ${
+                  champion
+                    ? 'bg-gradient-to-b from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/20'
+                    : 'bg-card'
+                }`}>
+                  <Trophy className={`mx-auto mb-3 h-10 w-10 ${champion ? 'text-yellow-500' : 'text-muted-foreground/30'}`} />
+                  <p className={`mb-4 font-bebas text-xl tracking-widest ${champion ? 'text-yellow-600 dark:text-yellow-400' : 'text-muted-foreground'}`}>
+                    ¿Quién será el Campeón del Mundo?
+                  </p>
 
-                {/* Slots grid */}
-                <div className={`bg-card p-4 ${isLastStage ? 'flex justify-center' : ''}`}>
-                  <div className={`grid gap-3 w-full ${stage.gridCols} ${isLastStage ? 'max-w-xs' : ''}`}>
-                    {slotKeys.map((slotKey, idx) => {
-                      const key = `${stage.key}:${slotKey}`
-                      const selectedTeam = teamMap.get(predictions[key] ?? '')
-                      const isChampion = isLastStage && idx === 0
-                      return (
-                        <SlotCard
-                          key={slotKey}
-                          num={idx + 1}
-                          selectedTeam={selectedTeam}
-                          availableTeams={available}
-                          onSelect={(id) => handleSelect(stage.key, slotKey, id)}
-                          locked={isLocked}
-                          ringCls={stage.ringCls}
-                          isChampion={isChampion}
-                        />
-                      )
-                    })}
-                  </div>
+                  {isLocked ? (
+                    <div className="flex flex-col items-center gap-2">
+                      {champion ? (
+                        <>
+                          <TeamFlag code={champion.flag_emoji} label={champion.name_es} className="h-10 w-14" />
+                          <p className="text-xl font-extrabold">{champion.name_es}</p>
+                          <p className="text-sm text-muted-foreground">{champion.code} · 15 pts si acertás</p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">No elegiste campeón</p>
+                      )}
+                      <div className="mt-2 flex items-center gap-1.5 rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">
+                        <Lock className="h-3 w-3" /> Bloqueado
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mx-auto max-w-xs space-y-3">
+                      <select
+                        value={selectedId}
+                        onChange={(e) => handleSelect(stage.key, slotKey, e.target.value)}
+                        disabled={available.length === 0}
+                        className="h-12 w-full rounded-xl border-2 border-yellow-400 bg-background px-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-400/40 disabled:opacity-40"
+                      >
+                        <option value="">
+                          {available.length === 0 ? '← Completá las Semis primero' : '🏆 Elegir campeón...'}
+                        </option>
+                        {available.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.flag_emoji} {t.name_es}
+                          </option>
+                        ))}
+                      </select>
+                      {champion && (
+                        <div className="flex flex-col items-center gap-1">
+                          <TeamFlag code={champion.flag_emoji} label={champion.name_es} className="h-8 w-12" />
+                          <p className="font-bold">{champion.name_es}</p>
+                          <p className="text-xs text-muted-foreground">15 pts si acertás</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
+            )
+          }
 
-              {/* Funnel arrow between stages */}
-              {stage.nextLabel && (
-                <FunnelArrow
-                  label={stage.nextLabel}
-                  count={stage.slots}
-                  accentCls={STAGES[stageIdx + 1]?.accentCls ?? 'text-muted-foreground'}
-                />
+          // For all other stages: show match cards (pairs of slots)
+          // Pair slots: [1,2], [3,4], [5,6], ...
+          const pairs: [string, string][] = []
+          for (let i = 0; i < slotKeys.length; i += 2) {
+            pairs.push([slotKeys[i], slotKeys[i + 1]])
+          }
+
+          return (
+            <div key={stage.key}>
+              {/* Stage header */}
+              <div className={`rounded-t-2xl px-4 py-3 flex items-center justify-between ${stage.headerCls}`}>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold tracking-wide">{stage.label}</span>
+                  <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-semibold">
+                    {stage.points} pts c/u
+                  </span>
+                </div>
+                <span className="flex items-center gap-1.5 text-[12px] font-semibold">
+                  <span className={`rounded-full px-2 py-0.5 ${filled === stage.slots ? 'bg-white/30' : 'bg-white/10'}`}>
+                    {filled}/{stage.slots}
+                  </span>
+                  {filled === stage.slots && <CheckCircle2 className="h-4 w-4" />}
+                </span>
+              </div>
+
+              {/* Hint if no pool yet */}
+              {stageIdx > 0 && pool.length === 0 && (
+                <div className="border-x border-b bg-muted/20 px-4 py-2 text-[11px] font-medium text-muted-foreground">
+                  ← Completá la ronda anterior para habilitar esta sección
+                </div>
               )}
+
+              {/* Match cards grid */}
+              <div className="rounded-b-2xl border border-t-0 bg-muted/10 p-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {pairs.map(([leftKey, rightKey], pairIdx) => {
+                    const leftId = predictions[`${stage.key}:${leftKey}`] ?? ''
+                    const rightId = predictions[`${stage.key}:${rightKey}`] ?? ''
+                    const leftNum = pairIdx * 2 + 1
+                    const rightNum = pairIdx * 2 + 2
+
+                    return (
+                      <MatchCard
+                        key={`${leftKey}-${rightKey}`}
+                        matchNum={pairIdx + 1}
+                        matchLabel={stage.matchLabel}
+                        leftSlot={leftNum}
+                        rightSlot={rightNum}
+                        leftId={leftId}
+                        rightId={rightId}
+                        availableForLeft={getAvailableForSlot(stage.key, leftKey, stageIdx)}
+                        availableForRight={getAvailableForSlot(stage.key, rightKey, stageIdx)}
+                        onSelectLeft={(id) => handleSelect(stage.key, leftKey, id)}
+                        onSelectRight={(id) => handleSelect(stage.key, rightKey, id)}
+                        locked={isLocked}
+                      />
+                    )
+                  })}
+                </div>
+
+                {/* Advance note */}
+                {stage.nextLabel && (
+                  <div className="mt-3 flex items-center justify-center gap-2">
+                    <ChevronDown className={`h-4 w-4 ${stage.accentCls}`} />
+                    <span className={`text-[11px] font-semibold ${stage.accentCls}`}>{stage.nextLabel}</span>
+                  </div>
+                )}
+              </div>
             </div>
           )
         })}
-      </div>
-
-      {/* ── Champion showcase ── */}
-      <div className={`rounded-2xl border-2 p-6 text-center shadow-lg transition-all ${
-        champion
-          ? 'border-yellow-400 bg-gradient-to-b from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/20'
-          : 'border-muted bg-muted/20'
-      }`}>
-        <Trophy className={`mx-auto mb-3 h-12 w-12 ${champion ? 'text-yellow-500' : 'text-muted-foreground/30'}`} />
-        <h2 className={`font-bebas text-2xl tracking-widest ${champion ? 'text-yellow-600 dark:text-yellow-400' : 'text-muted-foreground'}`}>
-          Tu Campeón del Mundo
-        </h2>
-        {champion ? (
-          <div className="mt-4 flex flex-col items-center gap-2">
-            <TeamFlag code={champion.flag_emoji} label={champion.name_es} className="h-10 w-14" />
-            <p className="text-xl font-extrabold">{champion.name_es}</p>
-            <p className="text-sm text-muted-foreground">{champion.code} · 15 pts si acertás</p>
-            {isLocked && (
-              <div className="mt-2 flex items-center gap-1.5 rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">
-                <Lock className="h-3 w-3" /> Predicción bloqueada
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Completá la Gran Final para ver tu campeón
-          </p>
-        )}
       </div>
 
       {/* ── Points explanation ── */}
