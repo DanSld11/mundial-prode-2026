@@ -12,7 +12,6 @@ import {
   CalendarDays,
   Target,
   Table2,
-  Swords,
   LogOut,
   Menu,
   Shield,
@@ -33,7 +32,6 @@ const navItems = [
   { href: '/dashboard/fixture', label: 'Fixture', icon: CalendarDays },
   { href: '/dashboard/predicciones', label: 'Predicciones', icon: Target },
   { href: '/dashboard/pronosticos', label: 'Pronósticos', icon: BarChart3 },
-  { href: '/dashboard/bracket', label: 'Eliminatorias', icon: Swords },
   { href: '/dashboard/pollas', label: 'Pollas', icon: Trophy },
   { href: '/dashboard/tabla', label: 'Tabla', icon: Table2 },
 ]
