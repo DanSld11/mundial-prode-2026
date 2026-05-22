@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null
@@ -9,6 +10,14 @@ export function getAccessToken(): string | null {
 let _browserInstance: ReturnType<typeof createBrowserClient> | null = null
 
 export function createAnonClient() {
+  if (typeof window === 'undefined') {
+    return createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    )
+  }
+
   if (!_browserInstance) {
     _browserInstance = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

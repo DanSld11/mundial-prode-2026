@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { getAccessToken, createAuthedClient } from '@/lib/auth-client'
+import { createAnonClient } from '@/lib/auth-client'
 import { Bell, BellOff, Lock, Medal, Target, Trophy, TrendingUp, UserRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,25 +27,15 @@ export default function PerfilPage() {
   const [savingPassword, setSavingPassword] = useState(false)
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
-  const [token, setToken] = useState<string | null>(null)
-  const [tokenChecked, setTokenChecked] = useState(false)
   const [stats, setStats] = useState<ProfileStats | null>(null)
   const [allPredictions, setAllPredictions] = useState<any[]>([])
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>('default')
 
-  const supabase = useMemo(() => token ? createAuthedClient(token) : createAuthedClient(''), [token])
-
-  useEffect(() => {
-    setToken(getAccessToken() ?? null)
-    setTokenChecked(true)
-  }, [])
-
   useEffect(() => {
     async function loadProfile() {
-      if (!tokenChecked) return
-      if (!token) { setLoading(false); return }
+      const supabase = createAnonClient()
 
-      const { data: userData } = await supabase.auth.getUser(token)
+      const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) { setLoading(false); return }
 
       const uid = userData.user.id
@@ -84,7 +74,7 @@ export default function PerfilPage() {
     } else {
       setNotifPermission('unsupported')
     }
-  }, [supabase, token, tokenChecked])
+  }, [])
 
   async function requestNotifications() {
     if (typeof window === 'undefined' || !('Notification' in window)) return
@@ -105,6 +95,7 @@ export default function PerfilPage() {
       return
     }
     setSavingProfile(true)
+    const supabase = createAnonClient()
     const { error } = await supabase
       .from('profiles')
       .update({ username: username.trim(), updated_at: new Date().toISOString() })
@@ -119,6 +110,7 @@ export default function PerfilPage() {
     if (password.length < 8) { toast.error('La contraseña debe tener al menos 8 caracteres.'); return }
     if (password !== passwordConfirm) { toast.error('Las contraseñas no coinciden.'); return }
     setSavingPassword(true)
+    const supabase = createAnonClient()
     const { error } = await supabase.auth.updateUser({ password })
     if (error) { toast.error(error.message) }
     else { toast.success('Contraseña actualizada'); setPassword(''); setPasswordConfirm('') }
@@ -135,7 +127,7 @@ export default function PerfilPage() {
     </div>
   )
 
-  if (!token || !userId) return (
+  if (!userId) return (
     <div className="rounded-xl border bg-card p-8 text-center">
       <h1 className="text-xl font-bold">Sesión no disponible</h1>
       <p className="mt-2 text-sm text-muted-foreground">Vuelve a iniciar sesión para editar tu perfil.</p>
