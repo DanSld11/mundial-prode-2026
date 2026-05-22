@@ -1,16 +1,25 @@
 import { createClient } from '@supabase/supabase-js'
 
 export function createPublicServerClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !anonKey) {
+    throw new Error('Supabase env vars are not configured')
+  }
+
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    url,
+    anonKey,
   )
 }
 
 // Usar solo en Server Actions / Route Handlers de admin
 export function createServiceRoleClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL no está configurada')
+  }
   if (!serviceKey) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY no está configurada')
   }

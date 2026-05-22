@@ -10,9 +10,21 @@ import { createBrowserClient } from '@supabase/ssr'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+function hasSupabaseConfig() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+}
+
+function missingSupabaseConfigError() {
+  return new Error('Supabase env vars are not configured')
+}
+
 // ── Client-side singleton (usar en componentes con 'use client') ──
 let _browserInstance: ReturnType<typeof createBrowserClient> | null = null
 export function createClient() {
+  if (!hasSupabaseConfig()) {
+    throw missingSupabaseConfigError()
+  }
+
   if (typeof window === 'undefined') {
     // Should not be called server-side; return a fresh one for safety
     return createBrowserClient(
@@ -31,6 +43,10 @@ export function createClient() {
 
 // ── Server-side (usar en Server Components y API routes) ──
 export async function createServerSupabaseClient() {
+  if (!hasSupabaseConfig()) {
+    throw missingSupabaseConfigError()
+  }
+
   const cookieStore = await cookies()
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
