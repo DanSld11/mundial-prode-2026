@@ -12,10 +12,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login?error=Completá+todos+los+campos', request.url))
   }
 
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !anonKey) {
+    return NextResponse.redirect(new URL('/auth/login?error=Supabase+no+configurado', request.url))
+  }
+
   const response = NextResponse.redirect(new URL(nextPath.startsWith('/') ? nextPath : '/dashboard', request.url))
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    anonKey,
     {
       cookies: {
         getAll() {
