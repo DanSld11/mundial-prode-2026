@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, Crown, Medal, Shield, Target, Trophy, Users } from 'lucide-react'
+import { ArrowRight, CalendarDays, Crown, Medal, Shield, Target, Trophy, Users, Zap } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TeamFlag } from '@/components/team-flag'
 import { formatPeruShortDateTime } from '@/lib/peru-time'
 import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
+import { ActivityFeed } from '@/components/activity-feed'
 
 const quickLinks = [
   { href: '/dashboard/grupos', title: 'Grupos', description: 'Ver las 48 selecciones', icon: Users },
@@ -165,6 +166,15 @@ export default function DashboardPage() {
           <ArrowRight className="h-5 w-5 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-brand-red" />
         </div>
       </Link>
+
+      {/* Activity feed */}
+      <section>
+        <div className="mb-3 flex items-center gap-2">
+          <Zap className="h-4 w-4 text-brand-red" />
+          <h2 className="text-sm font-semibold">Actividad reciente</h2>
+        </div>
+        <ActivityFeed />
+      </section>
 
       <section className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <Card className="shadow-sm">

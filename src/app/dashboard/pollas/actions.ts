@@ -222,3 +222,76 @@ export async function joinPoolAction(inviteCode: string) {
   revalidatePath('/dashboard/pollas')
   return { success: true, poolId: pool.id }
 }
+
+/* ── Enviar mensaje al chat ── */
+export async function sendMessageAction(poolId: string, message: string) {
+  const uid = await getAuthUserId()
+  if (!uid) return { error: 'No autenticado' }
+
+  const trimmed = message.trim()
+  if (!trimmed || trimmed.length > 500) return { error: 'Mensaje inválido' }
+
+  const db = createServiceRoleClient()
+
+  const { data: membership } = await db
+    .from('pool_members')
+    .select('user_id')
+    .eq('pool_id', poolId)
+    .eq('user_id', uid)
+    .maybeSingle()
+
+  if (!membership) return { error: 'No sos miembro de esta polla' }
+
+  const { error } = await db.from('pool_messages').insert({
+    pool_id: poolId,
+    user_id: uid,
+    message: trimmed,
+  })
+
+  if (error) return { error: error.message }
+  return { success: true }
+}
+
+/* ── Obtener predicciones de un miembro (solo partidos finalizados) ── */
+export async function getMemberPredictionsAction(poolId: string, targetUserId: string) {
+  const uid = await getAuthUserId()
+  if (!uid) return null
+
+  const db = createServiceRoleClient()
+
+  // Verificar que el solicitante es miembro de la polla
+  const { data: membership } = await db
+    .from('pool_members')
+    .select('user_id')
+    .eq('pool_id', poolId)
+    .eq('user_id', uid)
+    .maybeSingle()
+
+  if (!membership) return null
+
+  // Verificar que el objetivo también es miembro
+  const { data: targetMembership } = await db
+    .from('pool_members')
+    .select('user_id')
+    .eq('pool_id', poolId)
+    .eq('user_id', targetUserId)
+    .maybeSingle()
+
+  if (!targetMembership) return null
+
+  const { data } = await db
+    .from('predictions')
+    .select(`
+      id, predicted_home_score, predicted_away_score, predicted_outcome,
+      points_earned, is_exact_score, outcome_points, exact_score_points,
+      match:matches(
+        id, home_score, away_score, status, match_date,
+        home_team:teams!matches_home_team_id_fkey(name_es, code, flag_emoji),
+        away_team:teams!matches_away_team_id_fkey(name_es, code, flag_emoji)
+      )
+    `)
+    .eq('user_id', targetUserId)
+    .order('created_at', { ascending: false })
+
+  return (data ?? []).filter((p: any) => p.match?.status === 'finished')
+}
