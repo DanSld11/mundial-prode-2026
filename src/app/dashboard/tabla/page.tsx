@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Table2, Medal, Wifi } from 'lucide-react'
+import { Table2, Medal, Wifi, Info } from 'lucide-react'
 import { createAnonClient } from '@/lib/auth-client'
 import { cacheGet, cacheSet } from '@/lib/local-cache'
 
@@ -98,15 +98,27 @@ export default function TablaPage() {
           <h3 className="font-semibold text-muted-foreground">Aún no hay jugadores</h3>
         </div>
       ) : (
-        <Card className="mx-auto max-w-4xl overflow-hidden shadow-sm">
+        <div className="mx-auto max-w-4xl space-y-3">
+          {/* Breakdown info */}
+          <div className="flex items-start gap-2 rounded-xl border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+            <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+            <span>
+              La columna <strong>Partidos</strong> suma los puntos de todos los partidos del grupo.
+              {' '}<strong>Grupos</strong> y <strong>Especiales</strong> se activarán cuando se puntúen los pronósticos del torneo.
+            </span>
+          </div>
+
+        <Card className="overflow-hidden shadow-sm">
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">Pos</TableHead>
+                  <TableHead className="w-14">Pos</TableHead>
                   <TableHead>Jugador</TableHead>
-                  <TableHead className="text-center">Pts</TableHead>
-                  <TableHead className="text-center hidden sm:table-cell">Aciertos</TableHead>
+                  <TableHead className="text-center">Total</TableHead>
+                  <TableHead className="text-center hidden md:table-cell">Partidos</TableHead>
+                  <TableHead className="text-center hidden md:table-cell">Grupos</TableHead>
+                  <TableHead className="text-center hidden md:table-cell">Especiales</TableHead>
                   <TableHead className="text-center hidden sm:table-cell">Exactos</TableHead>
                 </TableRow>
               </TableHeader>
@@ -128,8 +140,13 @@ export default function TablaPage() {
                         <div className="w-7 h-7 rounded-full bg-brand-red flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
                           {e.username?.charAt(0).toUpperCase()}
                         </div>
-                        <span className="font-semibold text-sm">{e.username}</span>
-                        {idx === 0 && <span className="ml-1 text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide">líder</span>}
+                        <div>
+                          <span className="font-semibold text-sm">{e.username}</span>
+                          {idx === 0 && <span className="ml-1 text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide">líder</span>}
+                          <p className="text-[10px] text-muted-foreground sm:hidden">
+                            {e.predictions_correct} aciertos · {e.exact_scores} exactos
+                          </p>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -140,7 +157,9 @@ export default function TablaPage() {
                         'bg-muted text-muted-foreground'
                       }`}>{e.total_points}</span>
                     </TableCell>
-                    <TableCell className="text-center hidden sm:table-cell tabular-nums text-sm">{e.predictions_correct}</TableCell>
+                    <TableCell className="text-center hidden md:table-cell tabular-nums text-sm font-medium">{e.total_points}</TableCell>
+                    <TableCell className="text-center hidden md:table-cell text-xs text-muted-foreground">—</TableCell>
+                    <TableCell className="text-center hidden md:table-cell text-xs text-muted-foreground">—</TableCell>
                     <TableCell className="text-center hidden sm:table-cell tabular-nums text-sm">{e.exact_scores}</TableCell>
                   </TableRow>
                 ))}
@@ -148,6 +167,7 @@ export default function TablaPage() {
             </Table>
           </CardContent>
         </Card>
+        </div>
       )}
     </div>
   )

@@ -1,8 +1,9 @@
 import { getPoolDetail } from '../actions'
 import { notFound } from 'next/navigation'
-import { Trophy, Users, Gem, Crown, Medal, Award, ChevronLeft, Clock } from 'lucide-react'
+import { Trophy, Users, Gem, ChevronLeft, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { CopyCodeButton } from './CopyCodeButton'
+import { PoolTabs } from './PoolTabs'
 
 export const dynamic = 'force-dynamic'
 
@@ -109,76 +110,15 @@ export default async function PoolDetailPage({ params }: { params: { poolId: str
         </div>
       )}
 
-      {/* ── Leaderboard ── */}
-      <div>
-        <h2 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          Clasificación del grupo
-        </h2>
-
-        <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm divide-y divide-border">
-          {members.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">Aún no hay participantes.</p>
-          ) : (
-            members.map((member: any, idx: number) => {
-              const isMe       = member.user_id === myUserId
-              const points     = member.profile?.total_points ?? 0
-              const prizeCoins = idx === 0 ? prize1 : idx === 1 ? prize2 : idx === 2 ? prize3 : 0
-              const initial    = member.profile?.username?.charAt(0).toUpperCase() ?? '?'
-
-              return (
-                <div
-                  key={member.user_id}
-                  className={`flex items-center gap-3 px-4 py-3.5 transition-colors
-                    ${isMe ? 'bg-brand-red/5 dark:bg-brand-red/10' : 'hover:bg-muted/40'}`}
-                >
-                  {/* Posición / medalla */}
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center">
-                    {idx === 0 && <Crown  className="h-5 w-5 text-yellow-500" />}
-                    {idx === 1 && <Medal  className="h-5 w-5 text-slate-400"  />}
-                    {idx === 2 && <Award  className="h-5 w-5 text-amber-600"  />}
-                    {idx >= 3  && (
-                      <span className="text-sm font-bold text-muted-foreground tabular-nums">{idx + 1}</span>
-                    )}
-                  </div>
-
-                  {/* Avatar */}
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-red text-white text-xs font-bold">
-                    {initial}
-                  </div>
-
-                  {/* Nombre + premio estimado */}
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-semibold leading-tight truncate ${isMe ? 'text-brand-red' : 'text-foreground'}`}>
-                      {member.profile?.username ?? '—'}
-                      {isMe && (
-                        <span className="ml-1.5 text-[10px] font-normal text-muted-foreground">(vos)</span>
-                      )}
-                    </p>
-                    {prizeCoins > 0 && (
-                      <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                        <Gem className="h-2.5 w-2.5 text-yellow-500" />
-                        Premio estimado: <span className="font-semibold text-foreground">{prizeCoins.toLocaleString()} coins</span>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Puntos */}
-                  <div className="text-right shrink-0">
-                    <p className="text-base font-extrabold tabular-nums text-foreground">
-                      {points.toLocaleString()}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">pts</p>
-                  </div>
-                </div>
-              )
-            })
-          )}
-        </div>
-
-        <p className="mt-2 text-center text-[11px] text-muted-foreground">
-          Clasificación en tiempo real basada en los puntos globales del torneo
-        </p>
-      </div>
+      {/* ── Tabs: Clasificación + Chat ── */}
+      <PoolTabs
+        poolId={pool.id}
+        members={members}
+        myUserId={myUserId}
+        prize1={prize1}
+        prize2={prize2}
+        prize3={prize3}
+      />
 
       {/* Info box */}
       <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 flex items-start gap-2">

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { getAccessToken, createAuthedClient } from '@/lib/auth-client'
-import { Bell, BellOff, Lock, Medal, Target, Trophy, TrendingUp, UserRound } from 'lucide-react'
+import { Bell, BellOff, CheckCircle2, Clock, Lock, Medal, Share2, Target, Trophy, TrendingUp, UserRound, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -55,12 +55,20 @@ export default function PerfilPage() {
       const [profileRes, leaderboardRes, predsRes] = await Promise.all([
         supabase.from('profiles').select('username').eq('id', uid).single(),
         supabase.from('leaderboard').select('position, total_points, predictions_correct, exact_scores').eq('id', uid).single(),
-        supabase.from('predictions').select('id, points_earned, match:matches(status)').eq('user_id', uid),
+        supabase.from('predictions').select(`
+        id, points_earned, is_exact_score, predicted_home_score, predicted_away_score,
+        predicted_outcome, outcome_points, scorer_points, exact_score_points,
+        match:matches(
+          id, status, home_score, away_score, match_date,
+          home_team:teams!matches_home_team_id_fkey(name_es, code, flag_emoji),
+          away_team:teams!matches_away_team_id_fkey(name_es, code, flag_emoji)
+        )
+      `).eq('user_id', uid).order('created_at', { ascending: false }),
       ])
 
       setUsername(profileRes.data?.username ?? '')
 
-      const allPreds = predsRes.data ?? []
+      const allPreds = (predsRes.data ?? []) as any[]
       const pending = allPreds.filter((p: any) => p.match?.status !== 'finished').length
 
       setAllPredictions(allPreds)
@@ -148,6 +156,29 @@ export default function PerfilPage() {
     ? Math.round((stats.predictions_correct / stats.total_predictions) * 100)
     : 0
 
+  const finishedPreds = allPredictions.filter((p: any) => p.match?.status === 'finished')
+
+  function handleShare() {
+    const text = [
+      `🏆 Mi progreso en el Prode del Mundial 2026`,
+      ``,
+      `📊 Puesto #${stats?.position ?? '—'} en el ranking global`,
+      `⚽ ${stats?.total_points ?? 0} puntos totales`,
+      `✅ ${stats?.predictions_correct ?? 0} predicciones correctas`,
+      `🎯 ${stats?.exact_scores ?? 0} marcadores exactos`,
+      ``,
+      `¡Jugá el prode!`,
+    ].join('\n')
+
+    if (navigator.share) {
+      navigator.share({ title: 'Mi prode del Mundial 2026', text }).catch(() => null)
+    } else {
+      navigator.clipboard.writeText(text).then(() => {
+        toast.success('¡Copiado al portapapeles!')
+      })
+    }
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       {/* Header */}
@@ -156,7 +187,7 @@ export default function PerfilPage() {
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-red text-white shadow-sm text-2xl font-bold">
             {username ? username.charAt(0).toUpperCase() : '?'}
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="font-bebas text-3xl tracking-wide">{username || 'Mi Perfil'}</h1>
             <p className="text-sm text-muted-foreground">{email}</p>
             {stats?.position && (
@@ -165,6 +196,15 @@ export default function PerfilPage() {
               </p>
             )}
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleShare}
+            className="shrink-0 gap-1.5"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            Compartir
+          </Button>
         </div>
       </div>
 
@@ -274,6 +314,64 @@ export default function PerfilPage() {
                 Activar notificaciones
               </Button>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Prediction history */}
+      {finishedPreds.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Trophy className="h-4 w-4 text-brand-red" />
+              Historial de predicciones
+              <span className="ml-auto text-sm font-normal text-muted-foreground">
+                {finishedPreds.length} jugadas
+              </span>
+            </CardTitle>
+            <CardDescription>Tus predicciones en partidos ya finalizados.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y max-h-80 overflow-y-auto">
+              {finishedPreds.map((pred: any) => {
+                const home = pred.match?.home_team?.code ?? '?'
+                const away = pred.match?.away_team?.code ?? '?'
+                const actualHome = pred.match?.home_score
+                const actualAway = pred.match?.away_score
+                const isCorrect = pred.outcome_points > 0
+                const pts = pred.points_earned ?? 0
+
+                return (
+                  <div key={pred.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                    <div className="shrink-0 w-5 flex justify-center">
+                      {pred.is_exact_score ? (
+                        <span>🎯</span>
+                      ) : isCorrect ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-muted-foreground/40" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold tabular-nums">
+                        {home} {actualHome}–{actualAway} {away}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Tu pick: {pred.predicted_home_score ?? '?'}–{pred.predicted_away_score ?? '?'}
+                        {pred.is_exact_score && ' · Marcador exacto 🔥'}
+                      </p>
+                    </div>
+                    {pts > 0 ? (
+                      <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                        +{pts} pts
+                      </span>
+                    ) : (
+                      <span className="shrink-0 text-xs text-muted-foreground">0 pts</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </CardContent>
         </Card>
       )}
