@@ -18,6 +18,29 @@ function missingSupabaseConfigError() {
   return new Error('Supabase env vars are not configured')
 }
 
+function createMissingServerClient() {
+  const result = Promise.resolve({ data: null, error: missingSupabaseConfigError() })
+  const query = {
+    select: () => query,
+    eq: () => query,
+    single: () => result,
+    maybeSingle: () => result,
+    then: result.then.bind(result),
+    catch: result.catch.bind(result),
+    finally: result.finally.bind(result),
+  }
+
+  return {
+    auth: {
+      getUser: async () => ({ data: { user: null }, error: missingSupabaseConfigError() }),
+      signOut: async () => ({ error: null }),
+      signInWithPassword: async () => ({ data: { session: null, user: null }, error: missingSupabaseConfigError() }),
+      signUp: async () => ({ data: { session: null, user: null }, error: missingSupabaseConfigError() }),
+    },
+    from: () => query,
+  } as any
+}
+
 // ── Client-side singleton (usar en componentes con 'use client') ──
 let _browserInstance: ReturnType<typeof createBrowserClient> | null = null
 export function createClient() {
@@ -44,7 +67,7 @@ export function createClient() {
 // ── Server-side (usar en Server Components y API routes) ──
 export async function createServerSupabaseClient() {
   if (!hasSupabaseConfig()) {
-    throw missingSupabaseConfigError()
+    return createMissingServerClient()
   }
 
   const cookieStore = await cookies()
