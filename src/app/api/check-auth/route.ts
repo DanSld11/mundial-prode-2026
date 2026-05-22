@@ -1,22 +1,11 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export async function GET(request: NextRequest) {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll() {},
-      },
-    }
-  )
+export const dynamic = 'force-dynamic'
 
-  const { data: { user } } = await supabase.auth.getUser()
+export async function GET(request: NextRequest) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   const allCookies = request.cookies.getAll().map(c => ({
     name: c.name.substring(0, 30) + (c.name.length > 30 ? '...' : ''),
@@ -24,9 +13,7 @@ export async function GET(request: NextRequest) {
   }))
 
   return NextResponse.json({
-    authenticated: !!user,
-    userEmail: user?.email || null,
-    userId: user?.id || null,
+    supabaseConfigured: Boolean(url && anonKey),
     cookieCount: request.cookies.getAll().length,
     cookies: allCookies,
   })

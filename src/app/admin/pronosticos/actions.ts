@@ -1,16 +1,14 @@
 'use server'
 
-import { cookies } from 'next/headers'
+import { createServerSupabaseClient } from '@/lib/supabase'
 import { createServiceRoleClient } from '@/lib/server-client'
 import { revalidatePath } from 'next/cache'
 
 async function assertAdmin() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('sb-access-token')?.value
-  if (!token) return null
-  const db = createServiceRoleClient()
-  const { data: { user } } = await db.auth.getUser(token)
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
+  const db = createServiceRoleClient()
   const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single()
   return profile?.role === 'admin' ? user : null
 }

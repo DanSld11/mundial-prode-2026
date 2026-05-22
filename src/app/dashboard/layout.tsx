@@ -1,5 +1,7 @@
 import { Navbar } from '@/components/layout/navbar'
 
+export const dynamic = 'force-dynamic'
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-muted/25">

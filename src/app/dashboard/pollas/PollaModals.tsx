@@ -97,7 +97,7 @@ export function HowItWorksCard() {
             <p className="text-muted-foreground leading-relaxed">
               Al crear la polla se genera un <strong className="text-foreground">código de 6 letras</strong> único.
               Compartilo con quien quieras que se una. Pueden unirse desde la opción
-              <em> "Unirme con código"</em>.
+              <em> &quot;Unirme con código&quot;</em>.
             </p>
           </div>
 

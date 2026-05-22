@@ -17,6 +17,31 @@ export async function GET(request: Request) {
     }
   )
 
+  const demoUsers = [
+    {
+      email: process.env.DEMO_ADMIN_EMAIL,
+      password: process.env.DEMO_ADMIN_PASSWORD,
+      username: process.env.DEMO_ADMIN_USERNAME ?? 'admin',
+      favoriteTeam: process.env.DEMO_ADMIN_FAVORITE_TEAM ?? 'Argentina',
+      role: 'admin',
+    },
+    {
+      email: process.env.DEMO_PLAYER_EMAIL,
+      password: process.env.DEMO_PLAYER_PASSWORD,
+      username: process.env.DEMO_PLAYER_USERNAME ?? 'jugador',
+      favoriteTeam: process.env.DEMO_PLAYER_FAVORITE_TEAM ?? 'Brasil',
+      role: 'player',
+    },
+  ]
+
+  const missingDemoConfig = demoUsers.some((user) => !user.email || !user.password)
+  if (missingDemoConfig) {
+    return NextResponse.json(
+      { error: 'Missing demo user env vars. Configure DEMO_ADMIN_* and DEMO_PLAYER_* to use this setup route.' },
+      { status: 400 },
+    )
+  }
+
   const results: any = {
     found: [],
     deleted: [],
@@ -35,9 +60,11 @@ export async function GET(request: Request) {
     const allUsers = userList?.users || []
     results.found = allUsers.map((u: any) => u.email)
 
-    // Borrar usuarios que coincidan
+    const demoEmails = demoUsers.map((user) => user.email)
+
+    // Borrar usuarios demo que coincidan
     for (const user of allUsers) {
-      if (user.email === 'admin@prode.com' || user.email === 'jugador@prode.com') {
+      if (demoEmails.includes(user.email)) {
         try {
           await supabase.auth.admin.deleteUser(user.id)
           results.deleted.push(user.email)
@@ -50,44 +77,32 @@ export async function GET(request: Request) {
     // Pequena espera para que Supabase procese
     await new Promise(r => setTimeout(r, 500))
 
-    // Crear admin
-    try {
-      const { data: admin, error: adminError } = await supabase.auth.admin.createUser({
-        email: 'admin@prode.com',
-        password: 'admin123',
-        email_confirm: true,
-        user_metadata: { username: 'admin', favorite_team: 'Argentina' },
-      })
-      if (adminError) results.admin = { error: adminError.message }
-      else if (admin?.user) {
-        await supabase.from('profiles').update({ role: 'admin' }).eq('id', admin.user.id)
-        results.admin = { success: true, email: admin.user.email, id: admin.user.id }
+    for (const demoUser of demoUsers) {
+      const resultKey = demoUser.role === 'admin' ? 'admin' : 'jugador'
+      try {
+        const { data, error } = await supabase.auth.admin.createUser({
+          email: demoUser.email!,
+          password: demoUser.password!,
+          email_confirm: true,
+          user_metadata: { username: demoUser.username, favorite_team: demoUser.favoriteTeam },
+        })
+        if (error) results[resultKey] = { error: error.message }
+        else if (data?.user) {
+          if (demoUser.role === 'admin') {
+            await supabase.from('profiles').update({ role: 'admin' }).eq('id', data.user.id)
+          }
+          results[resultKey] = { success: true, email: data.user.email, id: data.user.id }
+        }
+      } catch (e: any) {
+        results[resultKey] = { error: e.message }
       }
-    } catch (e: any) {
-      results.admin = { error: e.message }
-    }
-
-    // Crear jugador
-    try {
-      const { data: jugador, error: jugadorError } = await supabase.auth.admin.createUser({
-        email: 'jugador@prode.com',
-        password: 'jugador123',
-        email_confirm: true,
-        user_metadata: { username: 'jugador', favorite_team: 'Brasil' },
-      })
-      if (jugadorError) results.jugador = { error: jugadorError.message }
-      else if (jugador?.user) {
-        results.jugador = { success: true, email: jugador.user.email, id: jugador.user.id }
-      }
-    } catch (e: any) {
-      results.jugador = { error: e.message }
     }
 
     // Verificar que los perfiles existen
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, username, role')
-      .in('username', ['admin', 'jugador'])
+      .in('username', demoUsers.map((user) => user.username))
     results.profiles = profiles
 
     return NextResponse.json(results)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,40 +11,14 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setError(params.get('error') ?? '')
+  }, [])
+
+  function handleSubmit() {
     setError('')
     setLoading(true)
-
-    const fd = new FormData(e.currentTarget)
-
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/signup`, {
-        method: 'POST',
-        headers: {
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: fd.get('email'),
-          password: fd.get('password'),
-          data: { username: fd.get('username'), favorite_team: fd.get('favorite_team') || null },
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) { setError(data.msg || 'Error al registrarse'); setLoading(false); return }
-
-      if (data.access_token) {
-        document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=604800; SameSite=Lax'
-        window.location.href = '/dashboard'
-      } else {
-        setError('Registro exitoso. Revisá tu email para confirmar.')
-        setLoading(false)
-      }
-    } catch (err: any) {
-      setError(err.message)
-      setLoading(false)
-    }
   }
 
   return (
@@ -66,7 +40,7 @@ export default function RegisterPage() {
               {error}
             </div>
           )}
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form action="/api/auth/register" method="post" onSubmit={handleSubmit} className="space-y-3">
             <Input name="username" type="text" placeholder="Nombre de usuario" required minLength={3} maxLength={20} className="h-10" />
             <Input name="email" type="email" placeholder="Email" required className="h-10" />
             <Input name="password" type="password" placeholder="Contraseña (mín 8)" required minLength={8} className="h-10" />

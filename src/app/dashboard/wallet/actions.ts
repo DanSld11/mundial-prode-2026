@@ -1,14 +1,11 @@
 'use server'
 
-import { cookies } from 'next/headers'
+import { createServerSupabaseClient } from '@/lib/supabase'
 import { createServiceRoleClient } from '@/lib/server-client'
 
 export async function getAuthUserId(): Promise<string | null> {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('sb-access-token')?.value
-  if (!token) return null
-  const admin = createServiceRoleClient()
-  const { data: { user } } = await admin.auth.getUser(token)
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
   return user?.id ?? null
 }
 

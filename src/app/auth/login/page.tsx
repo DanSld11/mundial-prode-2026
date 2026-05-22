@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,32 +10,17 @@ import { Trophy } from 'lucide-react'
 export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [nextPath, setNextPath] = useState('/dashboard')
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setError(params.get('error') ?? '')
+    setNextPath(params.get('next') ?? '/dashboard')
+  }, [])
+
+  function handleSubmit() {
     setError('')
     setLoading(true)
-
-    const fd = new FormData(e.currentTarget)
-
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-        method: 'POST',
-        headers: {
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: fd.get('email'), password: fd.get('password') }),
-      })
-      const data = await res.json()
-      if (!res.ok) { setError(data.msg || data.error_description || 'Email o contraseña incorrectos'); setLoading(false); return }
-
-      document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=604800; SameSite=Lax'
-      window.location.href = '/dashboard'
-    } catch (err: any) {
-      setError(err.message)
-      setLoading(false)
-    }
   }
 
   return (
@@ -57,7 +42,8 @@ export default function LoginPage() {
               {error}
             </div>
           )}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form action="/api/auth/login" method="post" onSubmit={handleSubmit} className="space-y-4">
+            <input type="hidden" name="next" value={nextPath} />
             <Input name="email" type="email" placeholder="Email" required className="h-10" />
             <Input name="password" type="password" placeholder="Contraseña" required className="h-10" />
             <Button type="submit" disabled={loading} className="w-full h-10 bg-brand-red hover:bg-red-700 text-white">

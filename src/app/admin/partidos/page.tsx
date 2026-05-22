@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,6 +11,7 @@ import { formatPeruShortDateTime } from '@/lib/peru-time'
 import { updateMatchResultAction } from '../actions'
 import { toast } from 'sonner'
 import { CheckCircle2, Loader2 } from 'lucide-react'
+import { createAnonClient } from '@/lib/auth-client'
 
 export default function AdminPartidosPage() {
   const [matches, setMatches] = useState<any[]>([])
@@ -21,7 +21,7 @@ export default function AdminPartidosPage() {
   const [saving, setSaving] = useState<string | null>(null)
 
   useEffect(() => {
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const supabase = createAnonClient()
     Promise.all([
       supabase.from('matches').select(`*, home_team:teams!matches_home_team_id_fkey(name_es,flag_emoji,code), away_team:teams!matches_away_team_id_fkey(name_es,flag_emoji,code)`).order('match_date', { ascending: true }),
       supabase.from('players').select('*, team:teams(id,name_es,code,flag_emoji)').eq('active', true).order('name'),

@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(request: Request) {
+  const secret = process.env.ADMIN_SECRET
+  if (!secret || request.headers.get('x-admin-secret') !== secret) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+  }
+
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY

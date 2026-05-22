@@ -61,7 +61,6 @@ export default function MatchPredictionPage() {
         .single()
       setMatch(matchData)
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const md = matchData as any
       if (!md) { setLoading(false); return }
       const teamIds = [md.home_team_id, md.away_team_id].filter(Boolean) as string[]
@@ -83,7 +82,6 @@ export default function MatchPredictionPage() {
         const uid = await getCurrentUserId(token)
         if (uid) {
           setUserId(uid)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: predictionData } = await (authedSupabase as any)
             .from('predictions')
             .select('*')

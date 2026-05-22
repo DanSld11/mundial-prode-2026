@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { useCallback, useEffect, useState } from 'react'
 import { UserPlus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { TeamFlag } from '@/components/team-flag'
+import { createPlayerAction, getPlayersAdminData, togglePlayerActiveAction, updatePlayerAction } from './actions'
 
 export default function AdminJugadoresPage() {
   const [teams, setTeams] = useState<any[]>([])
@@ -19,33 +19,27 @@ export default function AdminJugadoresPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  const supabase = useMemo(() => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!), [])
-
-  async function load() {
-    const [{ data: teamsData }, { data: playersData }] = await Promise.all([
-      supabase.from('teams').select('*').order('group_name').order('name_es'),
-      supabase.from('players').select('*, team:teams(id,name_es,code,flag_emoji)').order('name'),
-    ])
-    setTeams(teamsData ?? [])
-    setPlayers(playersData ?? [])
+  const load = useCallback(async () => {
+    const result = await getPlayersAdminData()
+    setTeams(result.teams ?? [])
+    setPlayers(result.players ?? [])
     setLoading(false)
-  }
+  }, [])
 
   useEffect(() => {
     load()
-  }, [])
+  }, [load])
 
   async function createPlayer(event: React.FormEvent) {
     event.preventDefault()
     if (!selectedTeamId || !name.trim()) return
 
     setSaving(true)
-    await supabase.from('players').insert({
-      team_id: selectedTeamId,
+    await createPlayerAction({
+      teamId: selectedTeamId,
       name: name.trim(),
-      shirt_number: shirtNumber ? parseInt(shirtNumber) : null,
-      position: position.trim() || null,
-      active: true,
+      shirtNumber,
+      position,
     })
     setName('')
     setShirtNumber('')
@@ -55,12 +49,12 @@ export default function AdminJugadoresPage() {
   }
 
   async function toggleActive(player: any) {
-    await supabase.from('players').update({ active: !player.active, updated_at: new Date().toISOString() }).eq('id', player.id)
+    await togglePlayerActiveAction(player.id, player.active)
     await load()
   }
 
   async function updatePlayer(player: any, updates: Record<string, any>) {
-    await supabase.from('players').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', player.id)
+    await updatePlayerAction(player.id, updates)
     await load()
   }
 
