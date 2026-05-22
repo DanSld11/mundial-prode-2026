@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { useEffect, useState } from 'react'
 import { Save, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { getScoringSettingsAction, saveScoringSettingAction } from './actions'
 
 const labels: Record<string, { title: string; description: string }> = {
   outcome: {
@@ -25,35 +25,17 @@ const labels: Record<string, { title: string; description: string }> = {
 export default function AdminPuntuacionPage() {
   const [settings, setSettings] = useState<Record<string, number>>({ outcome: 1, scorer: 2, exact_score: 3 })
   const [saving, setSaving] = useState<string | null>(null)
-  const supabase = useMemo(() => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!), [])
 
   useEffect(() => {
-    supabase.from('scoring_settings').select('*').then(({ data }) => {
-      if (!data) return
-      setSettings(Object.fromEntries(data.map((setting: any) => [setting.prediction_type, setting.points])))
+    getScoringSettingsAction().then((result) => {
+      if (!result.settings) return
+      setSettings(Object.fromEntries(result.settings.map((s: any) => [s.prediction_type, s.points])))
     })
-  }, [supabase])
+  }, [])
 
   async function saveSetting(type: string) {
     setSaving(type)
-    await supabase
-      .from('scoring_settings')
-      .upsert({ prediction_type: type, points: settings[type] ?? 0, updated_at: new Date().toISOString() })
-
-    const { data: finishedMatches } = await supabase
-      .from('matches')
-      .select('id, home_score, away_score')
-      .eq('status', 'finished')
-
-    for (const match of finishedMatches ?? []) {
-      if (match.home_score === null || match.away_score === null) continue
-      await supabase.rpc('update_match_predictions', {
-        p_match_id: match.id,
-        p_home_score: match.home_score,
-        p_away_score: match.away_score,
-      })
-    }
-
+    await saveScoringSettingAction(type, settings[type] ?? 0)
     setSaving(null)
   }
 
@@ -84,7 +66,7 @@ export default function AdminPuntuacionPage() {
                   type="number"
                   min={0}
                   value={settings[type] ?? 0}
-                  onChange={(event) => setSettings((prev) => ({ ...prev, [type]: parseInt(event.target.value || '0') }))}
+                  onChange={(e) => setSettings((prev) => ({ ...prev, [type]: parseInt(e.target.value || '0') }))}
                   className="h-10 text-center text-lg font-bold"
                 />
                 <span className="text-sm text-muted-foreground">pts</span>
