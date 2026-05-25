@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Wallet, Gift, Package, ArrowLeft, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { useToast } from '@/components/ui/use-toast'
+import { toast } from 'sonner'
 import Link from 'next/link'
 import { getUserWallet, getSystemSettings, claimDailyPack, buyPack, getUserStickers } from './actions'
 import { SEED_PLAYERS } from '@/lib/seed-players'
@@ -19,7 +19,6 @@ export default function AlbumPage() {
   const [openingPack, setOpeningPack] = useState(false)
   const [newStickers, setNewStickers] = useState<any[]>([])
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
-  const { toast } = useToast()
 
   useEffect(() => {
     loadData()
@@ -52,7 +51,7 @@ export default function AlbumPage() {
       setNewStickers(pack)
       await loadData()
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      toast.error(error.message)
       setOpeningPack(false)
     }
   }
@@ -64,7 +63,7 @@ export default function AlbumPage() {
       setNewStickers(pack)
       await loadData()
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      toast.error(error.message)
       setOpeningPack(false)
     }
   }
