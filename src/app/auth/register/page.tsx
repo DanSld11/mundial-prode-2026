@@ -35,7 +35,7 @@ export default function RegisterPage() {
       if (!res.ok) { setError(data.msg || 'Error al registrarse'); setLoading(false); return }
 
       if (data.access_token) {
-        document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=604800; SameSite=Lax'
+        document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=14400; SameSite=Lax'
         window.location.href = '/dashboard'
       } else {
         setError('Registro exitoso. Revisá tu email para confirmar.')

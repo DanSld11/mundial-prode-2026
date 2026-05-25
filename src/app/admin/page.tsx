@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { seedTeamsAction, seedMatchesAction, seedPlayersAction, recalculateAllPointsAction } from './actions'
 import { createAnonClient } from '@/lib/auth-client'
 import { formatPeruLongDateTime } from '@/lib/peru-time'
+import { Trophy, RefreshCw, Users, ShieldCheck, Database, CalendarDays, Coins, Activity, TrendingUp } from 'lucide-react'
 
 export default function AdminPage() {
   const [loadingTeams, setLoadingTeams] = useState(false)
@@ -60,138 +61,198 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Panel Admin</h2>
-        <p className="text-sm text-muted-foreground mt-1">Gestioná el torneo y los datos.</p>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
+      {/* Cabecera */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 p-8 shadow-xl">
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+              <ShieldCheck className="h-8 w-8 text-brand-red" />
+              Centro de Control
+            </h2>
+            <p className="text-slate-300 mt-2 text-sm max-w-xl">
+              Panel de administración principal. Gestiona los datos del Mundial, recalcula puntos, maneja usuarios y administra las recompensas.
+            </p>
+          </div>
+          <Button 
+            onClick={recalculatePoints} 
+            disabled={loadingRecalc}
+            className="shrink-0 bg-brand-red hover:bg-red-600 text-white shadow-lg shadow-red-900/20 border-0 h-11 px-6 rounded-xl font-semibold transition-all hover:scale-105 active:scale-95"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${loadingRecalc ? 'animate-spin' : ''}`} />
+            {loadingRecalc ? 'Recalculando...' : 'Recalcular Puntos'}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {/* Operaciones de Base de Datos */}
+        <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-blue-500/20"></div>
           <CardHeader>
-            <CardTitle className="text-base">Datos del Mundial</CardTitle>
-            <CardDescription>Cargar equipos y fixture oficial.</CardDescription>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Database className="h-5 w-5 text-blue-500" />
+              Base de Datos Inicial
+            </CardTitle>
+            <CardDescription>Poblar base con datos base del torneo.</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={seedTeams} disabled={loadingTeams}>
+          <CardContent className="flex flex-wrap gap-2 relative z-10">
+            <Button variant="secondary" size="sm" onClick={seedTeams} disabled={loadingTeams} className="bg-background shadow-sm">
               {loadingTeams ? 'Cargando...' : '48 Equipos'}
             </Button>
-            <Button variant="outline" size="sm" onClick={seedMatches} disabled={loadingMatches}>
+            <Button variant="secondary" size="sm" onClick={seedMatches} disabled={loadingMatches} className="bg-background shadow-sm">
               {loadingMatches ? 'Cargando...' : '72 Partidos'}
             </Button>
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={seedPlayers}
               disabled={loadingPlayers}
-              className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400"
+              className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 hover:text-emerald-700 border-0 shadow-sm"
             >
-              {loadingPlayers ? 'Cargando planteles...' : '🌍 ~700 Jugadores'}
+              {loadingPlayers ? 'Cargando...' : '🌍 ~700 Jugadores'}
             </Button>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group">
           <CardHeader>
-            <CardTitle className="text-base">Partidos</CardTitle>
-            <CardDescription>Cargar resultados y puntuar.</CardDescription>
+            <CardTitle className="text-base flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-indigo-500" />
+              Partidos & Resultados
+            </CardTitle>
+            <CardDescription>Cargar resultados y actualizar fases.</CardDescription>
           </CardHeader>
           <CardContent>
-            <a href="/admin/partidos"><Button variant="outline" size="sm">Gestionar</Button></a>
+            <a href="/admin/partidos">
+              <Button className="w-full bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 shadow-none border-0">Gestionar Partidos</Button>
+            </a>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group">
           <CardHeader>
-            <CardTitle className="text-base">Usuarios</CardTitle>
-            <CardDescription>Ver jugadores y resetear contraseñas.</CardDescription>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-5 w-5 text-orange-500" />
+              Usuarios
+            </CardTitle>
+            <CardDescription>Ver jugadores y contraseñas.</CardDescription>
           </CardHeader>
           <CardContent>
-            <a href="/admin/usuarios"><Button variant="outline" size="sm">Gestionar</Button></a>
+            <a href="/admin/usuarios">
+              <Button className="w-full bg-orange-500/10 text-orange-600 hover:bg-orange-500/20 shadow-none border-0">Ver Usuarios</Button>
+            </a>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group">
           <CardHeader>
-            <CardTitle className="text-base">Jugadores</CardTitle>
-            <CardDescription>Cargar planteles por selección.</CardDescription>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-yellow-500" />
+              Planteles
+            </CardTitle>
+            <CardDescription>Revisar nóminas por país.</CardDescription>
           </CardHeader>
           <CardContent>
-            <a href="/admin/jugadores"><Button variant="outline" size="sm">Gestionar</Button></a>
+            <a href="/admin/jugadores">
+              <Button className="w-full bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 shadow-none border-0">Ver Planteles</Button>
+            </a>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group">
           <CardHeader>
-            <CardTitle className="text-base">Puntuación</CardTitle>
-            <CardDescription>Editar puntos de predicciones.</CardDescription>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-emerald-500" />
+              Puntuación
+            </CardTitle>
+            <CardDescription>Reglas y multiplicadores.</CardDescription>
           </CardHeader>
           <CardContent>
-            <a href="/admin/puntuacion"><Button variant="outline" size="sm">Configurar</Button></a>
+            <a href="/admin/puntuacion">
+              <Button className="w-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 shadow-none border-0">Configurar Reglas</Button>
+            </a>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-amber-500/20"></div>
           <CardHeader>
-            <CardTitle className="text-base">💰 Wallet & Pollas</CardTitle>
-            <CardDescription>Dar coins a usuarios y gestionar grupos de apuesta.</CardDescription>
+            <CardTitle className="text-base flex items-center gap-2 relative z-10">
+              <Coins className="h-5 w-5 text-amber-500" />
+              Wallet & Pollas
+            </CardTitle>
+            <CardDescription className="relative z-10">Economía virtual y grupos.</CardDescription>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <a href="/admin/wallet">
+              <Button className="w-full bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 shadow-none border-0">Economía</Button>
+            </a>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="h-5 w-5 text-rose-500" />
+              Pronósticos Globales
+            </CardTitle>
+            <CardDescription>Cargar posiciones y premios.</CardDescription>
           </CardHeader>
           <CardContent>
-            <a href="/admin/wallet"><Button variant="outline" size="sm">Gestionar</Button></a>
+            <a href="/admin/pronosticos">
+              <Button className="w-full bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 shadow-none border-0">Resolver Torneo</Button>
+            </a>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">📊 Pronósticos</CardTitle>
-            <CardDescription>Cargar resultados de grupos y premios especiales.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <a href="/admin/pronosticos"><Button variant="outline" size="sm">Gestionar</Button></a>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Recalcular puntos</CardTitle>
-            <CardDescription>Repara predicciones después de editar resultados o goleadores.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" size="sm" onClick={recalculatePoints} disabled={loadingRecalc}>
-              {loadingRecalc ? 'Recalculando...' : 'Recalcular ahora'}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+
 
       {/* Recent activity log */}
-      <div>
-        <h2 className="mb-3 text-base font-semibold">Historial de resultados cargados</h2>
+      <div className="pt-4">
+        <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
+          <Activity className="h-5 w-5 text-muted-foreground" />
+          Historial de Resultados
+        </h2>
         {recentMatches.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No hay partidos finalizados aún.</p>
+          <div className="rounded-2xl border border-dashed p-8 text-center bg-card/30 backdrop-blur-sm">
+            <p className="text-sm text-muted-foreground">No hay partidos finalizados aún.</p>
+          </div>
         ) : (
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl shadow-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/30">
-                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">Partido</th>
-                  <th className="px-4 py-2 text-center font-medium text-muted-foreground">Resultado</th>
-                  <th className="px-4 py-2 text-center font-medium text-muted-foreground hidden sm:table-cell">Grupo</th>
-                  <th className="px-4 py-2 text-right font-medium text-muted-foreground hidden md:table-cell">Actualizado</th>
+                <tr className="border-b border-border/50 bg-muted/30">
+                  <th className="px-5 py-3 text-left font-semibold text-muted-foreground uppercase tracking-wider text-xs">Partido</th>
+                  <th className="px-5 py-3 text-center font-semibold text-muted-foreground uppercase tracking-wider text-xs">Resultado</th>
+                  <th className="px-5 py-3 text-center font-semibold text-muted-foreground uppercase tracking-wider text-xs hidden sm:table-cell">Grupo</th>
+                  <th className="px-5 py-3 text-right font-semibold text-muted-foreground uppercase tracking-wider text-xs hidden md:table-cell">Actualizado</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/30">
                 {recentMatches.map((m: any) => (
-                  <tr key={m.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="shrink-0">{m.home_team?.flag_emoji}</span>
-                        <span className="truncate max-w-[100px] font-medium">{m.home_team?.name_es}</span>
-                        <span className="text-muted-foreground">vs</span>
-                        <span className="truncate max-w-[100px] font-medium">{m.away_team?.name_es}</span>
-                        <span className="shrink-0">{m.away_team?.flag_emoji}</span>
+                  <tr key={m.id} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 bg-background/50 rounded-lg px-2 py-1 border border-border/50">
+                          <span className="shrink-0 text-lg">{m.home_team?.flag_emoji}</span>
+                          <span className="truncate max-w-[120px] font-semibold">{m.home_team?.name_es}</span>
+                        </div>
+                        <span className="text-muted-foreground/60 font-medium text-xs uppercase">vs</span>
+                        <div className="flex items-center gap-2 bg-background/50 rounded-lg px-2 py-1 border border-border/50">
+                          <span className="truncate max-w-[120px] font-semibold">{m.away_team?.name_es}</span>
+                          <span className="shrink-0 text-lg">{m.away_team?.flag_emoji}</span>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 text-center font-bold tabular-nums">
-                      {m.home_score} - {m.away_score}
+                    <td className="px-5 py-4 text-center">
+                      <div className="inline-flex items-center justify-center bg-brand-red text-white font-bold rounded-lg px-3 py-1 text-base shadow-sm">
+                        {m.home_score} - {m.away_score}
+                      </div>
                     </td>
-                    <td className="px-4 py-2.5 text-center hidden sm:table-cell">
-                      <Badge variant="secondary">G{m.group_name}</Badge>
+                    <td className="px-5 py-4 text-center hidden sm:table-cell">
+                      <Badge variant="outline" className="bg-background/50 font-semibold text-xs border-border/50">G{m.group_name}</Badge>
                     </td>
-                    <td className="px-4 py-2.5 text-right text-xs text-muted-foreground hidden md:table-cell">
+                    <td className="px-5 py-4 text-right text-xs text-muted-foreground font-medium hidden md:table-cell">
                       {m.updated_at ? formatPeruLongDateTime(m.updated_at) : '—'}
                     </td>
                   </tr>

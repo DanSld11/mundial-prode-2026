@@ -30,7 +30,7 @@ export default function LoginPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.msg || data.error_description || 'Email o contraseña incorrectos'); setLoading(false); return }
 
-      document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=604800; SameSite=Lax'
+      document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=14400; SameSite=Lax'
       window.location.href = '/dashboard'
     } catch (err: any) {
       setError(err.message)
