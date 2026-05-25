@@ -28,8 +28,11 @@ export default function AdminPuntuacionPage() {
 
   useEffect(() => {
     getScoringSettingsAction().then((result) => {
-      if (!result.settings) return
-      setSettings(Object.fromEntries(result.settings.map((s: any) => [s.prediction_type, s.points])))
+      if (!result.settings || result.settings.length === 0) return
+      setSettings((prev) => ({
+        ...prev,
+        ...Object.fromEntries(result.settings.map((s: any) => [s.prediction_type, s.points]))
+      }))
     })
   }, [])
 
