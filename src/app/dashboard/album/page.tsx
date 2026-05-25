@@ -125,7 +125,7 @@ export default function AlbumPage() {
               <div className="h-4 w-full bg-muted rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-brand-red to-red-500 transition-all duration-1000"
-                  style={{ width: \`\${progressPercentage}%\` }}
+                  style={{ width: `${progressPercentage}%` }}
                 ></div>
               </div>
             </div>
@@ -202,7 +202,7 @@ export default function AlbumPage() {
                     <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-brand-red"
-                        style={{ width: \`\${completion}%\` }}
+                        style={{ width: `${completion}%` }}
                       ></div>
                     </div>
                   </div>
@@ -299,11 +299,11 @@ export default function AlbumPage() {
                     return (
                       <div 
                         key={player.name}
-                        className={\`aspect-[3/4] rounded-xl border-2 p-2 flex flex-col relative \${
+                        className={`aspect-[3/4] rounded-xl border-2 p-2 flex flex-col relative ${
                           isOwned 
                             ? 'bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 border-amber-500/30 shadow-md' 
                             : 'bg-transparent border-dashed border-slate-300 dark:border-slate-700 opacity-60'
-                        }\`}
+                        }`}
                       >
                         {isOwned && ownedSticker.quantity > 1 && (
                           <div className="absolute -top-2 -right-2 bg-brand-red text-white text-[10px] font-black h-5 w-5 flex items-center justify-center rounded-full shadow-lg">
@@ -320,7 +320,7 @@ export default function AlbumPage() {
                           <span className="text-5xl grayscale">{TEAMS.find(t => t.code === selectedTeam)?.flag_emoji}</span>
                         </div>
                         
-                        <div className={\`text-center p-1 rounded \${isOwned ? 'bg-black/80 text-white' : 'bg-muted text-muted-foreground'}\`}>
+                        <div className={`text-center p-1 rounded ${isOwned ? 'bg-black/80 text-white' : 'bg-muted text-muted-foreground'}`}>
                           <p className="text-[10px] font-bold leading-tight truncate">{player.name}</p>
                         </div>
                       </div>
