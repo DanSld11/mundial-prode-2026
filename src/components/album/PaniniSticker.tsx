@@ -7,7 +7,8 @@ export function PaniniSticker({
   player, 
   team, 
   quantity,
-  isNew = false 
+  isNew = false,
+  index 
 }: { 
   player: any
   team: typeof SEED_TEAMS[number]
