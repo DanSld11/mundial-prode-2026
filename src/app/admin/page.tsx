@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 import { seedTeamsAction, seedMatchesAction, seedPlayersAction, recalculateAllPointsAction } from './actions'
 import { createAnonClient } from '@/lib/auth-client'
 import { formatPeruLongDateTime } from '@/lib/peru-time'
-import { Trophy, RefreshCw, Users, ShieldCheck, Database, CalendarDays, Coins, Activity, TrendingUp } from 'lucide-react'
+import { Trophy, RefreshCw, Users, ShieldCheck, Database, CalendarDays, Coins, Activity, TrendingUp, BookOpen } from 'lucide-react'
 
 export default function AdminPage() {
   const [loadingTeams, setLoadingTeams] = useState(false)
@@ -202,6 +202,21 @@ export default function AdminPage() {
           <CardContent>
             <a href="/admin/pronosticos">
               <Button className="w-full bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 shadow-none border-0">Resolver Torneo</Button>
+            </a>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-cyan-500" />
+              Álbum Digital
+            </CardTitle>
+            <CardDescription>Configurar sobres de figuritas.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <a href="/admin/album">
+              <Button className="w-full bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500/20 shadow-none border-0">Ajustes Álbum</Button>
             </a>
           </CardContent>
         </Card>

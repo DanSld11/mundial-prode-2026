@@ -18,6 +18,8 @@ export interface Database {
           favorite_team: string | null
           role: string
           total_points: number
+          coins: number
+          last_daily_pack_date: string | null
           created_at: string
           updated_at: string
         }
@@ -29,6 +31,8 @@ export interface Database {
           favorite_team?: string | null
           role?: string
           total_points?: number
+          coins?: number
+          last_daily_pack_date?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -40,8 +44,60 @@ export interface Database {
           favorite_team?: string | null
           role?: string
           total_points?: number
+          coins?: number
+          last_daily_pack_date?: string | null
           created_at?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_stickers: {
+        Row: {
+          id: string
+          user_id: string
+          team_code: string
+          player_name: string
+          quantity: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          team_code: string
+          player_name: string
+          quantity?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          team_code?: string
+          player_name?: string
+          quantity?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_stickers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      system_settings: {
+        Row: {
+          key: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          value?: Json
         }
         Relationships: []
       }
