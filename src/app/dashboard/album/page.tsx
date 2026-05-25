@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import Link from 'next/link'
 import { getUserWallet, getSystemSettings, claimDailyPack, buyPack, getUserStickers } from './actions'
 import { SEED_PLAYERS } from '@/lib/seed-players'
-import { TEAMS } from '@/lib/seed-data'
+import { SEED_TEAMS as TEAMS } from '@/lib/seed-data'
 
 export default function AlbumPage() {
   const [wallet, setWallet] = useState<any>(null)
