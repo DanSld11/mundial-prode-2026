@@ -1,10 +1,10 @@
 'use server'
 
-import { createServerClient } from '@/lib/server-client'
+import { createServerSupabaseClient as createServerClient } from '@/lib/supabase'
 import { SEED_PLAYERS } from '@/lib/seed-players'
 
 export async function getUserWallet() {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('No autorizado')
 
@@ -24,7 +24,7 @@ export async function getUserWallet() {
 }
 
 export async function getSystemSettings() {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { data } = await supabase.from('system_settings').select('*')
   const settings: Record<string, any> = {}
   data?.forEach(d => { settings[d.key] = d.value })
@@ -35,7 +35,7 @@ export async function getSystemSettings() {
 }
 
 export async function getUserStickers() {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('No autorizado')
 
@@ -89,7 +89,7 @@ async function savePackToInventory(userId: string, pack: typeof SEED_PLAYERS, su
 }
 
 export async function claimDailyPack() {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('No autorizado')
 
@@ -118,7 +118,7 @@ export async function claimDailyPack() {
 }
 
 export async function buyPack() {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('No autorizado')
 
