@@ -178,6 +178,7 @@ export default function PrediccionesPage() {
                       {isExact ? <><Trophy className="h-3 w-3" /><span>¡Marcador exacto!</span></>
                       : hasPoints ? <><CheckCircle2 className="h-3 w-3" /><span>Predicción acertada</span></>
                       : isFinished ? <span>Sin puntos</span>
+                      : new Date(p.match?.match_date) < new Date() ? <><Lock className="h-3 w-3" /><span>Bloqueado (En juego)</span></>
                       : <><Clock className="h-3 w-3" /><span>Pendiente</span></>}
                     </div>
                     <div className="flex items-center gap-2">

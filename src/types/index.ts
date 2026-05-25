@@ -191,4 +191,14 @@ export const POINTS_CONFIG = {
   third_place: 6,
 } as const
 
+export const STAGE_MULTIPLIERS: Record<Stage, number> = {
+  group: 1,
+  round_of_32: 1.5,
+  round_of_16: 1.5,
+  quarterfinal: 2,
+  semifinal: 2.5,
+  third_place: 2.5,
+  final: 3,
+}
+
 export type PointsConfig = typeof POINTS_CONFIG

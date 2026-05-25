@@ -193,19 +193,10 @@ export async function updateMatchResultAction(formData: FormData) {
     }
   }
 
-  // Calcular puntos usando service role para tener permisos completos
-  const { error: rpcError } = await adminClient.rpc('update_match_predictions', {
-    p_match_id: matchId,
-    p_home_score: homeScore,
-    p_away_score: awayScore,
-  })
-
-  if (rpcError) {
-    // Fallback: calcular puntos directo si el RPC falla
-    const fallbackError = await calculatePointsFallback(adminClient, matchId, homeScore, awayScore)
-    if (fallbackError) {
-      return { error: `Resultado guardado pero error al calcular puntos: ${rpcError.message}` }
-    }
+  // Calcular puntos solo con la lógica de JS (Node)
+  const errorCalculating = await calculatePointsFallback(adminClient, matchId, homeScore, awayScore)
+  if (errorCalculating) {
+    return { error: `Resultado guardado pero error al calcular puntos: ${errorCalculating}` }
   }
 
   revalidatePath('/admin/partidos')
@@ -216,7 +207,9 @@ export async function updateMatchResultAction(formData: FormData) {
   return { success: true }
 }
 
-// Fallback por si el RPC no está disponible: calcula puntos directo con JS
+import { STAGE_MULTIPLIERS } from '@/types'
+
+// Lógica de cálculo de puntos con Multiplicador y Bono Batacazo
 async function calculatePointsFallback(
   adminClient: ReturnType<typeof createServiceRoleClient>,
   matchId: string,
@@ -224,6 +217,9 @@ async function calculatePointsFallback(
   awayScore: number
 ): Promise<string | null> {
   try {
+    const { data: matchData } = await adminClient.from('matches').select('stage').eq('id', matchId).single()
+    const stageMultiplier = matchData?.stage ? (STAGE_MULTIPLIERS[matchData.stage as keyof typeof STAGE_MULTIPLIERS] ?? 1) : 1
+
     const actualOutcome = homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'draw'
 
     const { data: settings } = await adminClient.from('scoring_settings').select('prediction_type, points')
@@ -240,6 +236,12 @@ async function calculatePointsFallback(
 
     if (!predictions?.length) return null
 
+    // Calcular Bono Batacazo (Underdog Bonus)
+    // Si <= 20% de los que predijeron acertaron el resultado, reciben +2 pts extra
+    const totalPredictions = predictions.length
+    const correctOutcomeCount = predictions.filter(p => p.predicted_outcome === actualOutcome).length
+    const isUnderdog = correctOutcomeCount > 0 && (correctOutcomeCount / totalPredictions) <= 0.20
+
     const { data: scorers } = await adminClient
       .from('match_goal_scorers')
       .select('player_id')
@@ -248,18 +250,22 @@ async function calculatePointsFallback(
     const scorerSet = new Set((scorers ?? []).map((s) => s.player_id))
 
     for (const pred of predictions) {
-      const outcomePoints = pred.predicted_outcome === actualOutcome ? pts.outcome : 0
+      const isCorrectOutcome = pred.predicted_outcome === actualOutcome
+      const baseOutcomePoints = isCorrectOutcome ? pts.outcome : 0
+      const underdogBonus = (isCorrectOutcome && isUnderdog) ? 2 : 0
+      
       const scorerPoints = pred.predicted_scorer_id && scorerSet.has(pred.predicted_scorer_id) ? pts.scorer : 0
       const exactPoints =
         pred.predicted_home_score === homeScore && pred.predicted_away_score === awayScore ? pts.exact_score : 0
-      const total = outcomePoints + scorerPoints + exactPoints
+      
+      const total = ((baseOutcomePoints + scorerPoints + exactPoints) * stageMultiplier) + underdogBonus
 
       await adminClient
         .from('predictions')
         .update({
-          outcome_points: outcomePoints,
-          scorer_points: scorerPoints,
-          exact_score_points: exactPoints,
+          outcome_points: (baseOutcomePoints * stageMultiplier) + underdogBonus,
+          scorer_points: scorerPoints * stageMultiplier,
+          exact_score_points: exactPoints * stageMultiplier,
           points_earned: total,
           is_exact_score: exactPoints > 0,
           updated_at: new Date().toISOString(),
@@ -307,23 +313,8 @@ export async function recalculateAllPointsAction() {
   let rpcAvailable = true
 
   for (const match of matches ?? []) {
-    if (rpcAvailable) {
-      const { error: rpcError } = await adminClient.rpc('update_match_predictions', {
-        p_match_id: match.id,
-        p_home_score: match.home_score,
-        p_away_score: match.away_score,
-      })
-
-      if (rpcError) {
-        rpcAvailable = false
-        const fallbackError = await calculatePointsFallback(adminClient, match.id, match.home_score, match.away_score)
-        if (fallbackError) return { error: fallbackError }
-      }
-    } else {
-      const fallbackError = await calculatePointsFallback(adminClient, match.id, match.home_score, match.away_score)
-      if (fallbackError) return { error: fallbackError }
-    }
-
+    const errorCalculating = await calculatePointsFallback(adminClient, match.id, match.home_score, match.away_score)
+    if (errorCalculating) return { error: errorCalculating }
     recalculated += 1
   }
 

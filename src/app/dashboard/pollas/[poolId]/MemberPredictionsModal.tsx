@@ -68,7 +68,7 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
             </div>
           ) : !preds || preds.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
-              Aún no hay predicciones jugadas de partidos finalizados.
+              Aún no hay predicciones en juego o finalizadas.
             </div>
           ) : (
             <div className="space-y-4">
@@ -100,7 +100,8 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
                   const away = pred.match?.away_team?.code ?? '?'
                   const actualHome = pred.match?.home_score
                   const actualAway = pred.match?.away_score
-                  const isCorrect = pred.outcome_points > 0
+                  const isFinished = pred.match?.status === 'finished'
+                  const isCorrect = isFinished && pred.outcome_points > 0
                   const pts = pred.points_earned
 
                   return (
@@ -111,6 +112,8 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
                           ? 'border-brand-gold/40 bg-brand-gold/5'
                           : isCorrect
                           ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/40 dark:bg-emerald-950/20'
+                          : !isFinished
+                          ? 'border-blue-200 bg-blue-50/50 dark:border-blue-800/40 dark:bg-blue-950/20'
                           : 'border-border bg-muted/20'
                       }`}
                     >
@@ -119,6 +122,8 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
                           <span className="text-base">🎯</span>
                         ) : isCorrect ? (
                           <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        ) : !isFinished ? (
+                          <span className="text-xl">⏱️</span>
                         ) : (
                           <XCircle className="h-4 w-4 text-muted-foreground/50" />
                         )}
@@ -131,7 +136,7 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
                         <p className="text-[11px] text-muted-foreground">
                           Predijo: {pred.predicted_home_score ?? '?'}–{pred.predicted_away_score ?? '?'}
                           {' · '}
-                          Real: {actualHome ?? '?'}–{actualAway ?? '?'}
+                          {isFinished ? `Real: ${actualHome ?? '?'}–${actualAway ?? '?'}` : 'En juego'}
                         </p>
                       </div>
 

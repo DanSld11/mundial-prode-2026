@@ -293,5 +293,8 @@ export async function getMemberPredictionsAction(poolId: string, targetUserId: s
     .eq('user_id', targetUserId)
     .order('created_at', { ascending: false })
 
-  return (data ?? []).filter((p: any) => p.match?.status === 'finished')
+  return (data ?? []).filter((p: any) => {
+    if (!p.match) return false
+    return p.match.status === 'finished' || new Date(p.match.match_date) <= new Date()
+  })
 }
