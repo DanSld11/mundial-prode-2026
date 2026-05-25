@@ -205,7 +205,7 @@ export default function AdminPage() {
             </a>
           </CardContent>
         </Card>
-
+      </div>
 
       {/* Recent activity log */}
       <div className="pt-4">
