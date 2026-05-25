@@ -42,7 +42,7 @@ export function createAnonClient() {
     _anonInstance = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } },
+      { auth: { autoRefreshToken: false, persistSession: false, storageKey: 'supabase-anon-auth' } },
     )
   }
   return _anonInstance
@@ -59,7 +59,7 @@ export function createAuthedClient(token: string) {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
-          auth: { autoRefreshToken: false, persistSession: false },
+          auth: { autoRefreshToken: false, persistSession: false, storageKey: `sb-auth-${token.substring(0, 8)}` },
           global: { headers: { Authorization: `Bearer ${token}` } },
         },
       ),
