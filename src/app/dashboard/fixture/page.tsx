@@ -9,6 +9,8 @@ import { TeamFlag } from '@/components/team-flag'
 import { formatPeruDateLabel, formatPeruTime, peruDateKey } from '@/lib/peru-time'
 import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
 import { cacheGet, cacheSet } from '@/lib/local-cache'
+import { motion } from 'framer-motion'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const CACHE_KEY_MATCHES = 'fixture:matches'
 const CACHE_KEY_PREDS = 'fixture:predictions'
@@ -71,24 +73,33 @@ export default function FixturePage() {
 
   if (loading) return (
     <div className="space-y-5 sm:space-y-7">
-      <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5 animate-pulse">
+      <div className="rounded-3xl border border-border/50 bg-card/60 p-4 shadow-sm sm:p-5">
         <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-xl bg-muted/60" />
-          <div className="space-y-2"><div className="h-5 w-28 rounded bg-muted/60" /><div className="h-3 w-48 rounded bg-muted/60" /></div>
+          <Skeleton className="h-11 w-11 rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-28" />
+            <Skeleton className="h-3 w-48" />
+          </div>
         </div>
       </div>
       <div className="mx-auto max-w-5xl space-y-6">
-        {[1,2,3].map(d => (
+        {[1, 2, 3].map(d => (
           <div key={d} className="space-y-2">
-            <div className="h-4 w-32 rounded bg-muted/60 animate-pulse" />
-            {[1,2,3].map(m => (
-              <div key={m} className="rounded-xl border bg-card p-4 shadow-sm animate-pulse">
+            <Skeleton className="h-4 w-32 mb-2" />
+            {[1, 2, 3].map(m => (
+              <div key={m} className="rounded-3xl border border-border/50 bg-card/60 p-4 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <div className="h-5 w-12 rounded-md bg-muted/60" />
+                  <Skeleton className="h-5 w-12 rounded-md" />
                   <div className="flex flex-1 items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 justify-end"><div className="h-4 w-24 rounded bg-muted/60" /><div className="h-5 w-7 rounded bg-muted/60" /></div>
-                    <div className="h-5 w-16 rounded-md bg-muted/60" />
-                    <div className="flex items-center gap-2 flex-1"><div className="h-5 w-7 rounded bg-muted/60" /><div className="h-4 w-24 rounded bg-muted/60" /></div>
+                    <div className="flex items-center gap-2 flex-1 justify-end">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-5 w-7" />
+                    </div>
+                    <Skeleton className="h-5 w-16 rounded-md" />
+                    <div className="flex items-center gap-2 flex-1">
+                      <Skeleton className="h-5 w-7" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -149,8 +160,14 @@ export default function FixturePage() {
                   const awayFlag = match.away_team?.flag_emoji
 
                   return (
-                    <Card key={match.id} className="overflow-hidden border shadow-sm transition-shadow hover:shadow-md">
-                      <CardContent className="p-3 sm:p-4">
+                    <motion.div
+                      key={match.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: dayMatches.indexOf(match) * 0.1 }}
+                    >
+                      <Card className="overflow-hidden border shadow-sm transition-shadow hover:shadow-md">
+                        <CardContent className="p-3 sm:p-4">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                           <div className="flex items-center justify-between gap-2 sm:w-28 sm:justify-start">
                             <Badge variant="secondary" className="w-12 shrink-0 justify-center font-mono text-xs">G{match.group_name}</Badge>
@@ -211,7 +228,8 @@ export default function FixturePage() {
                           )}
                         </div>
                       </CardContent>
-                    </Card>
+                      </Card>
+                    </motion.div>
                   )
                 })}
               </div>

@@ -18,7 +18,7 @@ import {
   UserRound,
   Sun,
   Moon,
-  Gem,
+  BookOpen,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -33,6 +33,7 @@ const navItems = [
   { href: '/dashboard/predicciones', label: 'Predicciones', icon: Target },
   { href: '/dashboard/pronosticos', label: 'Pronósticos', icon: BarChart3 },
   { href: '/dashboard/pollas', label: 'Pollas', icon: Trophy },
+  { href: '/dashboard/reglas', label: 'Reglas', icon: BookOpen },
   { href: '/dashboard/tabla', label: 'Tabla', icon: Table2 },
 ]
 
@@ -43,7 +44,7 @@ const bottomNavItems = [
   { href: '/dashboard/predicciones', label: 'Pred.', icon: Target },
   { href: '/dashboard/pronosticos', label: 'Pronóst.', icon: BarChart3 },
   { href: '/dashboard/pollas', label: 'Pollas', icon: Trophy },
-  { href: '/dashboard/wallet', label: 'Wallet', icon: Gem },
+  { href: '/dashboard/reglas', label: 'Reglas', icon: BookOpen },
 ]
 
 export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
