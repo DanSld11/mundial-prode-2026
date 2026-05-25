@@ -379,6 +379,9 @@ export default function MatchPredictionPage() {
                   type="number"
                   min={0}
                   max={20}
+                  onKeyDown={(e) => {
+                    if (['e', 'E', '+', '-', '.', ','].includes(e.key)) e.preventDefault()
+                  }}
                   value={homeScore}
                   onChange={(e) => setHomeScore(e.target.value)}
                   className={[
@@ -393,6 +396,9 @@ export default function MatchPredictionPage() {
                   type="number"
                   min={0}
                   max={20}
+                  onKeyDown={(e) => {
+                    if (['e', 'E', '+', '-', '.', ','].includes(e.key)) e.preventDefault()
+                  }}
                   value={awayScore}
                   onChange={(e) => setAwayScore(e.target.value)}
                   className={[
