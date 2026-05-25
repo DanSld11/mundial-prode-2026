@@ -1,61 +1,63 @@
 'use server'
 
-import { createServerSupabaseClient as createServerClient } from '@/lib/supabase'
+import { cookies } from 'next/headers'
+import { createServiceRoleClient } from '@/lib/server-client'
 import { SEED_PLAYERS } from '@/lib/seed-players'
+
+async function getAuthUserId(): Promise<string | null> {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('sb-access-token')?.value
+  if (!token) return null
+  const db = createServiceRoleClient()
+  const { data: { user } } = await db.auth.getUser(token)
+  return user?.id ?? null
+}
 
 export async function getUserWallet() {
   try {
-    const supabase = await createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return { coins: 0 }
+    const uid = await getAuthUserId()
+    if (!uid) return { coins: 0 }
 
-    const { data: wallet } = await supabase
-      .from('wallets')
-      .select('balance')
-      .eq('user_id', session.user.id)
-      .single()
+    const db = createServiceRoleClient()
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('last_daily_pack_date, role')
-      .eq('id', session.user.id)
-      .single()
+    const [walletRes, profileRes] = await Promise.all([
+      db.from('wallets').select('balance').eq('user_id', uid).single(),
+      db.from('profiles').select('last_daily_pack_date, role').eq('id', uid).single(),
+    ])
 
-    return { ...profile, coins: wallet?.balance || 0 }
+    return {
+      ...(profileRes.data || {}),
+      coins: walletRes.data?.balance ?? 0,
+    }
   } catch (error) {
-    console.error(error)
+    console.error('getUserWallet error:', error)
     return { coins: 0 }
   }
 }
 
 export async function getSystemSettings() {
   try {
-    const supabase = await createServerClient()
-    const { data } = await supabase.from('system_settings').select('*')
+    const db = createServiceRoleClient()
+    const { data } = await db.from('system_settings').select('*')
     const settings: Record<string, any> = {}
     data?.forEach(d => { settings[d.key] = d.value })
-    
-    return {
-      packPrice: parseInt(settings['pack_price'] || '100')
-    }
-  } catch (error) {
+    return { packPrice: parseInt(settings['pack_price'] || '100') }
+  } catch {
     return { packPrice: 100 }
   }
 }
 
 export async function getUserStickers() {
   try {
-    const supabase = await createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return []
-
-    const { data } = await supabase
+    const uid = await getAuthUserId()
+    if (!uid) return []
+    const db = createServiceRoleClient()
+    const { data } = await db
       .from('user_stickers')
       .select('*')
-      .eq('user_id', session.user.id)
-
+      .eq('user_id', uid)
     return data || []
-  } catch (error) {
+  } catch {
     return []
   }
 }
@@ -71,11 +73,9 @@ function generatePack() {
   return pack
 }
 
-async function savePackToInventory(userId: string, pack: typeof SEED_PLAYERS, supabase: any) {
-  // Add to user_stickers
+async function savePackToInventory(userId: string, pack: typeof SEED_PLAYERS, db: any) {
   for (const player of pack) {
-    // Check if exists
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from('user_stickers')
       .select('id, quantity')
       .eq('user_id', userId)
@@ -84,18 +84,18 @@ async function savePackToInventory(userId: string, pack: typeof SEED_PLAYERS, su
       .single()
 
     if (existing) {
-      await supabase
+      await db
         .from('user_stickers')
         .update({ quantity: existing.quantity + 1 })
         .eq('id', existing.id)
     } else {
-      await supabase
+      await db
         .from('user_stickers')
         .insert({
           user_id: userId,
           team_code: player.team_code,
           player_name: player.name,
-          quantity: 1
+          quantity: 1,
         })
     }
   }
@@ -103,14 +103,15 @@ async function savePackToInventory(userId: string, pack: typeof SEED_PLAYERS, su
 
 export async function claimDailyPack() {
   try {
-    const supabase = await createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return { error: 'No autorizado' }
+    const uid = await getAuthUserId()
+    if (!uid) return { error: 'No autorizado' }
 
-    const { data: profile } = await supabase
+    const db = createServiceRoleClient()
+
+    const { data: profile } = await db
       .from('profiles')
       .select('last_daily_pack_date')
-      .eq('id', session.user.id)
+      .eq('id', uid)
       .single()
 
     const today = new Date().toISOString().split('T')[0]
@@ -118,15 +119,13 @@ export async function claimDailyPack() {
       return { error: 'Ya reclamaste tu sobre diario hoy.' }
     }
 
-    // Update date
-    await supabase
+    await db
       .from('profiles')
       .update({ last_daily_pack_date: today })
-      .eq('id', session.user.id)
+      .eq('id', uid)
 
-    // Generate pack
     const pack = generatePack()
-    await savePackToInventory(session.user.id, pack, supabase)
+    await savePackToInventory(uid, pack, db)
 
     return { pack }
   } catch (e: any) {
@@ -136,28 +135,32 @@ export async function claimDailyPack() {
 
 export async function buyPack() {
   try {
-    const supabase = await createServerClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return { error: 'No autorizado' }
+    const uid = await getAuthUserId()
+    if (!uid) return { error: 'No autorizado' }
 
-    // Get settings and coins
+    const db = createServiceRoleClient()
+
     const { packPrice } = await getSystemSettings()
-    const profile = await getUserWallet()
 
-    if (!profile || (profile.coins || 0) < packPrice) {
+    const { data: wallet } = await db
+      .from('wallets')
+      .select('balance')
+      .eq('user_id', uid)
+      .single()
+
+    const balance = wallet?.balance ?? 0
+
+    if (balance < packPrice) {
       return { error: 'No tienes suficientes monedas.' }
     }
 
-    // Deduct coins from wallets
-    await supabase
+    await db
       .from('wallets')
-      .update({ balance: (profile.coins || 0) - packPrice })
-      .eq('user_id', session.user.id)
+      .update({ balance: balance - packPrice })
+      .eq('user_id', uid)
 
-
-    // Generate pack
     const pack = generatePack()
-    await savePackToInventory(session.user.id, pack, supabase)
+    await savePackToInventory(uid, pack, db)
 
     return { pack }
   } catch (e: any) {
