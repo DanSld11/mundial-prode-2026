@@ -63,11 +63,16 @@ export function AlbumModal() {
   async function handleClaimDaily() {
     try {
       setOpeningPack(true)
-      const pack = await claimDailyPack()
-      setNewStickers(pack)
+      const res = await claimDailyPack()
+      if (res.error) {
+        toast.error(res.error)
+        setOpeningPack(false)
+        return
+      }
+      setNewStickers(res.pack || [])
       await loadData()
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(error.message || 'Error inesperado')
       setOpeningPack(false)
     }
   }
@@ -75,11 +80,16 @@ export function AlbumModal() {
   async function handleBuyPack() {
     try {
       setOpeningPack(true)
-      const pack = await buyPack()
-      setNewStickers(pack)
+      const res = await buyPack()
+      if (res.error) {
+        toast.error(res.error)
+        setOpeningPack(false)
+        return
+      }
+      setNewStickers(res.pack || [])
       await loadData()
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(error.message || 'Error inesperado')
       setOpeningPack(false)
     }
   }
