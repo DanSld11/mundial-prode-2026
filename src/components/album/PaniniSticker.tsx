@@ -13,13 +13,13 @@ export function PaniniSticker({
   team: typeof SEED_TEAMS[number]
   quantity: number
   isNew?: boolean
+  index?: number
 }) {
   const isOwned = quantity > 0 || isNew
   
-  // Asumimos que si el usuario sube las imágenes en public/figuritas/{TEAM_CODE}/{PLAYER_NAME}.png
-  // se mostrará la imagen. Si falla, mostramos una silueta generada por CSS.
   const [imgError, setImgError] = useState(false)
-  const imagePath = `/figuritas/${team?.code}/${player.name}.png`
+  // Utilizamos las imágenes extraídas usando el índice de la figurita
+  const imagePath = `/figuritas_extraidas/${team?.code}/figura_${index}.png`
 
   return (
     <div className={`relative aspect-[3/4] rounded-sm bg-white p-1 md:p-1.5 shadow-sm transition-transform duration-300 ${isOwned ? 'hover:scale-105 z-10 cursor-pointer shadow-md' : 'opacity-60 cursor-not-allowed'}`}>

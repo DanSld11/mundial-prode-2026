@@ -320,7 +320,7 @@ export function AlbumModal() {
 
                     {/* Grilla de Figuritas */}
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3 sm:gap-4 md:gap-6 lg:gap-8 pb-12">
-                      {teamPlayers.map(player => {
+                      {teamPlayers.map((player, index) => {
                         const ownedSticker = stickers.find(s => s.player_name === player.name && s.team_code === team.code)
                         return (
                           <PaniniSticker 
@@ -328,6 +328,7 @@ export function AlbumModal() {
                             player={player} 
                             team={team} 
                             quantity={ownedSticker?.quantity || 0} 
+                            index={index + 1}
                           />
                         )
                       })}
@@ -355,6 +356,9 @@ export function AlbumModal() {
             <div className="flex flex-wrap justify-center gap-4 max-w-6xl">
               {newStickers.map((sticker, idx) => {
                 const stickerTeam = TEAMS.find(t => t.code === sticker.team_code)
+                const teamPlayers = SEED_PLAYERS.filter(p => p.team_code === sticker.team_code)
+                const stickerIndex = teamPlayers.findIndex(p => p.name === sticker.player_name) + 1
+
                 return (
                   <motion.div
                     key={idx}
@@ -368,6 +372,7 @@ export function AlbumModal() {
                       team={stickerTeam as any} 
                       quantity={1} 
                       isNew={true}
+                      index={stickerIndex}
                     />
                   </motion.div>
                 )
