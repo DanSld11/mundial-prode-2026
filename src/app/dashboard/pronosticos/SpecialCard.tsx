@@ -150,44 +150,54 @@ function SingleSpecialCard({
   const resultPlayer = result?.player_id ? players.find(p => p.id === result.player_id) : null
 
   return (
-    <div className={`rounded-2xl border bg-card shadow-sm overflow-hidden ${locked ? 'opacity-80' : ''}`}>
-      <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{config.emoji}</span>
+    <div className={`rounded-3xl border border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden relative group ${locked ? 'opacity-80' : ''}`}>
+      <div className="absolute top-0 right-0 w-32 h-32 bg-brand-red/5 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-brand-red/10"></div>
+      
+      <div className="relative z-10 px-5 py-4 border-b border-border/50 bg-gradient-to-r from-muted/50 to-transparent flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-background/50 border border-border/50 text-2xl shadow-sm">
+            {config.emoji}
+          </span>
           <div>
-            <p className="font-semibold text-sm">{config.label}</p>
+            <p className="font-extrabold text-sm uppercase tracking-wide">{config.label}</p>
             <p className="text-xs text-muted-foreground">{config.description}</p>
           </div>
         </div>
         {locked && (
-          <span className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-full">
+          <span className="flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-md border border-amber-200 dark:border-amber-800">
             <Lock className="h-3 w-3" /> Cerrado
           </span>
         )}
       </div>
 
-      <div className="px-4 py-4 space-y-3">
+      <div className="relative z-10 px-5 py-5 space-y-4">
         {locked ? (
           /* Read-only view */
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Tu predicción</p>
-            {config.pickPlayer ? (
-              chosenPlayer
-                ? <p className="font-semibold">{chosenPlayer.name} {teams.find(t => t.id === (prediction?.team_id ?? teamId))?.flag_emoji}</p>
-                : <p className="text-sm text-muted-foreground italic">No seleccionaste</p>
-            ) : (
-              prediction?.team_id
-                ? <p className="font-semibold">{chosenTeam?.flag_emoji} {chosenTeam?.name_es}</p>
-                : <p className="text-sm text-muted-foreground italic">No seleccionaste</p>
-            )}
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Tu predicción</p>
+              {config.pickPlayer ? (
+                chosenPlayer
+                  ? <p className="font-bold text-lg">{chosenPlayer.name} <span className="text-sm font-normal text-muted-foreground">{teams.find(t => t.id === (prediction?.team_id ?? teamId))?.flag_emoji}</span></p>
+                  : <p className="text-sm text-muted-foreground italic bg-background/50 px-3 py-2 rounded-lg border border-border/50">No seleccionaste</p>
+              ) : (
+                prediction?.team_id
+                  ? <p className="font-bold text-lg">{chosenTeam?.flag_emoji} {chosenTeam?.name_es}</p>
+                  : <p className="text-sm text-muted-foreground italic bg-background/50 px-3 py-2 rounded-lg border border-border/50">No seleccionaste</p>
+              )}
+            </div>
+            
             {resultPlayer && (
-              <div className="mt-2 pt-2 border-t">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Resultado oficial</p>
-                <p className="font-semibold text-emerald-600">{resultPlayer.name}</p>
+              <div className="mt-3 pt-3 border-t border-border/50">
+                <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Resultado oficial</p>
+                <p className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                  <Check className="h-4 w-4" /> {resultPlayer.name}
+                </p>
               </div>
             )}
+            
             {prediction?.points_earned != null && (
-              <div className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-yellow-700 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-0.5 rounded-full">
+              <div className="mt-2 inline-flex items-center gap-1 text-xs font-black text-yellow-700 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700/50 px-3 py-1 rounded-md shadow-sm">
                 +{prediction.points_earned} pts
               </div>
             )}
@@ -196,12 +206,13 @@ function SingleSpecialCard({
           /* Edit view */
           <>
             {config.pickPlayer && (
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Selección</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Selección</label>
                 <select
                   value={teamId}
                   onChange={e => handleTeamChange(e.target.value)}
-                  className="w-full h-9 rounded-xl border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
+                  className="w-full h-11 rounded-xl border border-border/50 bg-background/80 px-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-red transition-all hover:bg-background cursor-pointer appearance-none shadow-sm"
+                  style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
                 >
                   <option value="">— Elegir selección —</option>
                   {teams.map(t => (
@@ -212,16 +223,17 @@ function SingleSpecialCard({
             )}
 
             {config.pickPlayer ? (
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">
-                  {config.playerFilter === 'GK' ? 'Portero' : 'Jugador'}
-                  {teamId && ` (${teamPlayers.length} disponibles)`}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide flex items-center justify-between">
+                  <span>{config.playerFilter === 'GK' ? 'Portero' : 'Jugador'}</span>
+                  {teamId && <span className="bg-muted px-2 py-0.5 rounded text-[10px]">{teamPlayers.length} opciones</span>}
                 </label>
                 <select
                   value={playerId}
                   disabled={!teamId}
                   onChange={e => handlePlayerChange(e.target.value)}
-                  className="w-full h-9 rounded-xl border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red disabled:opacity-50"
+                  className="w-full h-11 rounded-xl border border-border/50 bg-background/80 px-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-red disabled:opacity-50 transition-all hover:bg-background cursor-pointer appearance-none shadow-sm"
+                  style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
                 >
                   <option value="">— Elegir jugador —</option>
                   {teamPlayers.map(p => (
@@ -230,12 +242,13 @@ function SingleSpecialCard({
                 </select>
               </div>
             ) : (
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Equipo</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Equipo</label>
                 <select
                   value={teamId}
                   onChange={e => handleTeamChange(e.target.value)}
-                  className="w-full h-9 rounded-xl border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red"
+                  className="w-full h-11 rounded-xl border border-border/50 bg-background/80 px-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-red transition-all hover:bg-background cursor-pointer appearance-none shadow-sm"
+                  style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
                 >
                   <option value="">— Elegir equipo —</option>
                   {teams.map(t => (
@@ -246,12 +259,14 @@ function SingleSpecialCard({
             )}
 
             {/* Status */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground bg-background/50 px-3 py-2 rounded-lg border border-border/50 w-fit">
               {saving ? (
-                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Guardando...</>
+                <><Loader2 className="h-3.5 w-3.5 animate-spin text-brand-red" /> Guardando...</>
               ) : (config.pickPlayer ? playerId : teamId) ? (
-                <><Check className="h-3.5 w-3.5 text-emerald-500" /> Guardado</>
-              ) : null}
+                <><Check className="h-4 w-4 text-emerald-500" /> Guardado</>
+              ) : (
+                <span className="text-muted-foreground/50">Pendiente</span>
+              )}
             </div>
           </>
         )}
