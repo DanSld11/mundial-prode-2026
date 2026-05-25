@@ -67,7 +67,14 @@ export function PoolChat({ poolId, myUserId }: Props) {
             .select('username')
             .eq('id', newMsg.user_id)
             .single()
-          setMessages((prev) => [...prev, { ...newMsg, profile: profile ?? undefined }])
+          setMessages((prev) => {
+            // Evitar duplicados (ej: por actualización optimista)
+            if (prev.some(m => m.id === newMsg.id || (m.user_id === newMsg.user_id && m.message === newMsg.message && m.id.startsWith('temp-')))) {
+              // Reemplazar el mensaje temporal por el real
+              return prev.map(m => (m.user_id === newMsg.user_id && m.message === newMsg.message && m.id.startsWith('temp-')) ? { ...newMsg, profile: profile ?? undefined } : m)
+            }
+            return [...prev, { ...newMsg, profile: profile ?? undefined }]
+          })
         }
       )
       .subscribe()
@@ -85,6 +92,18 @@ export function PoolChat({ poolId, myUserId }: Props) {
     if (!trimmed || sending) return
     setSending(true)
     setText('')
+
+    // Actualización optimista: lo mostramos de inmediato en el chat
+    const tempMsg: Message = {
+      id: `temp-${Date.now()}`,
+      pool_id: poolId,
+      user_id: myUserId,
+      message: trimmed,
+      created_at: new Date().toISOString(),
+      profile: { username: 'Tú' } // Se mostrará a la derecha igual
+    }
+    setMessages(prev => [...prev, tempMsg])
+
     await sendMessageAction(poolId, trimmed)
     setSending(false)
   }

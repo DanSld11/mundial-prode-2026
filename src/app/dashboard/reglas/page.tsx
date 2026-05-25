@@ -33,21 +33,21 @@ export default function RulesPage() {
                 <p className="font-bold">Acertar Resultado</p>
                 <p className="text-xs text-muted-foreground">Local, Empate o Visitante</p>
               </div>
-              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">+3 pts</span>
+              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">+1 pt</span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/50">
               <div>
                 <p className="font-bold">Marcador Exacto</p>
                 <p className="text-xs text-muted-foreground">Ej: Predijiste 2-1 y terminó 2-1</p>
               </div>
-              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">+2 pts</span>
+              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">+3 pts</span>
             </div>
             <div className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/50">
               <div>
                 <p className="font-bold">Acertar Goleador</p>
                 <p className="text-xs text-muted-foreground">El jugador elegido anota al menos un gol</p>
               </div>
-              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">+1 pt</span>
+              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">+2 pts</span>
             </div>
           </CardContent>
         </Card>
@@ -126,7 +126,7 @@ export default function RulesPage() {
               <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-300/10 to-slate-400/10 border border-slate-400/20 text-center">
                 <span className="inline-flex w-8 h-8 items-center justify-center rounded-full bg-slate-300 text-slate-800 font-black mb-2 shadow-sm">2°</span>
                 <p className="font-bold">Segundo Lugar</p>
-                <p className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">+3 pts</p>
+                <p className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">+2 pts</p>
               </div>
               <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-300/10 to-orange-500/10 border border-orange-500/20 text-center">
                 <span className="inline-flex w-8 h-8 items-center justify-center rounded-full bg-orange-400 text-orange-950 font-black mb-2 shadow-sm">3°</span>
