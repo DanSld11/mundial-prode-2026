@@ -139,8 +139,7 @@ export function AlbumModal() {
       </button>
 
       {/* Contenedor Principal del Libro */}
-      <div className="relative w-full max-w-5xl aspect-[3/4] sm:aspect-[4/3] md:aspect-[16/9] lg:aspect-[2/1] perspective-1000">
-        
+      <div className="relative w-[98vw] max-w-[1800px] aspect-[3/4] sm:aspect-[4/3] md:aspect-[16/9] lg:aspect-[2/1] perspective-1000 max-h-[95vh]">
         {/* Controles de paginación */}
         {currentPage > 0 && (
           <button 
@@ -298,29 +297,29 @@ export function AlbumModal() {
                 const teamStickers = stickers.filter(s => s.team_code === team.code)
 
                 return (
-                  <div className="w-full h-full p-4 md:p-8 overflow-y-auto bg-[url('https://www.transparenttextures.com/patterns/paper.png')] bg-white relative">
-                    <div className="absolute top-0 left-0 w-8 h-full bg-gradient-to-r from-black/20 to-transparent"></div> {/* Sombra del lomo */}
+                  <div className="w-full h-full p-4 md:p-8 lg:p-12 overflow-y-auto bg-[url('https://www.transparenttextures.com/patterns/paper.png')] bg-white relative">
+                    <div className="absolute top-0 left-0 w-8 md:w-16 h-full bg-gradient-to-r from-black/20 to-transparent"></div> {/* Sombra del lomo */}
                     
                     {/* Cabecera de Página de Equipo */}
-                    <div className="flex items-center gap-4 mb-8 border-b-4 border-slate-900 pb-4">
-                      <div className="w-16 h-16 md:w-24 md:h-24 bg-slate-900 flex items-center justify-center text-4xl md:text-6xl rounded shadow-lg border-2 border-amber-500">
+                    <div className="flex items-center gap-4 md:gap-8 mb-8 md:mb-12 border-b-4 border-slate-900 pb-4">
+                      <div className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 bg-slate-900 flex items-center justify-center text-4xl md:text-6xl lg:text-7xl rounded shadow-lg border-2 border-amber-500">
                         {team.flag_emoji}
                       </div>
                       <div className="flex-1">
-                        <h2 className="text-3xl md:text-5xl font-black text-slate-900 uppercase tracking-tighter">{team.name}</h2>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="bg-slate-900 text-amber-400 text-xs font-bold px-2 py-1 uppercase rounded">{team.code}</span>
-                          <span className="text-slate-500 font-bold text-sm">{team.confederation}</span>
+                        <h2 className="text-3xl md:text-5xl lg:text-7xl font-black text-slate-900 uppercase tracking-tighter">{team.name}</h2>
+                        <div className="flex items-center gap-2 mt-1 md:mt-2">
+                          <span className="bg-slate-900 text-amber-400 text-xs md:text-sm font-bold px-2 py-1 uppercase rounded">{team.code}</span>
+                          <span className="text-slate-500 font-bold text-sm md:text-lg">{team.confederation}</span>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-bold text-slate-500 uppercase">Completado</div>
-                        <div className="text-2xl font-black text-brand-red">{teamStickers.length}/{teamPlayers.length}</div>
+                        <div className="text-sm md:text-lg font-bold text-slate-500 uppercase">Completado</div>
+                        <div className="text-2xl md:text-5xl font-black text-brand-red">{teamStickers.length}/{teamPlayers.length}</div>
                       </div>
                     </div>
 
                     {/* Grilla de Figuritas */}
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4 pb-12">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3 sm:gap-4 md:gap-6 lg:gap-8 pb-12">
                       {teamPlayers.map(player => {
                         const ownedSticker = stickers.find(s => s.player_name === player.name && s.team_code === team.code)
                         return (
