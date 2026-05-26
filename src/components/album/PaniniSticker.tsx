@@ -4,6 +4,21 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Star, Shield, Award } from 'lucide-react'
 import { SEED_TEAMS } from '@/lib/seed-data'
+import FIGURITAS_MAP from '@/lib/figuritas-map.json'
+
+// Dado el código de equipo e índice (1-based), devuelve la ruta real o null
+function getImagePath(teamCode: string | undefined, index: number | undefined): string | null {
+  if (!teamCode || !index) return null
+  const available = (FIGURITAS_MAP as Record<string, number[]>)[teamCode]
+  if (!available || available.length === 0) return null
+  // Si el índice exacto existe, usarlo; si no, usar el más cercano disponible
+  if (available.includes(index)) {
+    return `/figuritas_extraidas/${teamCode}/figura_${index}.jpg`
+  }
+  // Fallback: usar módulo para distribuir las imágenes disponibles entre los jugadores
+  const mapped = available[(index - 1) % available.length]
+  return `/figuritas_extraidas/${teamCode}/figura_${mapped}.jpg`
+}
 
 interface StickerPreviewProps {
   player: any
@@ -157,24 +172,13 @@ export function PaniniSticker({
   const [imgError, setImgError] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
 
-  // Intentar jpg primero (comprimido), fallback a png
-  const imagePath = index
-    ? `/figuritas_extraidas/${team?.code}/figura_${index}.jpg`
-    : null
-  
-  // Si hay error con jpg, intentar png
-  const [triedJpg, setTriedJpg] = useState(false)
+  // Usar el mapa para obtener solo rutas que realmente existen
+  const imagePath = getImagePath(team?.code, index)
   const [currentSrc, setCurrentSrc] = useState(imagePath)
 
   const handleImgError = () => {
-    if (!triedJpg && imagePath) {
-      // Intentar con PNG si JPG falla
-      const pngPath = imagePath.replace('.jpg', '.png')
-      setCurrentSrc(pngPath)
-      setTriedJpg(true)
-    } else {
-      setImgError(true)
-    }
+    // Ya sabemos que la imagen existe en el mapa, si falla es problema de red
+    setImgError(true)
   }
 
   const handleClick = () => {
