@@ -151,11 +151,11 @@ export default function DashboardPage() {
         Promise.all([
           authClient.from('predictions').select('id', { count: 'exact', head: true }).eq('user_id', userId),
           authClient.from('group_predictions').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-          authClient.from('pool_members').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+          authClient.from('pool_members').select('pool_id', { count: 'exact', head: true }).eq('user_id', userId).catch(() => ({ count: 0 })),
         ]).then(([predsRes, groupPredsRes, poolsRes]) => {
           setUserPredCount(predsRes.count ?? 0)
           setUserGroupPredCount(groupPredsRes.count ?? 0)
-          setUserPoolCount(poolsRes.count ?? 0)
+          setUserPoolCount((poolsRes as any).count ?? 0)
         })
       })
     }
