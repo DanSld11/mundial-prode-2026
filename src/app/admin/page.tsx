@@ -233,47 +233,28 @@ export default function AdminPage() {
             <p className="text-sm text-muted-foreground">No hay partidos finalizados aún.</p>
           </div>
         ) : (
-          <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl shadow-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border/50 bg-muted/30">
-                  <th className="px-5 py-3 text-left font-semibold text-muted-foreground uppercase tracking-wider text-xs">Partido</th>
-                  <th className="px-5 py-3 text-center font-semibold text-muted-foreground uppercase tracking-wider text-xs">Resultado</th>
-                  <th className="px-5 py-3 text-center font-semibold text-muted-foreground uppercase tracking-wider text-xs hidden sm:table-cell">Grupo</th>
-                  <th className="px-5 py-3 text-right font-semibold text-muted-foreground uppercase tracking-wider text-xs hidden md:table-cell">Actualizado</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/30">
-                {recentMatches.map((m: any) => (
-                  <tr key={m.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 bg-background/50 rounded-lg px-2 py-1 border border-border/50">
-                          <span className="shrink-0 text-lg">{m.home_team?.flag_emoji}</span>
-                          <span className="truncate max-w-[120px] font-semibold">{m.home_team?.name_es}</span>
-                        </div>
-                        <span className="text-muted-foreground/60 font-medium text-xs uppercase">vs</span>
-                        <div className="flex items-center gap-2 bg-background/50 rounded-lg px-2 py-1 border border-border/50">
-                          <span className="truncate max-w-[120px] font-semibold">{m.away_team?.name_es}</span>
-                          <span className="shrink-0 text-lg">{m.away_team?.flag_emoji}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <div className="inline-flex items-center justify-center bg-brand-red text-white font-bold rounded-lg px-3 py-1 text-base shadow-sm">
-                        {m.home_score} - {m.away_score}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-center hidden sm:table-cell">
-                      <Badge variant="outline" className="bg-background/50 font-semibold text-xs border-border/50">G{m.group_name}</Badge>
-                    </td>
-                    <td className="px-5 py-4 text-right text-xs text-muted-foreground font-medium hidden md:table-cell">
-                      {m.updated_at ? formatPeruLongDateTime(m.updated_at) : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-2">
+            {recentMatches.map((m: any) => (
+              <div key={m.id} className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-xl px-4 py-3 flex items-center gap-3">
+                {/* Equipo local */}
+                <div className="flex flex-1 items-center justify-end gap-2 min-w-0">
+                  <span className="truncate text-sm font-semibold text-right">{m.home_team?.name_es}</span>
+                  <span className="shrink-0 text-xl">{m.home_team?.flag_emoji}</span>
+                </div>
+                {/* Marcador */}
+                <div className="shrink-0 flex flex-col items-center gap-0.5">
+                  <div className="bg-brand-red text-white font-bold rounded-lg px-3 py-1 text-sm tabular-nums">
+                    {m.home_score} - {m.away_score}
+                  </div>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-border/50">G{m.group_name}</Badge>
+                </div>
+                {/* Equipo visitante */}
+                <div className="flex flex-1 items-center gap-2 min-w-0">
+                  <span className="shrink-0 text-xl">{m.away_team?.flag_emoji}</span>
+                  <span className="truncate text-sm font-semibold">{m.away_team?.name_es}</span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

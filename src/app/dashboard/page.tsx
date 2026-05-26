@@ -101,58 +101,70 @@ function WorldCupCountdown() {
 
 function InstallAppBanner() {
   const [prompt, setPrompt] = useState<any>(null)
-  const [isIOS, setIsIOS] = useState(false)
-  const [showIOSSteps, setShowIOSSteps] = useState(false)
+  const [platform, setPlatform] = useState<'android' | 'ios' | 'other'>('other')
+  const [showSteps, setShowSteps] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+    // Already running as installed PWA — hide banner
+    if (window.matchMedia('(display-mode: standalone)').matches) return
     const ua = navigator.userAgent
-    if (/iphone|ipad|ipod/i.test(ua)) setIsIOS(true)
+    if (/iphone|ipad|ipod/i.test(ua)) {
+      setPlatform('ios')
+    } else {
+      setPlatform('android')
+    }
     const handler = (e: any) => { e.preventDefault(); setPrompt(e) }
     window.addEventListener('beforeinstallprompt', handler)
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
-  async function handleInstall() {
+  async function handleClick() {
     if (prompt) {
       prompt.prompt()
       await prompt.userChoice
       setPrompt(null)
-    } else if (isIOS) {
-      setShowIOSSteps((v) => !v)
+    } else {
+      setShowSteps((v) => !v)
     }
   }
 
   return (
-    <div className="rounded-2xl border bg-gradient-to-r from-brand-red/5 to-brand-red/10 p-4 shadow-sm sm:p-5">
-      <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-red text-white shadow-sm">
-          <Smartphone className="h-6 w-6" />
+    <div className="rounded-2xl border bg-gradient-to-r from-brand-red/5 to-brand-red/10 p-4 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-red text-white shadow-sm">
+          <Smartphone className="h-5 w-5" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm">Instalá la app en tu celular</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">Accedé al toque desde tu pantalla de inicio</p>
+          <p className="font-semibold text-sm">Instalá la app</p>
+          <p className="text-xs text-muted-foreground">Accedé directo desde tu pantalla de inicio</p>
         </div>
         <button
-          onClick={handleInstall}
-          className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-brand-red px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 active:scale-95"
+          onClick={handleClick}
+          className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 active:scale-95 transition-all"
         >
           <Download className="h-4 w-4" />
           Instalar
         </button>
       </div>
-      {showIOSSteps && (
-        <div className="mt-3 rounded-xl border bg-card p-3 text-xs text-muted-foreground space-y-1">
-          <p>1. Tocá el ícono <strong>Compartir</strong> <span className="bg-muted px-1 rounded font-mono">⎙</span> en Safari</p>
-          <p>2. Desplazá y tocá <strong>"Agregar a pantalla de inicio"</strong></p>
-          <p>3. Tocá <strong>Agregar</strong></p>
+      {showSteps && (
+        <div className="mt-3 rounded-xl border bg-card p-3 space-y-1.5">
+          {platform === 'ios' ? (
+            <>
+              <p className="text-xs font-semibold text-foreground">Pasos para iPhone/iPad (Safari):</p>
+              <p className="text-xs text-muted-foreground">1. Tocá el ícono <strong>Compartir</strong> <span className="bg-muted px-1 rounded">⎙</span></p>
+              <p className="text-xs text-muted-foreground">2. Tocá <strong>"Agregar a pantalla de inicio"</strong></p>
+              <p className="text-xs text-muted-foreground">3. Tocá <strong>Agregar</strong> arriba a la derecha</p>
+            </>
+          ) : (
+            <>
+              <p className="text-xs font-semibold text-foreground">Pasos para Android (Chrome):</p>
+              <p className="text-xs text-muted-foreground">1. Tocá el menú <strong>⋮</strong> arriba a la derecha</p>
+              <p className="text-xs text-muted-foreground">2. Tocá <strong>"Agregar a pantalla de inicio"</strong> o <strong>"Instalar app"</strong></p>
+              <p className="text-xs text-muted-foreground">3. Confirmá tocando <strong>Instalar</strong></p>
+            </>
+          )}
         </div>
-      )}
-      {/* fallback text if neither prompt nor iOS */}
-      {!prompt && !isIOS && (
-        <p className="mt-3 text-xs text-muted-foreground">
-          En Chrome: tocá el menú <strong>⋮</strong> y seleccioná <strong>"Agregar a pantalla de inicio"</strong>.
-        </p>
       )}
     </div>
   )
