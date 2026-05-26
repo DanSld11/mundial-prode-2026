@@ -113,10 +113,11 @@ export default function MatchPredictionPage() {
     load()
   }, [matchId, supabase])
 
-  // La predicción se bloquea si: el admin/tiempo la cerró O el usuario ya confirmó
+  // La predicción se bloquea solo si: el admin la cerró O ya empezó el partido
+  // Los usuarios pueden editar su predicción hasta que comience el partido
   const isMatchLocked = !!match && (match.predictions_locked || new Date(match.match_date) < new Date())
-  const isUserConfirmed = !!prediction  // ya confirmó → no puede cambiar
-  const isLocked = isMatchLocked || isUserConfirmed
+  const isUserConfirmed = !!prediction  // ya tiene una predicción guardada (editable si no está bloqueado)
+  const isLocked = isMatchLocked        // solo el partido bloquea, no el haber confirmado antes
   const isFinished = match?.status === 'finished'
 
   const homePlayers = players.filter((p) => p.team_id === match?.home_team_id)
@@ -242,8 +243,30 @@ export default function MatchPredictionPage() {
           </div>
         )}
 
-        {/* Banner: predicción ya confirmada */}
-        {isUserConfirmed && !isFinished && (
+        {/* Banner: predicción ya guardada pero editable */}
+        {isUserConfirmed && !isFinished && !isMatchLocked && (
+          <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900 dark:bg-emerald-950/30">
+            <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                Predicción guardada — podés editarla
+              </p>
+              <p className="text-xs text-emerald-700/80 dark:text-emerald-400/70">
+                Podés cambiar tu pronóstico hasta que empiece el partido.
+              </p>
+            </div>
+            <button
+              onClick={sharePrediction}
+              className="flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-200 dark:border-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Compartir
+            </button>
+          </div>
+        )}
+
+        {/* Banner: predicción confirmada y partido bloqueado */}
+        {isUserConfirmed && !isFinished && isMatchLocked && (
           <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-900 dark:bg-emerald-950/30">
             <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
             <div className="flex-1">
@@ -251,7 +274,7 @@ export default function MatchPredictionPage() {
                 Predicción confirmada
               </p>
               <p className="text-xs text-emerald-700/80 dark:text-emerald-400/70">
-                Ya registraste tu pronóstico para este partido. No se puede modificar.
+                El partido ya comenzó. Tu predicción está bloqueada.
               </p>
             </div>
             <button
@@ -379,9 +402,6 @@ export default function MatchPredictionPage() {
                   type="number"
                   min={0}
                   max={20}
-                  onKeyDown={(e) => {
-                    if (['e', 'E', '+', '-', '.', ','].includes(e.key)) e.preventDefault()
-                  }}
                   value={homeScore}
                   onChange={(e) => setHomeScore(e.target.value)}
                   className={[
@@ -396,9 +416,6 @@ export default function MatchPredictionPage() {
                   type="number"
                   min={0}
                   max={20}
-                  onKeyDown={(e) => {
-                    if (['e', 'E', '+', '-', '.', ','].includes(e.key)) e.preventDefault()
-                  }}
                   value={awayScore}
                   onChange={(e) => setAwayScore(e.target.value)}
                   className={[
@@ -553,7 +570,7 @@ export default function MatchPredictionPage() {
           <p className="text-sm text-muted-foreground">
             Revisá tu pronóstico antes de confirmar.{' '}
             <span className="font-semibold text-foreground">
-              Una vez confirmado no podrás modificarlo.
+              Podés modificarlo hasta que comience el partido.
             </span>
           </p>
 
@@ -604,9 +621,9 @@ export default function MatchPredictionPage() {
           </div>
 
           {/* Advertencia */}
-          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
-            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            Una vez confirmada, tu predicción queda bloqueada y no podrás editarla.
+          <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs text-blue-800 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300">
+            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            Podés volver a editar tu predicción en cualquier momento antes de que empiece el partido.
           </div>
 
           {/* Acciones */}

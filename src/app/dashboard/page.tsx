@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, Crown, Medal, Shield, Target, Trophy, Users, Zap } from 'lucide-react'
+import { ArrowRight, CalendarDays, CheckCircle2, Circle, Crown, Medal, Shield, Target, Trophy, Users, Zap } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TeamFlag } from '@/components/team-flag'
@@ -23,6 +23,9 @@ export default function DashboardPage() {
   const [leaders, setLeaders] = useState<any[]>([])
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [userPredCount, setUserPredCount] = useState<number | null>(null)
+  const [userGroupPredCount, setUserGroupPredCount] = useState<number | null>(null)
+  const [userPoolCount, setUserPoolCount] = useState<number | null>(null)
 
   useEffect(() => {
     const supabase = createAnonClient()
@@ -49,6 +52,16 @@ export default function DashboardPage() {
         if (!userId) return
         authClient.from('profiles').select('role').eq('id', userId).single().then(({ data: profile }) => {
           setIsAdmin(profile?.role === 'admin')
+        })
+        // Datos para el checklist de onboarding
+        Promise.all([
+          authClient.from('predictions').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+          authClient.from('group_predictions').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+          authClient.from('pool_members').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+        ]).then(([predsRes, groupPredsRes, poolsRes]) => {
+          setUserPredCount(predsRes.count ?? 0)
+          setUserGroupPredCount(groupPredsRes.count ?? 0)
+          setUserPoolCount(poolsRes.count ?? 0)
         })
       })
     }
@@ -152,6 +165,50 @@ export default function DashboardPage() {
           </Link>
         ))}
       </section>
+
+      {/* Onboarding checklist — visible hasta que completen los 3 pasos */}
+      {userPredCount !== null && (userPredCount < 5 || userGroupPredCount === 0 || userPoolCount === 0) && (
+        <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+          <h2 className="mb-3 text-sm font-semibold">🚀 Primeros pasos</h2>
+          <div className="space-y-2">
+            {[
+              {
+                done: (userGroupPredCount ?? 0) > 0,
+                label: 'Completá tus pronósticos de grupo',
+                desc: 'Predecí las posiciones de los 9 grupos',
+                href: '/dashboard/pronosticos',
+              },
+              {
+                done: (userPredCount ?? 0) >= 5,
+                label: 'Predecí al menos 5 partidos',
+                desc: `Ya tenés ${userPredCount ?? 0} predicción${(userPredCount ?? 0) !== 1 ? 'es' : ''} · meta: 5`,
+                href: '/dashboard/fixture',
+              },
+              {
+                done: (userPoolCount ?? 0) > 0,
+                label: 'Unite a una polla',
+                desc: 'Competí con tus amigos',
+                href: '/dashboard/pollas',
+              },
+            ].map((step) => (
+              <Link
+                key={step.href}
+                href={step.href}
+                className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${step.done ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800/30 dark:bg-emerald-950/20' : 'hover:bg-muted/50'}`}
+              >
+                {step.done
+                  ? <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />
+                  : <Circle className="h-5 w-5 shrink-0 text-muted-foreground/40" />}
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm font-semibold leading-tight ${step.done ? 'line-through text-muted-foreground' : ''}`}>{step.label}</p>
+                  <p className="text-xs text-muted-foreground">{step.desc}</p>
+                </div>
+                {!step.done && <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Pronósticos callout */}
       <Link href="/dashboard/pronosticos" className="group block overflow-hidden rounded-2xl border bg-gradient-to-r from-brand-gold/10 to-brand-red/10 p-4 shadow-sm transition hover:shadow-md sm:p-5">

@@ -4,22 +4,49 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { CalendarDays, MapPin, Wifi } from 'lucide-react'
+import { CalendarDays, CheckCircle2, Clock, MapPin, Wifi } from 'lucide-react'
 import { TeamFlag } from '@/components/team-flag'
 import { formatPeruDateLabel, formatPeruTime, peruDateKey } from '@/lib/peru-time'
 import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
 import { cacheGet, cacheSet } from '@/lib/local-cache'
-import { motion } from 'framer-motion'
-import { Skeleton } from '@/components/ui/skeleton'
 
 const CACHE_KEY_MATCHES = 'fixture:matches'
 const CACHE_KEY_PREDS = 'fixture:predictions'
+
+
+/** Countdown para partidos que arrancan en menos de 24 horas */
+function MatchCountdown({ matchDate }: { matchDate: string }) {
+  const [timeLeft, setTimeLeft] = useState('')
+
+  useEffect(() => {
+    function update() {
+      const diff = new Date(matchDate).getTime() - Date.now()
+      if (diff <= 0) { setTimeLeft(''); return }
+      const h = Math.floor(diff / 3_600_000)
+      const m = Math.floor((diff % 3_600_000) / 60_000)
+      const s = Math.floor((diff % 60_000) / 1_000)
+      setTimeLeft(`${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`)
+    }
+    update()
+    const id = setInterval(update, 1_000)
+    return () => clearInterval(id)
+  }, [matchDate])
+
+  if (!timeLeft) return null
+  return (
+    <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+      <Clock className="h-2.5 w-2.5" />
+      {timeLeft}
+    </span>
+  )
+}
 
 export default function FixturePage() {
   const [matches, setMatches] = useState<any[]>([])
   const [predictions, setPredictions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [liveIndicator, setLiveIndicator] = useState(false)
+  const [activeGroup, setActiveGroup] = useState<string>('todos')
 
   useEffect(() => {
     // Show cached data immediately (optimistic)
@@ -73,33 +100,24 @@ export default function FixturePage() {
 
   if (loading) return (
     <div className="space-y-5 sm:space-y-7">
-      <div className="rounded-3xl border border-border/50 bg-card/60 p-4 shadow-sm sm:p-5">
+      <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5 animate-pulse">
         <div className="flex items-center gap-3">
-          <Skeleton className="h-11 w-11 rounded-xl" />
-          <div className="space-y-2">
-            <Skeleton className="h-5 w-28" />
-            <Skeleton className="h-3 w-48" />
-          </div>
+          <div className="h-11 w-11 rounded-xl bg-muted/60" />
+          <div className="space-y-2"><div className="h-5 w-28 rounded bg-muted/60" /><div className="h-3 w-48 rounded bg-muted/60" /></div>
         </div>
       </div>
       <div className="mx-auto max-w-5xl space-y-6">
-        {[1, 2, 3].map(d => (
+        {[1,2,3].map(d => (
           <div key={d} className="space-y-2">
-            <Skeleton className="h-4 w-32 mb-2" />
-            {[1, 2, 3].map(m => (
-              <div key={m} className="rounded-3xl border border-border/50 bg-card/60 p-4 shadow-sm">
+            <div className="h-4 w-32 rounded bg-muted/60 animate-pulse" />
+            {[1,2,3].map(m => (
+              <div key={m} className="rounded-xl border bg-card p-4 shadow-sm animate-pulse">
                 <div className="flex items-center gap-3">
-                  <Skeleton className="h-5 w-12 rounded-md" />
+                  <div className="h-5 w-12 rounded-md bg-muted/60" />
                   <div className="flex flex-1 items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 justify-end">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-5 w-7" />
-                    </div>
-                    <Skeleton className="h-5 w-16 rounded-md" />
-                    <div className="flex items-center gap-2 flex-1">
-                      <Skeleton className="h-5 w-7" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
+                    <div className="flex items-center gap-2 flex-1 justify-end"><div className="h-4 w-24 rounded bg-muted/60" /><div className="h-5 w-7 rounded bg-muted/60" /></div>
+                    <div className="h-5 w-16 rounded-md bg-muted/60" />
+                    <div className="flex items-center gap-2 flex-1"><div className="h-5 w-7 rounded bg-muted/60" /><div className="h-4 w-24 rounded bg-muted/60" /></div>
                   </div>
                 </div>
               </div>
@@ -111,11 +129,21 @@ export default function FixturePage() {
   )
 
   const predictionsMap = new Map(predictions.map((p: any) => [p.match_id, p]))
-  const matchesByDate: Record<string, any[]> = {}
-  matches.forEach((m: any) => {
+
+  // Progreso de predicciones (solo partidos que aún no empezaron y no están bloqueados)
+  const openMatches = matches.filter((m: any) => !m.predictions_locked && new Date(m.match_date) > new Date())
+  const completedPreds = openMatches.filter((m: any) => predictionsMap.has(m.id)).length
+  const totalOpen = openMatches.length
+  const progressPct = totalOpen > 0 ? Math.round((completedPreds / totalOpen) * 100) : 100
+
+  // Grupos disponibles para el filtro
+  const availableGroups = Array.from(new Set(matches.map((m: any) => m.group_name))).sort()
+  const filteredMatches = activeGroup === 'todos' ? matches : matches.filter((m: any) => m.group_name === activeGroup)
+  const filteredByDate: Record<string, any[]> = {}
+  filteredMatches.forEach((m: any) => {
     const d = peruDateKey(m.match_date)
-    if (!matchesByDate[d]) matchesByDate[d] = []
-    matchesByDate[d].push(m)
+    if (!filteredByDate[d]) filteredByDate[d] = []
+    filteredByDate[d].push(m)
   })
 
   return (
@@ -138,6 +166,53 @@ export default function FixturePage() {
         </div>
       </div>
 
+      {/* Banner de progreso de predicciones */}
+      {matches.length > 0 && (
+        <div className="rounded-2xl border bg-card p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className={`h-4 w-4 ${progressPct === 100 ? 'text-emerald-500' : 'text-brand-red'}`} />
+              <span className="text-sm font-semibold">
+                {progressPct === 100
+                  ? '¡Todas las predicciones completadas!'
+                  : `${completedPreds} de ${totalOpen} predicciones completadas`}
+              </span>
+            </div>
+            <span className="text-sm font-bold tabular-nums text-muted-foreground">{progressPct}%</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className={`h-2 rounded-full transition-all duration-500 ${progressPct === 100 ? 'bg-emerald-500' : 'bg-brand-red'}`}
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          {totalOpen === 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">No hay partidos abiertos para predecir en este momento.</p>
+          )}
+        </div>
+      )}
+
+      {/* Filtros por grupo */}
+      {availableGroups.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setActiveGroup('todos')}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${activeGroup === 'todos' ? 'bg-brand-red text-white shadow-sm' : 'border bg-card text-muted-foreground hover:border-brand-red/50 hover:text-foreground'}`}
+          >
+            Todos
+          </button>
+          {availableGroups.map((g) => (
+            <button
+              key={g}
+              onClick={() => setActiveGroup(g)}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${activeGroup === g ? 'bg-brand-red text-white shadow-sm' : 'border bg-card text-muted-foreground hover:border-brand-red/50 hover:text-foreground'}`}
+            >
+              Grupo {g}
+            </button>
+          ))}
+        </div>
+      )}
+
       {matches.length === 0 ? (
         <div className="rounded-xl border bg-card p-12 text-center">
           <CalendarDays className="mx-auto h-10 w-10 text-muted-foreground/30 mb-3" />
@@ -146,7 +221,7 @@ export default function FixturePage() {
         </div>
       ) : (
         <div className="mx-auto max-w-5xl space-y-6">
-          {Object.entries(matchesByDate).map(([dateKey, dayMatches]) => (
+          {Object.entries(filteredByDate).map(([dateKey, dayMatches]) => (
             <div key={dateKey}>
               <h2 className="mb-2 pl-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 {formatPeruDateLabel(dayMatches[0].match_date)}
@@ -160,14 +235,8 @@ export default function FixturePage() {
                   const awayFlag = match.away_team?.flag_emoji
 
                   return (
-                    <motion.div
-                      key={match.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: dayMatches.indexOf(match) * 0.1 }}
-                    >
-                      <Card className="overflow-hidden border shadow-sm transition-shadow hover:shadow-md">
-                        <CardContent className="p-3 sm:p-4">
+                    <Card key={match.id} className="overflow-hidden border shadow-sm transition-shadow hover:shadow-md">
+                      <CardContent className="p-3 sm:p-4">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                           <div className="flex items-center justify-between gap-2 sm:w-28 sm:justify-start">
                             <Badge variant="secondary" className="w-12 shrink-0 justify-center font-mono text-xs">G{match.group_name}</Badge>
@@ -199,7 +268,7 @@ export default function FixturePage() {
                           </div>
                         </div>
                         <div className="mt-3 flex flex-col items-center justify-between gap-2 border-t pt-3 sm:flex-row">
-                          <div className="text-xs text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             {pred ? (
                               <span>
                                 Predicción guardada
@@ -209,6 +278,10 @@ export default function FixturePage() {
                               <span>Predicciones cerradas</span>
                             ) : (
                               <span>Resultado, goleador y marcador exacto</span>
+                            )}
+                            {/* Countdown si faltan menos de 24h y el partido no cerró */}
+                            {!isLocked && !isFinished && (new Date(match.match_date).getTime() - Date.now()) < 86_400_000 && (
+                              <MatchCountdown matchDate={match.match_date} />
                             )}
                           </div>
                           <Link
@@ -228,8 +301,7 @@ export default function FixturePage() {
                           )}
                         </div>
                       </CardContent>
-                      </Card>
-                    </motion.div>
+                    </Card>
                   )
                 })}
               </div>
