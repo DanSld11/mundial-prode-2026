@@ -17,7 +17,6 @@ import {
   Sun,
   Moon,
   BookOpen,
-  Menu,
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -43,12 +42,7 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
   const { open: sidebarOpen, toggle: toggleSidebar } = useSidebar()
   const [detectedAdmin, setDetectedAdmin] = useState(isAdmin)
   const [username, setUsername] = useState('')
-  const [mobileOpen, setMobileOpen] = useState(false)
   const showAdmin = isAdmin || detectedAdmin
-
-  useEffect(() => {
-    setMobileOpen(false)
-  }, [pathname])
 
   useEffect(() => {
     if (isAdmin) return
@@ -208,50 +202,15 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
           >
             {resolved === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary transition-colors"
-            aria-label="Abrir menú"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+          <Link href="/dashboard/perfil">
+            <Avatar className="h-7 w-7">
+              <AvatarFallback className="bg-brand-red text-white text-xs font-bold">
+                {username ? username.charAt(0).toUpperCase() : '?'}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
         </div>
       </header>
-
-      {/* MOBILE DRAWER OVERLAY */}
-      {mobileOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      {/* MOBILE DRAWER PANEL */}
-      <aside
-        className={cn(
-          'lg:hidden fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r bg-card shadow-2xl transition-transform duration-300 ease-in-out',
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
-        <div className="flex h-14 shrink-0 items-center justify-between border-b px-4">
-          <Link href="/dashboard" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-red text-white">
-              <Trophy className="h-3.5 w-3.5" />
-            </div>
-            <span className="font-bold text-sm tracking-tight">
-              Mundial <span className="text-brand-red">2026</span>
-            </span>
-          </Link>
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary transition-colors"
-            aria-label="Cerrar menú"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <NavLinks onClick={() => setMobileOpen(false)} />
-      </aside>
 
       {/* MOBILE BOTTOM NAV */}
       <nav className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t bg-card/90 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1.5 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
