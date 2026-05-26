@@ -187,7 +187,7 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
       )}
 
       {/* MOBILE TOP HEADER */}
-      <header className="lg:hidden sticky top-0 z-50 flex h-14 items-center justify-between border-b bg-card/80 px-4 backdrop-blur-xl">
+      <header className="lg:hidden fixed inset-x-0 top-0 z-50 flex h-14 items-center justify-between border-b bg-card/80 px-4 backdrop-blur-xl">
         <Link href="/dashboard" className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-red text-white">
             <Trophy className="h-3.5 w-3.5" />
