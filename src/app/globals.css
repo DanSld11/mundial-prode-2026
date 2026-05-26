@@ -64,9 +64,7 @@
     --sidebar-border: #1E293B;
     --sidebar-ring: #C8102E;
   }
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', sans-serif;
@@ -79,3 +77,55 @@
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--muted); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Mundial 2026 Animations */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes float-ball {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%       { transform: translateY(-18px) rotate(180deg); }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-glow-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200,16,46,0); }
+  50%       { box-shadow: 0 0 28px 8px rgba(200,16,46,0.22); }
+}
+@keyframes shimmer-gold {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-5px); }
+}
+@keyframes countdown-pop {
+  0%  { transform: scale(1); }
+  15% { transform: scale(1.12); }
+  30% { transform: scale(1); }
+}
+
+.animate-marquee      { animation: marquee 35s linear infinite; }
+.animate-marquee-fast { animation: marquee 18s linear infinite; }
+.animate-float-ball   { animation: float-ball var(--dur,4s) ease-in-out var(--delay,0s) infinite; }
+.animate-fadeInUp     { animation: fadeInUp 0.6s ease-out both; }
+.animate-fadeInDown   { animation: fadeInDown 0.5s ease-out both; }
+.animate-pulse-glow   { animation: pulse-glow-red 2.5s ease-in-out infinite; }
+.animate-bounce-subtle { animation: bounce-subtle 2.2s ease-in-out infinite; }
+.animate-countdown-pop { animation: countdown-pop 1s ease-in-out; }
+.animate-shimmer-gold {
+  background: linear-gradient(90deg, #C8A400 0%, #FFD700 40%, #C8A400 60%, #FFD700 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer-gold 3s linear infinite;
+}

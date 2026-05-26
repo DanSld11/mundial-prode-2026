@@ -13,15 +13,12 @@ import {
   Target,
   Table2,
   LogOut,
-  Menu,
   Shield,
-  UserRound,
   Sun,
   Moon,
   BookOpen,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { useTheme } from '@/components/theme-provider'
@@ -37,30 +34,26 @@ const navItems = [
   { href: '/dashboard/tabla', label: 'Tabla', icon: Table2 },
 ]
 
-// Bottom nav shows most important 6 items
 const bottomNavItems = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
   { href: '/dashboard/fixture', label: 'Fixture', icon: CalendarDays },
   { href: '/dashboard/predicciones', label: 'Pred.', icon: Target },
   { href: '/dashboard/pronosticos', label: 'Pronóst.', icon: BarChart3 },
   { href: '/dashboard/pollas', label: 'Pollas', icon: Trophy },
-  { href: '/dashboard/reglas', label: 'Reglas', icon: BookOpen },
+  { href: '/dashboard/tabla', label: 'Tabla', icon: Table2 },
 ]
 
 export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()
   const { resolved, toggleTheme } = useTheme()
-  const [mobileOpen, setMobileOpen] = useState(false)
   const [detectedAdmin, setDetectedAdmin] = useState(isAdmin)
   const [username, setUsername] = useState('')
   const showAdmin = isAdmin || detectedAdmin
 
   useEffect(() => {
     if (isAdmin) return
-
     const token = getAccessToken()
     if (!token) return
-
     const supabase = createAuthedClient(token)
     getCurrentUserId(token).then((userId) => {
       if (!userId) return
@@ -76,165 +69,142 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
     })
   }, [isAdmin])
 
-  const mobileNavItems = useMemo(() => {
-    return showAdmin ? [...navItems, { href: '/admin', label: 'Admin', icon: Shield }] : navItems
-  }, [showAdmin])
+  const allNavItems = useMemo(
+    () => showAdmin ? [...navItems, { href: '/admin', label: 'Admin', icon: Shield }] : navItems,
+    [showAdmin]
+  )
 
   return (
     <>
-      <nav className="sticky top-0 z-50 w-full border-b border-white/10 bg-card/60 backdrop-blur-xl supports-[backdrop-filter]:bg-card/40 transition-all duration-300">
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-red/5 via-transparent to-brand-gold/5 pointer-events-none" />
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center px-4 sm:px-6 lg:px-8 relative">
-          <Link href="/dashboard" className="mr-3 flex min-w-0 items-center gap-2 group lg:mr-8">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-red text-white">
-              <Trophy className="h-4 w-4" />
-            </div>
-            <span className="hidden font-bold text-base tracking-tight min-[380px]:inline">
-              Mundial Perú <span className="text-brand-red">2026</span>
-            </span>
-          </Link>
-
-          <div className="hidden min-[920px]:flex min-[920px]:items-center min-[920px]:gap-1">
-            {navItems.map((item) => {
-              const active = pathname === item.href
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-all hover:scale-105',
-                    active
-                      ? 'bg-secondary/80 shadow-sm text-secondary-foreground'
-                      : 'text-muted-foreground hover:bg-secondary/50 hover:text-secondary-foreground'
-                  )}
-                >
-                  <item.icon className="h-3.5 w-3.5" />
-                  {item.label}
-                </Link>
-              )
-            })}
-            {showAdmin && (
-              <Link
-                href="/admin"
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-all hover:scale-105',
-                  pathname.startsWith('/admin')
-                    ? 'bg-secondary/80 shadow-sm text-secondary-foreground'
-                    : 'text-muted-foreground hover:bg-secondary/50 hover:text-secondary-foreground'
-                )}
-              >
-                <Shield className="h-3.5 w-3.5" />
-                Admin
-              </Link>
-            )}
+      {/* DESKTOP SIDEBAR (lg+) */}
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:w-64 lg:flex-col border-r bg-card">
+        <div className="flex h-16 shrink-0 items-center gap-3 border-b px-5">
+          <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="58" r="26" fill="#C8102E" />
+            <ellipse cx="50" cy="58" rx="26" ry="9" fill="none" stroke="white" strokeWidth="1.5" opacity="0.35" />
+            <line x1="24" y1="58" x2="76" y2="58" stroke="white" strokeWidth="1.5" opacity="0.35" />
+            <ellipse cx="50" cy="58" rx="13" ry="26" fill="none" stroke="white" strokeWidth="1.5" opacity="0.35" />
+            <path d="M37 32 Q37 21 50 19 Q63 21 63 32 L59 43 Q50 47 41 43 Z" fill="#FFD700" />
+            <path d="M41 43 L43 51 L57 51 L59 43" fill="#C8A400" />
+            <rect x="43" y="51" width="14" height="3" rx="1.5" fill="#C8A400" />
+            <rect x="39" y="54" width="22" height="3" rx="1.5" fill="#C8A400" />
+            <path d="M37 34 Q28 34 28 41 Q28 47 37 47" fill="none" stroke="#FFD700" strokeWidth="3" strokeLinecap="round" />
+            <path d="M63 34 Q72 34 72 41 Q72 47 63 47" fill="none" stroke="#FFD700" strokeWidth="3" strokeLinecap="round" />
+            <circle cx="50" cy="30" r="3" fill="#FFD700" opacity="0.7" />
+          </svg>
+          <div className="leading-none">
+            <p className="font-bold text-sm tracking-tight">Mundial Perú</p>
+            <p className="font-black text-brand-red text-[11px] tracking-[0.15em]">2026</p>
           </div>
-
-          <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
-            <Link href="/dashboard/perfil">
-              <Button variant="ghost" size="sm" className="hidden gap-1.5 text-muted-foreground sm:inline-flex">
-                <UserRound className="h-3.5 w-3.5" />
-                <span>Perfil</span>
-              </Button>
-            </Link>
-            <form action="/auth/logout" method="post">
-              <Button type="submit" variant="ghost" size="sm" className="hidden gap-1.5 text-muted-foreground sm:inline-flex">
-                <LogOut className="h-3.5 w-3.5" />
-                <span>Salir</span>
-              </Button>
-            </form>
-
-            {/* Theme toggle */}
-            <button
-              onClick={toggleTheme}
-              aria-label={resolved === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-              title={resolved === 'dark' ? 'Modo claro' : 'Modo oscuro'}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-secondary-foreground"
-            >
-              {resolved === 'dark'
-                ? <Sun className="h-4 w-4" />
-                : <Moon className="h-4 w-4" />}
-            </button>
-
-            <Link href="/dashboard/perfil" aria-label="Perfil">
-              <Avatar className="h-7 w-7">
-                <AvatarFallback className="bg-brand-red text-white text-xs font-bold">
-                  {username ? username.charAt(0).toUpperCase() : '?'}
-                </AvatarFallback>
-              </Avatar>
-            </Link>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="ml-1 min-[920px]:hidden"
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
         </div>
 
-        {mobileOpen && (
-          <div className="border-t bg-card min-[920px]:hidden">
-            <div className="mx-auto w-full max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {mobileNavItems.map((item) => {
-                const active = pathname === item.href
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      'flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
-                      active ? 'bg-secondary text-secondary-foreground' : 'text-muted-foreground hover:bg-secondary'
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </Link>
-                )
-              })}
-              </div>
-              <Separator className="my-3" />
-              <Link
-                href="/dashboard/perfil"
-                onClick={() => setMobileOpen(false)}
-                className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary"
-              >
-                <UserRound className="h-4 w-4" />
-                Perfil
-              </Link>
-              <button
-                onClick={() => { toggleTheme(); setMobileOpen(false) }}
-                className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary"
-              >
-                {resolved === 'dark'
-                  ? <><Sun className="h-4 w-4" /> Modo claro</>
-                  : <><Moon className="h-4 w-4" /> Modo oscuro</>}
-              </button>
-              <form action="/auth/logout" method="post">
-                <button className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary">
-                  <LogOut className="h-4 w-4" />
-                  Salir
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-      </nav>
-
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-card/70 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-12px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl min-[920px]:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-6 gap-1 relative">
-          {bottomNavItems.map((item) => {
-            const active = pathname === item.href
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+          {allNavItems.map((item) => {
+            const active = item.href === '/dashboard'
+              ? pathname === '/dashboard'
+              : pathname.startsWith(item.href)
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex min-w-0 flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-all hover:scale-105 active:scale-95',
-                  active ? 'bg-secondary/80 shadow-sm text-secondary-foreground' : 'text-muted-foreground hover:bg-secondary/50'
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
+                  active
+                    ? 'bg-brand-red text-white shadow-sm'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                )}
+              >
+                <item.icon className="h-4 w-4 shrink-0 transition-transform group-hover:scale-110" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </nav>
+
+        <div className="shrink-0 border-t px-3 py-3 space-y-0.5">
+          <Separator className="mb-2" />
+          <Link
+            href="/dashboard/perfil"
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
+              pathname === '/dashboard/perfil'
+                ? 'bg-secondary text-foreground'
+                : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+            )}
+          >
+            <Avatar className="h-6 w-6 shrink-0">
+              <AvatarFallback className="bg-brand-red text-white text-xs font-bold">
+                {username ? username.charAt(0).toUpperCase() : '?'}
+              </AvatarFallback>
+            </Avatar>
+            <span className="truncate">{username || 'Perfil'}</span>
+          </Link>
+
+          <button
+            onClick={toggleTheme}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
+          >
+            {resolved === 'dark'
+              ? <Sun className="h-4 w-4 shrink-0" />
+              : <Moon className="h-4 w-4 shrink-0" />}
+            {resolved === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+          </button>
+
+          <form action="/auth/logout" method="post">
+            <button
+              type="submit"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              Salir
+            </button>
+          </form>
+        </div>
+      </aside>
+
+      {/* MOBILE TOP HEADER */}
+      <header className="lg:hidden sticky top-0 z-50 flex h-14 items-center justify-between border-b bg-card/80 px-4 backdrop-blur-xl">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-red text-white">
+            <Trophy className="h-3.5 w-3.5" />
+          </div>
+          <span className="font-bold text-sm tracking-tight">
+            Mundial <span className="text-brand-red">2026</span>
+          </span>
+        </Link>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={toggleTheme}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary transition-colors"
+          >
+            {resolved === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+          <Link href="/dashboard/perfil">
+            <Avatar className="h-7 w-7">
+              <AvatarFallback className="bg-brand-red text-white text-xs font-bold">
+                {username ? username.charAt(0).toUpperCase() : '?'}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
+        </div>
+      </header>
+
+      {/* MOBILE BOTTOM NAV */}
+      <nav className="lg:hidden fixed inset-x-0 bottom-0 z-50 border-t bg-card/80 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <div className="mx-auto grid max-w-md grid-cols-6 gap-1">
+          {bottomNavItems.map((item) => {
+            const active = item.href === '/dashboard'
+              ? pathname === '/dashboard'
+              : pathname.startsWith(item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex min-w-0 flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-all active:scale-95',
+                  active
+                    ? 'bg-brand-red/10 text-brand-red'
+                    : 'text-muted-foreground hover:bg-secondary/50'
                 )}
               >
                 <item.icon className="h-4 w-4" />

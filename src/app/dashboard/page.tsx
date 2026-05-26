@@ -11,11 +11,106 @@ import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId 
 import { ActivityFeed } from '@/components/activity-feed'
 
 const quickLinks = [
-  { href: '/dashboard/grupos', title: 'Grupos', description: 'Ver las 48 selecciones', icon: Users },
-  { href: '/dashboard/fixture', title: 'Fixture', description: 'Predecir partidos', icon: CalendarDays },
-  { href: '/dashboard/predicciones', title: 'Mis predicciones', description: 'Revisar tus picks', icon: Target },
-  { href: '/dashboard/tabla', title: 'Tabla', description: 'Ranking de jugadores', icon: Medal },
+  { href: '/dashboard/grupos',      title: 'Grupos',          description: 'Ver las 48 selecciones',  icon: Users },
+  { href: '/dashboard/fixture',     title: 'Fixture',         description: 'Predecir partidos',        icon: CalendarDays },
+  { href: '/dashboard/predicciones',title: 'Mis predicciones',description: 'Revisar tus picks',        icon: Target },
+  { href: '/dashboard/tabla',       title: 'Tabla',           description: 'Ranking de jugadores',     icon: Medal },
 ]
+
+const FLAGS_MARQUEE = [
+  '\U0001f1e7\U0001f1f7','\U0001f1e6\U0001f1f7','\U0001f1eb\U0001f1f7','\U0001f1ea\U0001f1f8','\U0001f1e9\U0001f1ea','\U0001f1f5\U0001f1f9','\U0001f1f3\U0001f1f1','\U0001f1e7\U0001f1ea','\U0001f1ee\U0001f1f9','\U0001f1ed\U0001f1f7',
+  '\U0001f1ef\U0001f1f5','\U0001f1f0\U0001f1f7','\U0001f1f2\U0001f1fd','\U0001f1fa\U0001f1f8','\U0001f1e8\U0001f1e6','\U0001f1f8\U0001f1f3','\U0001f1f2\U0001f1e6','\U0001f1f5\U0001f1ea','\U0001f1e8\U0001f1f4','\U0001f1fa\U0001f1fe',
+  '\U0001f1e6\U0001f1fa','\U0001f1f8\U0001f1e6','\U0001f1e9\U0001f1f0','\U0001f1f5\U0001f1f1','\U0001f1e8\U0001f1ed','\U0001f1ec\U0001f1e7','\U0001f1f5\U0001f1e6','\U0001f1ea\U0001f1e8','\U0001f1f3\U0001f1ec','\U0001f1e8\U0001f1f2',
+  '\U0001f1ec\U0001f1ed','\U0001f1ee\U0001f1f7','\U0001f1f8\U0001f1ea','\U0001f1f7\U0001f1f8','\U0001f1f5\U0001f1fe','\U0001f1e7\U0001f1f4','\U0001f1fb\U0001f1ea','\U0001f1e8\U0001f1f7','\U0001f1ed\U0001f1f3','\U0001f1f9\U0001f1f3',
+  '\U0001f1ff\U0001f1e6','\U0001f1e8\U0001f1ee','\U0001f1e6\U0001f1f1','\U0001f1fa\U0001f1e6','\U0001f1f8\U0001f1f0','\U0001f1f6\U0001f1e6','\U0001f1e6\U0001f1f9','\U0001f1f7\U0001f1f4',
+]
+
+function getCountdown() {
+  const WC = new Date('2026-06-11T22:00:00Z')
+  const diff = WC.getTime() - Date.now()
+  if (diff <= 0) return null
+  return {
+    days:  Math.floor(diff / 86_400_000),
+    hours: Math.floor((diff % 86_400_000) / 3_600_000),
+    mins:  Math.floor((diff % 3_600_000) / 60_000),
+    secs:  Math.floor((diff % 60_000) / 1_000),
+  }
+}
+
+function WorldCupCountdown() {
+  const [cd, setCd] = useState<{ days: number; hours: number; mins: number; secs: number } | null>(null)
+
+  useEffect(() => {
+    setCd(getCountdown())
+    const t = setInterval(() => setCd(getCountdown()), 1_000)
+    return () => clearInterval(t)
+  }, [])
+
+  if (!cd) return null
+
+  return (
+    <div
+      className="relative overflow-hidden rounded-2xl border text-white"
+      style={{ background: 'linear-gradient(135deg, #001F5B 0%, #002868 40%, #C8102E 100%)' }}
+    >
+      {/* Hex pattern */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.07]">
+        <svg width="100%" height="100%">
+          <defs>
+            <pattern id="dhex" x="0" y="0" width="40" height="70" patternUnits="userSpaceOnUse">
+              <polygon points="20,2 38,12 38,32 20,42 2,32 2,12" fill="none" stroke="white" strokeWidth="1"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#dhex)"/>
+        </svg>
+      </div>
+
+      <div className="relative px-5 py-4 sm:px-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          {/* Left: label */}
+          <div className="flex items-center gap-3">
+            <span className="text-3xl animate-bounce-subtle">⚽</span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/60">Cuenta regresiva</p>
+              <p className="font-bebas text-xl tracking-wide">Mundial FIFA 2026 · 11 jun · Azteca</p>
+            </div>
+          </div>
+
+          {/* Right: digits */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {[
+              { val: cd.days,  label: 'días'  },
+              { val: cd.hours, label: 'horas' },
+              { val: cd.mins,  label: 'min'   },
+              { val: cd.secs,  label: 'seg'   },
+            ].map((u, i) => (
+              <div key={u.label} className="flex items-center gap-2 sm:gap-3">
+                {i > 0 && <span className="text-white/30 font-bold text-lg">:</span>}
+                <div className="flex flex-col items-center rounded-xl bg-white/10 px-3 py-2 min-w-[3rem] backdrop-blur-sm">
+                  <span className="font-bebas text-2xl sm:text-3xl tabular-nums leading-none">{String(u.val).padStart(2,'0')}</span>
+                  <span className="text-[9px] uppercase tracking-wider text-white/50">{u.label}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FlagMarquee() {
+  const doubled = [...FLAGS_MARQUEE, ...FLAGS_MARQUEE]
+  return (
+    <div className="overflow-hidden rounded-xl border bg-muted/30 py-2.5">
+      <div className="flex animate-marquee-fast whitespace-nowrap">
+        {doubled.map((flag, i) => (
+          <span key={i} className="mx-2.5 text-xl leading-none" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}>{flag}</span>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function DashboardPage() {
   const [teams, setTeams] = useState<any[]>([])
@@ -53,7 +148,6 @@ export default function DashboardPage() {
         authClient.from('profiles').select('role').eq('id', userId).single().then(({ data: profile }) => {
           setIsAdmin(profile?.role === 'admin')
         })
-        // Datos para el checklist de onboarding
         Promise.all([
           authClient.from('predictions').select('id', { count: 'exact', head: true }).eq('user_id', userId),
           authClient.from('group_predictions').select('id', { count: 'exact', head: true }).eq('user_id', userId),
@@ -74,7 +168,15 @@ export default function DashboardPage() {
   if (loading) return <div className="py-20 text-center text-sm text-muted-foreground">Cargando dashboard...</div>
 
   return (
-    <div className="space-y-5 sm:space-y-7">
+    <div className="space-y-5 sm:space-y-6">
+
+      {/* Countdown */}
+      <WorldCupCountdown />
+
+      {/* Flag strip */}
+      <FlagMarquee />
+
+      {/* Hero card */}
       <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
         <div className="grid gap-0 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="p-5 sm:p-7 lg:p-8">
@@ -105,8 +207,8 @@ export default function DashboardPage() {
           <div className="border-t bg-muted/30 p-5 sm:p-7 lg:border-l lg:border-t-0 lg:p-8">
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: 'Equipos', value: teams.length },
-                { label: 'Grupos', value: groupCount },
+                { label: 'Equipos',  value: teams.length },
+                { label: 'Grupos',   value: groupCount },
                 { label: 'Partidos', value: matches.length },
               ].map((item) => (
                 <div key={item.label} className="rounded-xl border bg-card p-3 text-center shadow-sm">
@@ -149,6 +251,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      {/* Quick links */}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[...quickLinks, ...(isAdmin ? [{ href: '/admin', title: 'Admin', description: 'Gestionar torneo', icon: Shield }] : [])].map((item) => (
           <Link key={item.href} href={item.href} className="group rounded-xl border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
@@ -166,30 +269,15 @@ export default function DashboardPage() {
         ))}
       </section>
 
-      {/* Onboarding checklist — visible hasta que completen los 3 pasos */}
+      {/* Onboarding checklist */}
       {userPredCount !== null && (userPredCount < 5 || userGroupPredCount === 0 || userPoolCount === 0) && (
         <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
           <h2 className="mb-3 text-sm font-semibold">🚀 Primeros pasos</h2>
           <div className="space-y-2">
             {[
-              {
-                done: (userGroupPredCount ?? 0) > 0,
-                label: 'Completá tus pronósticos de grupo',
-                desc: 'Predecí las posiciones de los 9 grupos',
-                href: '/dashboard/pronosticos',
-              },
-              {
-                done: (userPredCount ?? 0) >= 5,
-                label: 'Predecí al menos 5 partidos',
-                desc: `Ya tenés ${userPredCount ?? 0} predicción${(userPredCount ?? 0) !== 1 ? 'es' : ''} · meta: 5`,
-                href: '/dashboard/fixture',
-              },
-              {
-                done: (userPoolCount ?? 0) > 0,
-                label: 'Unite a una polla',
-                desc: 'Competí con tus amigos',
-                href: '/dashboard/pollas',
-              },
+              { done: (userGroupPredCount ?? 0) > 0, label: 'Completá tus pronósticos de grupo', desc: 'Predecí las posiciones de los 9 grupos', href: '/dashboard/pronosticos' },
+              { done: (userPredCount ?? 0) >= 5,      label: 'Predecí al menos 5 partidos',       desc: `Ya tenés ${userPredCount ?? 0} predicción${(userPredCount ?? 0) !== 1 ? 'es' : ''} · meta: 5`, href: '/dashboard/fixture' },
+              { done: (userPoolCount ?? 0) > 0,       label: 'Unite a una polla',                  desc: 'Competí con tus amigos',              href: '/dashboard/pollas' },
             ].map((step) => (
               <Link
                 key={step.href}
@@ -233,6 +321,7 @@ export default function DashboardPage() {
         <ActivityFeed />
       </section>
 
+      {/* Groups + leaderboard */}
       <section className="grid gap-5 lg:grid-cols-[1fr_360px]">
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
