@@ -24,6 +24,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { useTheme } from '@/components/theme-provider'
+import { useSidebar } from '@/components/layout/sidebar-context'
 
 const navItems = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
@@ -39,6 +40,7 @@ const navItems = [
 export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()
   const { resolved, toggleTheme } = useTheme()
+  const { open: sidebarOpen, toggle: toggleSidebar } = useSidebar()
   const [detectedAdmin, setDetectedAdmin] = useState(isAdmin)
   const [username, setUsername] = useState('')
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -141,35 +143,53 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
     </>
   )
 
-  const SidebarHeader = () => (
-    <div className="flex h-16 shrink-0 items-center gap-3 border-b px-5">
-      <svg width="36" height="36" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50" cy="58" r="26" fill="#C8102E" />
-        <ellipse cx="50" cy="58" rx="26" ry="9" fill="none" stroke="white" strokeWidth="1.5" opacity="0.35" />
-        <line x1="24" y1="58" x2="76" y2="58" stroke="white" strokeWidth="1.5" opacity="0.35" />
-        <ellipse cx="50" cy="58" rx="13" ry="26" fill="none" stroke="white" strokeWidth="1.5" opacity="0.35" />
-        <path d="M37 32 Q37 21 50 19 Q63 21 63 32 L59 43 Q50 47 41 43 Z" fill="#FFD700" />
-        <path d="M41 43 L43 51 L57 51 L59 43" fill="#C8A400" />
-        <rect x="43" y="51" width="14" height="3" rx="1.5" fill="#C8A400" />
-        <rect x="39" y="54" width="22" height="3" rx="1.5" fill="#C8A400" />
-        <path d="M37 34 Q28 34 28 41 Q28 47 37 47" fill="none" stroke="#FFD700" strokeWidth="3" strokeLinecap="round" />
-        <path d="M63 34 Q72 34 72 41 Q72 47 63 47" fill="none" stroke="#FFD700" strokeWidth="3" strokeLinecap="round" />
-        <circle cx="50" cy="30" r="3" fill="#FFD700" opacity="0.7" />
-      </svg>
-      <div className="leading-none">
-        <p className="font-bold text-sm tracking-tight">Mundial Perú</p>
-        <p className="font-black text-brand-red text-[11px] tracking-[0.15em]">2026</p>
-      </div>
-    </div>
-  )
-
   return (
     <>
       {/* DESKTOP SIDEBAR (lg+) */}
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:w-64 lg:flex-col border-r bg-card">
-        <SidebarHeader />
+      <aside className={cn(
+        'hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:w-64 lg:flex-col border-r bg-card transition-transform duration-300 ease-in-out',
+        sidebarOpen ? 'lg:translate-x-0' : 'lg:-translate-x-full'
+      )}>
+        {/* Sidebar header with toggle */}
+        <div className="flex h-16 shrink-0 items-center gap-3 border-b px-4">
+          <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="58" r="26" fill="#C8102E" />
+            <ellipse cx="50" cy="58" rx="26" ry="9" fill="none" stroke="white" strokeWidth="1.5" opacity="0.35" />
+            <line x1="24" y1="58" x2="76" y2="58" stroke="white" strokeWidth="1.5" opacity="0.35" />
+            <ellipse cx="50" cy="58" rx="13" ry="26" fill="none" stroke="white" strokeWidth="1.5" opacity="0.35" />
+            <path d="M37 32 Q37 21 50 19 Q63 21 63 32 L59 43 Q50 47 41 43 Z" fill="#FFD700" />
+            <path d="M41 43 L43 51 L57 51 L59 43" fill="#C8A400" />
+            <rect x="43" y="51" width="14" height="3" rx="1.5" fill="#C8A400" />
+            <rect x="39" y="54" width="22" height="3" rx="1.5" fill="#C8A400" />
+            <path d="M37 34 Q28 34 28 41 Q28 47 37 47" fill="none" stroke="#FFD700" strokeWidth="3" strokeLinecap="round" />
+            <path d="M63 34 Q72 34 72 41 Q72 47 63 47" fill="none" stroke="#FFD700" strokeWidth="3" strokeLinecap="round" />
+            <circle cx="50" cy="30" r="3" fill="#FFD700" opacity="0.7" />
+          </svg>
+          <div className="flex-1 leading-none">
+            <p className="font-bold text-sm tracking-tight">Mundial Perú</p>
+            <p className="font-black text-brand-red text-[11px] tracking-[0.15em]">2026</p>
+          </div>
+          <button
+            onClick={toggleSidebar}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary transition-colors"
+            aria-label="Cerrar menú"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
         <NavLinks />
       </aside>
+
+      {/* DESKTOP TOGGLE BUTTON — visible only when sidebar is closed */}
+      {!sidebarOpen && (
+        <button
+          onClick={toggleSidebar}
+          className="hidden lg:flex fixed left-0 top-4 z-50 h-10 w-10 items-center justify-center rounded-r-xl border border-l-0 bg-card text-muted-foreground shadow-md hover:bg-secondary transition-colors"
+          aria-label="Abrir menú"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+      )}
 
       {/* MOBILE TOP HEADER */}
       <header className="lg:hidden sticky top-0 z-50 flex h-14 items-center justify-between border-b bg-card/80 px-4 backdrop-blur-xl">

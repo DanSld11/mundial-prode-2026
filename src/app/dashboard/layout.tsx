@@ -2,21 +2,22 @@ import { Navbar } from '@/components/layout/navbar'
 import { FloatingAlbumButton } from '@/components/layout/FloatingAlbumButton'
 import { AlbumProvider } from '@/components/album/AlbumContext'
 import { AlbumModal } from '@/components/album/AlbumModal'
+import { SidebarProvider } from '@/components/layout/sidebar-context'
+import { SidebarShell } from '@/components/layout/sidebar-shell'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <AlbumProvider>
-      <div className="flex min-h-screen bg-muted/25">
-        <Navbar />
-        {/* Offset for fixed sidebar on desktop, full width on mobile */}
-        <div className="flex flex-1 flex-col lg:pl-64">
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-8 pt-4 sm:px-6 sm:pt-6 lg:pb-10 lg:pt-8">
+      <SidebarProvider>
+        <div className="flex min-h-screen bg-muted/25">
+          <Navbar />
+          <SidebarShell maxWidth="max-w-5xl">
             {children}
-          </main>
+          </SidebarShell>
+          <FloatingAlbumButton />
+          <AlbumModal />
         </div>
-        <FloatingAlbumButton />
-        <AlbumModal />
-      </div>
+      </SidebarProvider>
     </AlbumProvider>
   )
 }
