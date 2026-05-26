@@ -7,30 +7,30 @@ import { ArrowRight, CalendarDays, Medal, Shield, Target, Trophy, Users } from '
 const THEMES = [
   {
     bg: 'linear-gradient(135deg, #001F5B 0%, #002868 45%, #9B0726 100%)',
-    flag: '\u{1F1FA}\u{1F1F8}',
+    flag: 'us',
     country: 'Estados Unidos',
     cities: 'Nueva York · Los Ángeles · Dallas · Miami',
   },
   {
     bg: 'linear-gradient(135deg, #1a0000 0%, #a30000 50%, #6b0000 100%)',
-    flag: '\u{1F1E8}\u{1F1E6}',
+    flag: 'ca',
     country: 'Canadá',
     cities: 'Toronto · Vancouver · Montreal',
   },
   {
     bg: 'linear-gradient(135deg, #003820 0%, #006847 50%, #9B1523 100%)',
-    flag: '\u{1F1F2}\u{1F1FD}',
+    flag: 'mx',
     country: 'México',
     cities: 'Ciudad de México · Guadalajara · Monterrey',
   },
 ]
 
 const FLAGS = [
-  '\u{1F1E7}\u{1F1F7}','\u{1F1E6}\u{1F1F7}','\u{1F1EB}\u{1F1F7}','\u{1F1EA}\u{1F1F8}','\u{1F1E9}\u{1F1EA}','\u{1F1F5}\u{1F1F9}','\u{1F1F3}\u{1F1F1}','\u{1F1E7}\u{1F1EA}','\u{1F1EE}\u{1F1F9}','\u{1F1ED}\u{1F1F7}',
-  '\u{1F1EF}\u{1F1F5}','\u{1F1F0}\u{1F1F7}','\u{1F1F2}\u{1F1FD}','\u{1F1FA}\u{1F1F8}','\u{1F1E8}\u{1F1E6}','\u{1F1F8}\u{1F1F3}','\u{1F1F2}\u{1F1E6}','\u{1F1F5}\u{1F1EA}','\u{1F1E8}\u{1F1F4}','\u{1F1FA}\u{1F1FE}',
-  '\u{1F1E6}\u{1F1FA}','\u{1F1F8}\u{1F1E6}','\u{1F1E9}\u{1F1F0}','\u{1F1F5}\u{1F1F1}','\u{1F1E8}\u{1F1ED}','\u{1F1EC}\u{1F1E7}','\u{1F1F5}\u{1F1E6}','\u{1F1EA}\u{1F1E8}','\u{1F1F3}\u{1F1EC}','\u{1F1E8}\u{1F1F2}',
-  '\u{1F1EC}\u{1F1ED}','\u{1F1EE}\u{1F1F7}','\u{1F1F8}\u{1F1EA}','\u{1F1F7}\u{1F1F8}','\u{1F1F5}\u{1F1FE}','\u{1F1E7}\u{1F1F4}','\u{1F1FB}\u{1F1EA}','\u{1F1E8}\u{1F1F7}','\u{1F1ED}\u{1F1F3}','\u{1F1F9}\u{1F1F3}',
-  '\u{1F1FF}\u{1F1E6}','\u{1F1E8}\u{1F1EE}','\u{1F1E6}\u{1F1F1}','\u{1F1FA}\u{1F1E6}','\u{1F1F8}\u{1F1F0}','\u{1F1F6}\u{1F1E6}','\u{1F1E6}\u{1F1F9}','\u{1F1F7}\u{1F1F4}',
+  'br','ar','fr','es','de','pt','nl','be','it','hr',
+  'jp','kr','mx','us','ca','sn','ma','pe','co','uy',
+  'au','sa','dk','pl','ch','gb','pa','ec','ng','cm',
+  'gh','ir','se','rs','py','bo','ve','cr','hn','tn',
+  'za','ci','dz','ua','sk','qa','at','ro',
 ]
 
 const FEATURES = [
@@ -160,7 +160,7 @@ export default function LandingPage() {
             className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm"
             style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(-10px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}
           >
-            <span className="text-lg">{theme.flag}</span>
+            <img src={`https://flagcdn.com/w40/${theme.flag}.png`} alt={theme.country} className="h-5 w-7 rounded-sm object-cover shadow-sm" />
             <span className="font-semibold">{theme.country}</span>
             <span className="h-3.5 w-px bg-white/30" />
             <span className="text-white/65 text-xs">{theme.cities}</span>
@@ -231,7 +231,7 @@ export default function LandingPage() {
       <div className="overflow-hidden border-y bg-muted/40 py-3">
         <div className="flex animate-marquee whitespace-nowrap">
           {doubled.map((flag, i) => (
-            <span key={i} className="mx-3 text-2xl leading-none" style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.12))' }}>{flag}</span>
+            <img key={i} src={`https://flagcdn.com/w40/${flag}.png`} alt="" className="mx-2 h-6 w-9 rounded-sm object-cover shadow-sm" style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.12))' }} />
           ))}
         </div>
       </div>
@@ -280,9 +280,9 @@ export default function LandingPage() {
           <p className="mb-8 text-center text-sm text-muted-foreground">3 países · 16 ciudades · historia por escribir</p>
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { flag: '\u{1F1FA}\u{1F1F8}', country: 'Estados Unidos', cities: 'Nueva York · Los Ángeles · Dallas\nMiami · Seattle · San Francisco\nBoston · Kansas City · Philadelphia', bg: 'linear-gradient(135deg,#001F5B,#002868,#BF0A30)' },
-              { flag: '\u{1F1E8}\u{1F1E6}', country: 'Canadá', cities: 'Toronto · Vancouver\nMontreal', bg: 'linear-gradient(135deg,#8B0000,#CC0000,#660000)' },
-              { flag: '\u{1F1F2}\u{1F1FD}', country: 'México', cities: 'Ciudad de México\nGuadalajara · Monterrey', bg: 'linear-gradient(135deg,#004D2C,#006847,#CE1126)' },
+              { flag: 'us', country: 'Estados Unidos', cities: 'Nueva York · Los Ángeles · Dallas\nMiami · Seattle · San Francisco\nBoston · Kansas City · Philadelphia', bg: 'linear-gradient(135deg,#001F5B,#002868,#BF0A30)' },
+              { flag: 'ca', country: 'Canadá', cities: 'Toronto · Vancouver\nMontreal', bg: 'linear-gradient(135deg,#8B0000,#CC0000,#660000)' },
+              { flag: 'mx', country: 'México', cities: 'Ciudad de México\nGuadalajara · Monterrey', bg: 'linear-gradient(135deg,#004D2C,#006847,#CE1126)' },
             ].map((h) => (
               <div key={h.country} className="relative overflow-hidden rounded-2xl p-6 text-white" style={{ background: h.bg }}>
                 <div className="pointer-events-none absolute inset-0 opacity-[0.06]">
@@ -291,7 +291,7 @@ export default function LandingPage() {
                     <rect width="100%" height="100%" fill={`url(#hx-${h.country})`}/>
                   </svg>
                 </div>
-                <span className="text-5xl">{h.flag}</span>
+                <img src={`https://flagcdn.com/w80/${h.flag}.png`} alt={h.country} className="mb-1 h-10 w-14 rounded object-cover shadow-md" />
                 <h3 className="mt-3 font-bold text-xl">{h.country}</h3>
                 <p className="mt-1 text-sm text-white/65 whitespace-pre-line">{h.cities}</p>
               </div>

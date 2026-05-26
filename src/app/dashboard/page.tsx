@@ -18,11 +18,11 @@ const quickLinks = [
 ]
 
 const FLAGS_MARQUEE = [
-  '\u{1F1E7}\u{1F1F7}','\u{1F1E6}\u{1F1F7}','\u{1F1EB}\u{1F1F7}','\u{1F1EA}\u{1F1F8}','\u{1F1E9}\u{1F1EA}','\u{1F1F5}\u{1F1F9}','\u{1F1F3}\u{1F1F1}','\u{1F1E7}\u{1F1EA}','\u{1F1EE}\u{1F1F9}','\u{1F1ED}\u{1F1F7}',
-  '\u{1F1EF}\u{1F1F5}','\u{1F1F0}\u{1F1F7}','\u{1F1F2}\u{1F1FD}','\u{1F1FA}\u{1F1F8}','\u{1F1E8}\u{1F1E6}','\u{1F1F8}\u{1F1F3}','\u{1F1F2}\u{1F1E6}','\u{1F1F5}\u{1F1EA}','\u{1F1E8}\u{1F1F4}','\u{1F1FA}\u{1F1FE}',
-  '\u{1F1E6}\u{1F1FA}','\u{1F1F8}\u{1F1E6}','\u{1F1E9}\u{1F1F0}','\u{1F1F5}\u{1F1F1}','\u{1F1E8}\u{1F1ED}','\u{1F1EC}\u{1F1E7}','\u{1F1F5}\u{1F1E6}','\u{1F1EA}\u{1F1E8}','\u{1F1F3}\u{1F1EC}','\u{1F1E8}\u{1F1F2}',
-  '\u{1F1EC}\u{1F1ED}','\u{1F1EE}\u{1F1F7}','\u{1F1F8}\u{1F1EA}','\u{1F1F7}\u{1F1F8}','\u{1F1F5}\u{1F1FE}','\u{1F1E7}\u{1F1F4}','\u{1F1FB}\u{1F1EA}','\u{1F1E8}\u{1F1F7}','\u{1F1ED}\u{1F1F3}','\u{1F1F9}\u{1F1F3}',
-  '\u{1F1FF}\u{1F1E6}','\u{1F1E8}\u{1F1EE}','\u{1F1E6}\u{1F1F1}','\u{1F1FA}\u{1F1E6}','\u{1F1F8}\u{1F1F0}','\u{1F1F6}\u{1F1E6}','\u{1F1E6}\u{1F1F9}','\u{1F1F7}\u{1F1F4}',
+  'br','ar','fr','es','de','pt','nl','be','it','hr',
+  'jp','kr','mx','us','ca','sn','ma','pe','co','uy',
+  'au','sa','dk','pl','ch','gb','pa','ec','ng','cm',
+  'gh','ir','se','rs','py','bo','ve','cr','hn','tn',
+  'za','ci','dz','ua','sk','qa','at','ro',
 ]
 
 function getCountdown() {
@@ -105,7 +105,7 @@ function FlagMarquee() {
     <div className="overflow-hidden rounded-xl border bg-muted/30 py-2.5">
       <div className="flex animate-marquee-fast whitespace-nowrap">
         {doubled.map((flag, i) => (
-          <span key={i} className="mx-2.5 text-xl leading-none" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}>{flag}</span>
+          <img key={i} src={`https://flagcdn.com/w40/${flag}.png`} alt="" className="mx-2 h-5 w-8 rounded-sm object-cover shadow-sm" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }} />
         ))}
       </div>
     </div>
