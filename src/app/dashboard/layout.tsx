@@ -10,7 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Navbar />
         {/* Offset for fixed sidebar on desktop, full width on mobile */}
         <div className="flex flex-1 flex-col lg:pl-64">
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-4 sm:px-6 sm:pt-6 lg:pb-10 lg:pt-8">
+          <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-8 pt-4 sm:px-6 sm:pt-6 lg:pb-10 lg:pt-8">
             {children}
           </main>
         </div>

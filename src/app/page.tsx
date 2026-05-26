@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, Medal, Shield, Target, Trophy, Users } from 'lucide-react'
+import { ArrowRight, CalendarDays, Medal, Menu, Shield, Target, Trophy, Users, X } from 'lucide-react'
 
 const THEMES = [
   {
@@ -86,6 +86,7 @@ export default function LandingPage() {
   const [themeIdx, setThemeIdx] = useState(0)
   const [visible, setVisible] = useState(true)
   const [countdown, setCountdown] = useState<{ days: number; hours: number; mins: number } | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     setCountdown(getCountdown())
@@ -109,19 +110,35 @@ export default function LandingPage() {
 
       {/* Navbar */}
       <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <WorldCupLogo size={38} />
+        <div className="mx-auto flex h-14 sm:h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <WorldCupLogo size={32} />
             <div className="leading-none">
               <p className="font-bold text-sm tracking-tight">Mundial Perú</p>
-              <p className="font-black text-brand-red text-xs tracking-[0.2em]">2026</p>
+              <p className="font-black text-brand-red text-[10px] sm:text-xs tracking-[0.2em]">2026</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          {/* Desktop nav links */}
+          <div className="hidden sm:flex items-center gap-2">
             <Link href="/auth/login" className="inline-flex h-9 items-center rounded-lg border px-4 text-sm font-medium transition-colors hover:bg-muted">Ingresar</Link>
             <Link href="/auth/register" className="inline-flex h-9 items-center rounded-lg bg-brand-red px-4 text-sm font-medium text-white transition-colors hover:bg-red-700">Registrarse</Link>
           </div>
+          {/* Mobile hamburger */}
+          <button
+            className="sm:hidden flex h-8 w-8 items-center justify-center rounded-lg text-foreground hover:bg-muted transition-colors"
+            onClick={() => setMenuOpen(v => !v)}
+            aria-label="Abrir menú"
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
+        {/* Mobile dropdown menu */}
+        {menuOpen && (
+          <div className="sm:hidden border-t bg-card px-4 py-3 flex flex-col gap-2">
+            <Link href="/auth/login" onClick={() => setMenuOpen(false)} className="flex h-10 items-center justify-center rounded-lg border text-sm font-medium transition-colors hover:bg-muted">Ingresar</Link>
+            <Link href="/auth/register" onClick={() => setMenuOpen(false)} className="flex h-10 items-center justify-center rounded-lg bg-brand-red text-sm font-medium text-white transition-colors hover:bg-red-700">Registrarse</Link>
+          </div>
+        )}
       </header>
 
       {/* Hero */}
@@ -154,16 +171,16 @@ export default function LandingPage() {
           >⚽</span>
         ))}
 
-        <div className="relative mx-auto w-full max-w-6xl px-4 py-24 sm:px-6">
+        <div className="relative mx-auto w-full max-w-6xl px-4 py-14 sm:py-24 sm:px-6">
           {/* Host badge */}
           <div
-            className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm"
+            className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm max-w-full overflow-hidden"
             style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(-10px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}
           >
-            <img src={`https://flagcdn.com/w40/${theme.flag}.png`} alt={theme.country} className="h-5 w-7 rounded-sm object-cover shadow-sm" />
-            <span className="font-semibold">{theme.country}</span>
-            <span className="h-3.5 w-px bg-white/30" />
-            <span className="text-white/65 text-xs">{theme.cities}</span>
+            <img src={`https://flagcdn.com/w40/${theme.flag}.png`} alt={theme.country} className="h-5 w-7 shrink-0 rounded-sm object-cover shadow-sm" />
+            <span className="font-semibold shrink-0">{theme.country}</span>
+            <span className="hidden sm:block h-3.5 w-px bg-white/30 shrink-0" />
+            <span className="hidden sm:block text-white/65 text-xs truncate">{theme.cities}</span>
           </div>
 
           {/* Title */}
@@ -188,22 +205,22 @@ export default function LandingPage() {
 
           {/* Countdown pill */}
           {countdown && (
-            <div className="mt-10 inline-flex items-center gap-4 rounded-2xl border border-white/20 bg-black/30 px-5 py-3.5 backdrop-blur-md">
+            <div className="mt-8 inline-flex flex-wrap items-center gap-3 sm:gap-4 rounded-2xl border border-white/20 bg-black/30 px-4 sm:px-5 py-3 sm:py-3.5 backdrop-blur-md">
               {[
                 { val: countdown.days,  label: 'días'  },
                 { val: countdown.hours, label: 'horas'  },
                 { val: countdown.mins,  label: 'min'    },
               ].map((u, i) => (
-                <div key={u.label} className="flex items-center gap-4">
-                  {i > 0 && <span className="text-white/30 font-bold text-xl">:</span>}
-                  <div className="text-center min-w-[2.5rem]">
-                    <span className="block font-bebas text-4xl text-white tabular-nums leading-none">{String(u.val).padStart(2,'0')}</span>
+                <div key={u.label} className="flex items-center gap-3 sm:gap-4">
+                  {i > 0 && <span className="text-white/30 font-bold text-lg sm:text-xl">:</span>}
+                  <div className="text-center min-w-[2rem] sm:min-w-[2.5rem]">
+                    <span className="block font-bebas text-3xl sm:text-4xl text-white tabular-nums leading-none">{String(u.val).padStart(2,'0')}</span>
                     <span className="text-[10px] text-white/50 uppercase tracking-wider">{u.label}</span>
                   </div>
                 </div>
               ))}
-              <div className="ml-2 h-10 w-px bg-white/20" />
-              <div>
+              <div className="hidden sm:block ml-2 h-10 w-px bg-white/20" />
+              <div className="hidden sm:block">
                 <p className="text-xs font-semibold text-white">Hasta el pitazo inicial</p>
                 <p className="text-[11px] text-white/50">11 Jun 2026 · Estadio Azteca</p>
               </div>
@@ -238,15 +255,15 @@ export default function LandingPage() {
 
       {/* Stats bar */}
       <div className="border-b bg-card">
-        <div className="mx-auto grid max-w-6xl grid-cols-4 divide-x px-4 sm:px-6">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 px-4 sm:px-6">
           {[
             { value: '48', label: 'Selecciones' },
             { value: '12', label: 'Grupos' },
             { value: '104', label: 'Partidos' },
             { value: '6', label: 'Pts/partido' },
           ].map((s) => (
-            <div key={s.label} className="flex flex-col items-center py-5 text-center">
-              <span className="font-bebas text-4xl text-brand-red">{s.value}</span>
+            <div key={s.label} className="flex flex-col items-center py-4 sm:py-5 text-center">
+              <span className="font-bebas text-3xl sm:text-4xl text-brand-red">{s.value}</span>
               <span className="text-xs text-muted-foreground">{s.label}</span>
             </div>
           ))}
