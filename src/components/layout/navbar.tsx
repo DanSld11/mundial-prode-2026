@@ -17,6 +17,7 @@ import {
   Sun,
   Moon,
   BookOpen,
+  Menu,
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
