@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, CheckCircle2, Circle, Crown, Medal, Shield, Target, Trophy, Users, Zap } from 'lucide-react'
+import { ArrowRight, CalendarDays, CheckCircle2, Circle, Crown, Download, Medal, Shield, Smartphone, Target, Trophy, Users, Zap } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TeamFlag } from '@/components/team-flag'
@@ -94,6 +94,75 @@ function WorldCupCountdown() {
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function InstallAppBanner() {
+  const [prompt, setPrompt] = useState<any>(null)
+  const [isIOS, setIsIOS] = useState(false)
+  const [isInstalled, setIsInstalled] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    // Already installed as PWA
+    if (window.matchMedia('(display-mode: standalone)').matches) { setIsInstalled(true); return }
+    // iOS detection
+    const ua = navigator.userAgent
+    if (/iphone|ipad|ipod/i.test(ua) && !(window.navigator as any).standalone) setIsIOS(true)
+    // Android/Chrome install prompt
+    const handler = (e: any) => { e.preventDefault(); setPrompt(e) }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  async function handleInstall() {
+    if (!prompt) return
+    prompt.prompt()
+    const { outcome } = await prompt.userChoice
+    if (outcome === 'accepted') setIsInstalled(true)
+    setPrompt(null)
+  }
+
+  if (isInstalled || dismissed) return null
+  if (!prompt && !isIOS) return null
+
+  return (
+    <div className="rounded-2xl border bg-gradient-to-r from-brand-red/5 to-brand-red/10 p-4 shadow-sm sm:p-5">
+      <div className="flex items-start gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-red text-white shadow-sm">
+          <Smartphone className="h-6 w-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm">Instalá la app en tu celular</p>
+          {isIOS ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Tocá el ícono de compartir <span className="font-mono bg-muted px-1 rounded">⎙</span> y luego <strong>"Agregar a pantalla de inicio"</strong>.
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Accedé más rápido desde tu pantalla de inicio, sin necesidad del navegador.
+            </p>
+          )}
+          {!isIOS && (
+            <button
+              onClick={handleInstall}
+              className="mt-3 inline-flex items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 active:scale-95"
+            >
+              <Download className="h-4 w-4" />
+              Descargar app
+            </button>
+          )}
+        </div>
+        <button
+          onClick={() => setDismissed(true)}
+          className="text-muted-foreground hover:text-foreground text-lg leading-none shrink-0"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
       </div>
     </div>
   )
@@ -382,6 +451,10 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Install app banner */}
+      <InstallAppBanner />
+
     </div>
   )
 }
