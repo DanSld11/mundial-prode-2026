@@ -267,7 +267,7 @@ export default function FixturePage() {
                             <MapPin className="h-3 w-3" />{match.city}
                           </div>
                         </div>
-                        <div className="mt-3 flex flex-col items-center justify-between gap-2 border-t pt-3 sm:flex-row">
+                        <div className="mt-3 flex flex-col items-start justify-between gap-2 border-t pt-3 sm:flex-row sm:items-center">
                           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                             {pred ? (
                               <span>
@@ -286,7 +286,7 @@ export default function FixturePage() {
                           </div>
                           <Link
                             href={`/dashboard/fixture/${match.id}`}
-                            className={`inline-flex h-8 items-center justify-center rounded-lg px-3 text-sm font-medium transition-colors ${
+                            className={`inline-flex h-8 w-full items-center justify-center rounded-lg px-3 text-sm font-medium transition-colors sm:w-auto ${
                               pred
                                 ? 'border bg-background hover:bg-muted'
                                 : 'bg-brand-red text-white hover:bg-red-700'

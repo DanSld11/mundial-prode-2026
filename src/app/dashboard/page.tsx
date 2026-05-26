@@ -77,18 +77,18 @@ function WorldCupCountdown() {
           </div>
 
           {/* Right: digits */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-3">
             {[
               { val: cd.days,  label: 'días'  },
               { val: cd.hours, label: 'horas' },
               { val: cd.mins,  label: 'min'   },
               { val: cd.secs,  label: 'seg'   },
             ].map((u, i) => (
-              <div key={u.label} className="flex items-center gap-2 sm:gap-3">
-                {i > 0 && <span className="text-white/30 font-bold text-lg">:</span>}
-                <div className="flex flex-col items-center rounded-xl bg-white/10 px-3 py-2 min-w-[3rem] backdrop-blur-sm">
-                  <span className="font-bebas text-2xl sm:text-3xl tabular-nums leading-none">{String(u.val).padStart(2,'0')}</span>
-                  <span className="text-[9px] uppercase tracking-wider text-white/50">{u.label}</span>
+              <div key={u.label} className="flex items-center gap-1.5 sm:gap-3">
+                {i > 0 && <span className="text-white/30 font-bold">:</span>}
+                <div className="flex flex-col items-center rounded-xl bg-white/10 px-2.5 py-1.5 min-w-[2.5rem] sm:min-w-[3rem] backdrop-blur-sm">
+                  <span className="font-bebas text-xl sm:text-3xl tabular-nums leading-none">{String(u.val).padStart(2,'0')}</span>
+                  <span className="text-[8px] sm:text-[9px] uppercase tracking-wider text-white/50">{u.label}</span>
                 </div>
               </div>
             ))}

@@ -6,7 +6,7 @@ import { useSidebar } from './sidebar-context'
 export function SidebarShell({ children, maxWidth = 'max-w-5xl' }: { children: React.ReactNode; maxWidth?: string }) {
   const { open } = useSidebar()
   return (
-    <div className={cn('flex flex-1 flex-col transition-all duration-300', open ? 'lg:pl-64' : 'lg:pl-0')}>
+    <div className={cn('flex flex-1 min-w-0 flex-col transition-all duration-300', open ? 'lg:pl-64' : 'lg:pl-0')}>
       <main className={cn('mx-auto w-full flex-1 px-4 pb-24 pt-[4.5rem] sm:px-6 sm:pt-[4.5rem] lg:pb-10 lg:pt-8', maxWidth)}>
         {children}
       </main>

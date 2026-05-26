@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Target, CheckCircle2, Trophy, Clock, Star, Filter } from 'lucide-react'
+import { Target, CheckCircle2, Trophy, Clock, Star, Filter, Lock } from 'lucide-react'
 import { TeamFlag } from '@/components/team-flag'
 import { getAccessToken, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
 
