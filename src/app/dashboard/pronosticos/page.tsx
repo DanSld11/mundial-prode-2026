@@ -26,7 +26,7 @@ export default async function PronosticosPage() {
   const groupNames = Object.keys(groupMap).sort()
 
   return (
-    <div className="space-y-8 pb-24">
+    <div className="space-y-6 sm:space-y-8">
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Pronósticos</h2>
@@ -50,7 +50,7 @@ export default async function PronosticosPage() {
         {groupNames.length === 0 ? (
           <p className="text-sm text-muted-foreground">No hay equipos cargados aún.</p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {groupNames.map(gName => (
               <GroupCard
                 key={gName}

@@ -252,6 +252,39 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
         </div>
         <NavLinks onClick={() => setMobileOpen(false)} />
       </aside>
+
+      {/* MOBILE BOTTOM NAV */}
+      <nav className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t bg-card/90 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1.5 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <div className="mx-auto grid max-w-md grid-cols-6 gap-0.5">
+          {[
+            { href: '/dashboard',              label: 'Inicio',   icon: LayoutDashboard },
+            { href: '/dashboard/fixture',      label: 'Fixture',  icon: CalendarDays },
+            { href: '/dashboard/predicciones', label: 'Pred.',    icon: Target },
+            { href: '/dashboard/pronosticos',  label: 'Pronóst.', icon: BarChart3 },
+            { href: '/dashboard/pollas',       label: 'Pollas',   icon: Trophy },
+            { href: '/dashboard/tabla',        label: 'Tabla',    icon: Table2 },
+          ].map((item) => {
+            const active = item.href === '/dashboard'
+              ? pathname === '/dashboard'
+              : pathname.startsWith(item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex min-w-0 flex-col items-center gap-0.5 rounded-xl px-0.5 py-1.5 text-[10px] font-medium transition-all active:scale-95',
+                  active
+                    ? 'bg-brand-red/10 text-brand-red'
+                    : 'text-muted-foreground hover:bg-secondary/50'
+                )}
+              >
+                <item.icon className="h-[18px] w-[18px]" />
+                <span className="max-w-full truncate">{item.label}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
     </>
   )
 }

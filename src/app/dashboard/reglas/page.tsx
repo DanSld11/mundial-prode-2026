@@ -7,15 +7,15 @@ export const metadata = {
 
 export default function RulesPage() {
   return (
-    <div className="mx-auto max-w-4xl space-y-8 pb-10">
+    <div className="mx-auto max-w-4xl space-y-6 pb-10">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">Reglas y Puntuación 📖</h1>
+        <h1 className="text-xl font-extrabold tracking-tight sm:text-3xl">Reglas y Puntuación 📖</h1>
         <p className="text-muted-foreground mt-2">
           Conoce cómo funciona el sistema de puntos de nuestra polla mundialista.
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
         {/* Resultados de Partidos */}
         <Card className="rounded-3xl border-border/50 bg-card/60 backdrop-blur-xl shadow-lg relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-brand-red/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
@@ -117,7 +117,7 @@ export default function RulesPage() {
             <p className="text-sm text-muted-foreground mb-4">
               Por cada grupo, debes predecir qué equipos terminarán en 1°, 2° y 3° lugar.
             </p>
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="p-4 rounded-2xl bg-gradient-to-br from-yellow-300/10 to-yellow-500/10 border border-yellow-500/20 text-center">
                 <span className="inline-flex w-8 h-8 items-center justify-center rounded-full bg-yellow-400 text-yellow-950 font-black mb-2 shadow-sm">1°</span>
                 <p className="font-bold">Primer Lugar</p>

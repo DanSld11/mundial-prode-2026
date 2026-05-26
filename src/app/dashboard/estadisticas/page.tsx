@@ -241,7 +241,7 @@ export default function EstadisticasPage() {
                       <div key={team.name_es} className="flex items-center gap-2 text-sm">
                         <span className="w-5 text-center font-mono text-xs text-muted-foreground">{i + 1}</span>
                         <TeamFlag code={team.flag_emoji} label={team.name_es} />
-                        <span className="w-28 shrink-0 truncate font-medium">{team.name_es}</span>
+                        <span className="w-20 sm:w-28 shrink-0 truncate font-medium">{team.name_es}</span>
                         <div className="flex-1 overflow-hidden rounded-full bg-muted h-2">
                           <div className="h-2 rounded-full bg-brand-red transition-all" style={{ width: `${pct}%` }} />
                         </div>

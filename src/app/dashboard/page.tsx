@@ -181,7 +181,7 @@ export default function DashboardPage() {
         <div className="grid gap-0 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="p-5 sm:p-7 lg:p-8">
             <Badge className="mb-4 bg-brand-red text-white hover:bg-brand-red">Copa Mundial FIFA 2026</Badge>
-            <h1 className="max-w-2xl font-bebas text-4xl tracking-wide sm:text-5xl lg:text-6xl">
+            <h1 className="max-w-2xl font-bebas text-2xl tracking-wide sm:text-4xl lg:text-5xl xl:text-6xl">
               Tu centro de predicciones del Mundial
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">

@@ -277,7 +277,7 @@ function SingleSpecialCard({
 
 export default function SpecialCards({ teams, players, predictions, results }: Props) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {CARDS.map(cfg => (
         <SingleSpecialCard
           key={cfg.type}
