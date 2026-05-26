@@ -7,30 +7,30 @@ import { ArrowRight, CalendarDays, Medal, Shield, Target, Trophy, Users } from '
 const THEMES = [
   {
     bg: 'linear-gradient(135deg, #001F5B 0%, #002868 45%, #9B0726 100%)',
-    flag: '\U0001f1fa\U0001f1f8',
+    flag: '\u{1F1FA}\u{1F1F8}',
     country: 'Estados Unidos',
     cities: 'Nueva York · Los Ángeles · Dallas · Miami',
   },
   {
     bg: 'linear-gradient(135deg, #1a0000 0%, #a30000 50%, #6b0000 100%)',
-    flag: '\U0001f1e8\U0001f1e6',
+    flag: '\u{1F1E8}\u{1F1E6}',
     country: 'Canadá',
     cities: 'Toronto · Vancouver · Montreal',
   },
   {
     bg: 'linear-gradient(135deg, #003820 0%, #006847 50%, #9B1523 100%)',
-    flag: '\U0001f1f2\U0001f1fd',
+    flag: '\u{1F1F2}\u{1F1FD}',
     country: 'México',
     cities: 'Ciudad de México · Guadalajara · Monterrey',
   },
 ]
 
 const FLAGS = [
-  '\U0001f1e7\U0001f1f7','\U0001f1e6\U0001f1f7','\U0001f1eb\U0001f1f7','\U0001f1ea\U0001f1f8','\U0001f1e9\U0001f1ea','\U0001f1f5\U0001f1f9','\U0001f1f3\U0001f1f1','\U0001f1e7\U0001f1ea','\U0001f1ee\U0001f1f9','\U0001f1ed\U0001f1f7',
-  '\U0001f1ef\U0001f1f5','\U0001f1f0\U0001f1f7','\U0001f1f2\U0001f1fd','\U0001f1fa\U0001f1f8','\U0001f1e8\U0001f1e6','\U0001f1f8\U0001f1f3','\U0001f1f2\U0001f1e6','\U0001f1f5\U0001f1ea','\U0001f1e8\U0001f1f4','\U0001f1fa\U0001f1fe',
-  '\U0001f1e6\U0001f1fa','\U0001f1f8\U0001f1e6','\U0001f1e9\U0001f1f0','\U0001f1f5\U0001f1f1','\U0001f1e8\U0001f1ed','\U0001f1ec\U0001f1e7','\U0001f1f5\U0001f1e6','\U0001f1ea\U0001f1e8','\U0001f1f3\U0001f1ec','\U0001f1e8\U0001f1f2',
-  '\U0001f1ec\U0001f1ed','\U0001f1ee\U0001f1f7','\U0001f1f8\U0001f1ea','\U0001f1f7\U0001f1f8','\U0001f1f5\U0001f1fe','\U0001f1e7\U0001f1f4','\U0001f1fb\U0001f1ea','\U0001f1e8\U0001f1f7','\U0001f1ed\U0001f1f3','\U0001f1f9\U0001f1f3',
-  '\U0001f1ff\U0001f1e6','\U0001f1e8\U0001f1ee','\U0001f1e6\U0001f1f1','\U0001f1fa\U0001f1e6','\U0001f1f8\U0001f1f0','\U0001f1f6\U0001f1e6','\U0001f1e6\U0001f1f9','\U0001f1f7\U0001f1f4',
+  '\u{1F1E7}\u{1F1F7}','\u{1F1E6}\u{1F1F7}','\u{1F1EB}\u{1F1F7}','\u{1F1EA}\u{1F1F8}','\u{1F1E9}\u{1F1EA}','\u{1F1F5}\u{1F1F9}','\u{1F1F3}\u{1F1F1}','\u{1F1E7}\u{1F1EA}','\u{1F1EE}\u{1F1F9}','\u{1F1ED}\u{1F1F7}',
+  '\u{1F1EF}\u{1F1F5}','\u{1F1F0}\u{1F1F7}','\u{1F1F2}\u{1F1FD}','\u{1F1FA}\u{1F1F8}','\u{1F1E8}\u{1F1E6}','\u{1F1F8}\u{1F1F3}','\u{1F1F2}\u{1F1E6}','\u{1F1F5}\u{1F1EA}','\u{1F1E8}\u{1F1F4}','\u{1F1FA}\u{1F1FE}',
+  '\u{1F1E6}\u{1F1FA}','\u{1F1F8}\u{1F1E6}','\u{1F1E9}\u{1F1F0}','\u{1F1F5}\u{1F1F1}','\u{1F1E8}\u{1F1ED}','\u{1F1EC}\u{1F1E7}','\u{1F1F5}\u{1F1E6}','\u{1F1EA}\u{1F1E8}','\u{1F1F3}\u{1F1EC}','\u{1F1E8}\u{1F1F2}',
+  '\u{1F1EC}\u{1F1ED}','\u{1F1EE}\u{1F1F7}','\u{1F1F8}\u{1F1EA}','\u{1F1F7}\u{1F1F8}','\u{1F1F5}\u{1F1FE}','\u{1F1E7}\u{1F1F4}','\u{1F1FB}\u{1F1EA}','\u{1F1E8}\u{1F1F7}','\u{1F1ED}\u{1F1F3}','\u{1F1F9}\u{1F1F3}',
+  '\u{1F1FF}\u{1F1E6}','\u{1F1E8}\u{1F1EE}','\u{1F1E6}\u{1F1F1}','\u{1F1FA}\u{1F1E6}','\u{1F1F8}\u{1F1F0}','\u{1F1F6}\u{1F1E6}','\u{1F1E6}\u{1F1F9}','\u{1F1F7}\u{1F1F4}',
 ]
 
 const FEATURES = [
@@ -280,9 +280,9 @@ export default function LandingPage() {
           <p className="mb-8 text-center text-sm text-muted-foreground">3 países · 16 ciudades · historia por escribir</p>
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { flag: '\U0001f1fa\U0001f1f8', country: 'Estados Unidos', cities: 'Nueva York · Los Ángeles · Dallas\nMiami · Seattle · San Francisco\nBoston · Kansas City · Philadelphia', bg: 'linear-gradient(135deg,#001F5B,#002868,#BF0A30)' },
-              { flag: '\U0001f1e8\U0001f1e6', country: 'Canadá', cities: 'Toronto · Vancouver\nMontreal', bg: 'linear-gradient(135deg,#8B0000,#CC0000,#660000)' },
-              { flag: '\U0001f1f2\U0001f1fd', country: 'México', cities: 'Ciudad de México\nGuadalajara · Monterrey', bg: 'linear-gradient(135deg,#004D2C,#006847,#CE1126)' },
+              { flag: '\u{1F1FA}\u{1F1F8}', country: 'Estados Unidos', cities: 'Nueva York · Los Ángeles · Dallas\nMiami · Seattle · San Francisco\nBoston · Kansas City · Philadelphia', bg: 'linear-gradient(135deg,#001F5B,#002868,#BF0A30)' },
+              { flag: '\u{1F1E8}\u{1F1E6}', country: 'Canadá', cities: 'Toronto · Vancouver\nMontreal', bg: 'linear-gradient(135deg,#8B0000,#CC0000,#660000)' },
+              { flag: '\u{1F1F2}\u{1F1FD}', country: 'México', cities: 'Ciudad de México\nGuadalajara · Monterrey', bg: 'linear-gradient(135deg,#004D2C,#006847,#CE1126)' },
             ].map((h) => (
               <div key={h.country} className="relative overflow-hidden rounded-2xl p-6 text-white" style={{ background: h.bg }}>
                 <div className="pointer-events-none absolute inset-0 opacity-[0.06]">
