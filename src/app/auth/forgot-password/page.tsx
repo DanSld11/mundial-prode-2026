@@ -23,7 +23,10 @@ export default function ForgotPasswordPage() {
             apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({
+            email,
+            redirect_to: `${window.location.origin}/auth/reset-password`,
+          }),
         }
       )
       // Supabase devuelve 200 incluso si el email no existe (seguridad)
