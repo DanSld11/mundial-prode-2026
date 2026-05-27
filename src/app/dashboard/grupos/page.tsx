@@ -95,89 +95,88 @@ export default function GruposPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <div className="w-full overflow-x-auto">
-                    <table className="w-full min-w-[420px] text-xs table-fixed">
-                      <colgroup>
-                        <col className="w-7" />   {/* # */}
-                        <col />                    {/* Selección — flexible */}
-                        <col className="w-8" />   {/* PJ */}
-                        <col className="w-8" />   {/* PG */}
-                        <col className="w-8" />   {/* PE */}
-                        <col className="w-8" />   {/* PP */}
-                        <col className="w-8" />   {/* GF */}
-                        <col className="w-8" />   {/* GC */}
-                        <col className="w-9" />   {/* DG */}
-                        <col className="w-9" />   {/* Pts */}
-                      </colgroup>
-                      <thead className="bg-muted/40 text-[10px] uppercase tracking-wide text-muted-foreground">
-                        <tr>
-                          <th className="py-2 text-center">#</th>
-                          <th className="py-2 pl-2 text-left">Selección</th>
-                          <th className="py-2 text-center" title="Partidos jugados">PJ</th>
-                          <th className="py-2 text-center" title="Ganados">PG</th>
-                          <th className="py-2 text-center" title="Empatados">PE</th>
-                          <th className="py-2 text-center" title="Perdidos">PP</th>
-                          <th className="py-2 text-center" title="Goles a favor">GF</th>
-                          <th className="py-2 text-center" title="Goles en contra">GC</th>
-                          <th className="py-2 text-center" title="Diferencia de goles">DG</th>
-                          <th className="py-2 text-center font-bold" title="Puntos">Pts</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/50">
-                        {standings.map((standing, index) => {
-                          const team = standing.team
-                          const qualifies = index < 2
-                          return (
-                            <tr
-                              key={team.id}
-                              className={[
-                                'transition-colors',
-                                qualifies
-                                  ? 'bg-emerald-50/60 dark:bg-emerald-950/20'
-                                  : 'hover:bg-muted/20',
-                              ].join(' ')}
-                            >
-                              <td className="py-2 text-center align-middle">
-                                <span className={`text-xs font-bold tabular-nums ${qualifies ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>
-                                  {index + 1}
-                                </span>
-                              </td>
-                              <td className="py-2 pl-2 pr-1 align-middle">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <TeamFlag code={team.flag_emoji} label={team.name_es} className="h-3.5 w-5 shrink-0" />
-                                  <span className="truncate text-xs font-semibold leading-tight">{team.name_es}</span>
-                                </div>
-                              </td>
-                              <td className="py-2 text-center tabular-nums">{standing.played}</td>
-                              <td className="py-2 text-center tabular-nums font-medium text-emerald-700 dark:text-emerald-400">{standing.won}</td>
-                              <td className="py-2 text-center tabular-nums text-muted-foreground">{standing.drawn}</td>
-                              <td className="py-2 text-center tabular-nums text-red-600 dark:text-red-400">{standing.lost}</td>
-                              <td className="py-2 text-center tabular-nums">{standing.goalsFor}</td>
-                              <td className="py-2 text-center tabular-nums text-muted-foreground">{standing.goalsAgainst}</td>
-                              <td className={`py-2 text-center tabular-nums font-semibold ${
-                                standing.goalDifference > 0 ? 'text-emerald-600 dark:text-emerald-400' :
-                                standing.goalDifference < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
-                              }`}>
-                                {standing.goalDifference > 0 ? '+' : ''}{standing.goalDifference}
-                              </td>
-                              <td className="py-2 text-center">
-                                <span className={`font-extrabold tabular-nums text-sm ${qualifies ? 'text-emerald-700 dark:text-emerald-300' : ''}`}>
-                                  {standing.points}
-                                </span>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                        {standings.length === 0 && (
-                          <tr>
-                            <td colSpan={10} className="px-4 py-6 text-center text-sm text-muted-foreground">
-                              Sin equipos cargados.
+                  {/* table-fixed: cols de stats tienen ancho fijo, la col de equipo toma el resto */}
+                  <table className="w-full table-fixed text-[11px]">
+                    <colgroup>
+                      <col style={{ width: 22 }} />  {/* # */}
+                      <col />                         {/* Equipo — flexible */}
+                      <col style={{ width: 26 }} />  {/* PJ */}
+                      <col style={{ width: 26 }} />  {/* PG */}
+                      <col style={{ width: 26 }} />  {/* PE */}
+                      <col style={{ width: 26 }} />  {/* PP */}
+                      <col style={{ width: 26 }} />  {/* GF */}
+                      <col style={{ width: 26 }} />  {/* GC */}
+                      <col style={{ width: 30 }} />  {/* DG */}
+                      <col style={{ width: 30 }} />  {/* Pts */}
+                    </colgroup>
+                    <thead className="bg-muted/40 text-[9px] uppercase tracking-wide text-muted-foreground">
+                      <tr>
+                        <th className="py-1.5 text-center">#</th>
+                        <th className="py-1.5 pl-1.5 text-left">Equipo</th>
+                        <th className="py-1.5 text-center" title="Partidos jugados">PJ</th>
+                        <th className="py-1.5 text-center" title="Ganados">PG</th>
+                        <th className="py-1.5 text-center" title="Empatados">PE</th>
+                        <th className="py-1.5 text-center" title="Perdidos">PP</th>
+                        <th className="py-1.5 text-center" title="Goles a favor">GF</th>
+                        <th className="py-1.5 text-center" title="Goles en contra">GC</th>
+                        <th className="py-1.5 text-center" title="Diferencia de goles">DG</th>
+                        <th className="py-1.5 text-center font-bold" title="Puntos">Pts</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {standings.map((standing, index) => {
+                        const team = standing.team
+                        const qualifies = index < 2
+                        return (
+                          <tr
+                            key={team.id}
+                            className={qualifies ? 'bg-emerald-50/60 dark:bg-emerald-950/20' : 'hover:bg-muted/20 transition-colors'}
+                          >
+                            {/* # */}
+                            <td className="py-2 text-center align-middle">
+                              <span className={`font-bold tabular-nums ${qualifies ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+                                {index + 1}
+                              </span>
+                            </td>
+
+                            {/* Equipo: bandera + nombre truncado */}
+                            <td className="py-2 pl-1.5 pr-1 align-middle max-w-0">
+                              <div className="flex items-center gap-1 min-w-0">
+                                <TeamFlag code={team.flag_emoji} label={team.name_es} className="h-3 w-[18px] shrink-0" />
+                                <span className="truncate font-semibold leading-none">{team.name_es}</span>
+                              </div>
+                            </td>
+
+                            {/* Stats */}
+                            <td className="py-2 text-center tabular-nums">{standing.played}</td>
+                            <td className="py-2 text-center tabular-nums font-medium text-emerald-700 dark:text-emerald-400">{standing.won}</td>
+                            <td className="py-2 text-center tabular-nums text-muted-foreground">{standing.drawn}</td>
+                            <td className="py-2 text-center tabular-nums text-red-600 dark:text-red-400">{standing.lost}</td>
+                            <td className="py-2 text-center tabular-nums">{standing.goalsFor}</td>
+                            <td className="py-2 text-center tabular-nums text-muted-foreground">{standing.goalsAgainst}</td>
+                            <td className={`py-2 text-center tabular-nums font-semibold ${
+                              standing.goalDifference > 0 ? 'text-emerald-600 dark:text-emerald-400' :
+                              standing.goalDifference < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
+                            }`}>
+                              {standing.goalDifference > 0 ? '+' : ''}{standing.goalDifference}
+                            </td>
+                            <td className="py-2 text-center">
+                              <span className={`font-extrabold tabular-nums text-xs ${qualifies ? 'text-emerald-700 dark:text-emerald-300' : ''}`}>
+                                {standing.points}
+                              </span>
                             </td>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                        )
+                      })}
+                      {standings.length === 0 && (
+                        <tr>
+                          <td colSpan={10} className="px-4 py-6 text-center text-sm text-muted-foreground">
+                            Sin equipos cargados.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </CardContent>
               </Card>
             )
