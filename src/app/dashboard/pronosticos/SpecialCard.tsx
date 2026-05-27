@@ -151,10 +151,10 @@ function SingleSpecialCard({
   const resultPlayer = result?.player_id ? players.find(p => p.id === result.player_id) : null
 
   return (
-    <div className={`rounded-3xl border border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden relative group ${locked ? 'opacity-80' : ''}`}>
+    <div className={`rounded-3xl border border-zinc-200 dark:border-zinc-700 bg-card shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden relative group ${locked ? 'opacity-80' : ''}`}>
       <div className="absolute top-0 right-0 w-32 h-32 bg-brand-red/5 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-brand-red/10"></div>
-      
-      <div className="relative z-10 px-5 py-4 border-b border-border/50 bg-gradient-to-r from-muted/50 to-transparent flex items-center justify-between">
+
+      <div className="relative z-10 px-5 py-4 border-b border-zinc-200 dark:border-zinc-700 bg-muted/40 dark:bg-zinc-800/60 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-background/50 border border-border/50 text-2xl shadow-sm">
             {config.emoji}
@@ -228,7 +228,7 @@ function SingleSpecialCard({
                   <select
                     value={teamId}
                     onChange={e => handleTeamChange(e.target.value)}
-                    className={`w-full h-11 rounded-xl border border-border/50 bg-background/80 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-red transition-all hover:bg-background cursor-pointer appearance-none shadow-sm ${teamId ? 'pl-11 pr-8' : 'px-3'}`}
+                    className={`w-full h-11 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-red transition-all hover:bg-zinc-50 dark:hover:bg-zinc-700 cursor-pointer appearance-none shadow-sm ${teamId ? 'pl-11 pr-8' : 'px-3'}`}
                     style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
                   >
                     <option value="">— Elegir selección —</option>
@@ -250,7 +250,7 @@ function SingleSpecialCard({
                   value={playerId}
                   disabled={!teamId}
                   onChange={e => handlePlayerChange(e.target.value)}
-                  className="w-full h-11 rounded-xl border border-border/50 bg-background/80 px-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-red disabled:opacity-50 transition-all hover:bg-background cursor-pointer appearance-none shadow-sm"
+                  className="w-full h-11 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-red disabled:opacity-50 transition-all hover:bg-zinc-50 dark:hover:bg-zinc-700 cursor-pointer appearance-none shadow-sm"
                   style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
                 >
                   <option value="">— Elegir jugador —</option>
@@ -271,7 +271,7 @@ function SingleSpecialCard({
                   <select
                     value={teamId}
                     onChange={e => handleTeamChange(e.target.value)}
-                    className={`w-full h-11 rounded-xl border border-border/50 bg-background/80 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-red transition-all hover:bg-background cursor-pointer appearance-none shadow-sm ${teamId ? 'pl-11 pr-8' : 'px-3'}`}
+                    className={`w-full h-11 rounded-xl border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-red transition-all hover:bg-zinc-50 dark:hover:bg-zinc-700 cursor-pointer appearance-none shadow-sm ${teamId ? 'pl-11 pr-8' : 'px-3'}`}
                     style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
                   >
                     <option value="">— Elegir equipo —</option>

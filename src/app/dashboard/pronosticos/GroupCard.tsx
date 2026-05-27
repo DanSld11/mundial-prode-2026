@@ -92,9 +92,9 @@ export default function GroupCard({ groupName, teams, predictions, locked }: Pro
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-card shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/40">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-700 bg-muted/40 dark:bg-zinc-800/60">
         <h3 className="font-extrabold text-sm tracking-widest text-foreground uppercase flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-brand-red shrink-0" />
           Grupo {groupName}
@@ -107,7 +107,7 @@ export default function GroupCard({ groupName, teams, predictions, locked }: Pro
       </div>
 
       {/* Una fila por equipo */}
-      <div className="divide-y divide-border/40">
+      <div className="divide-y divide-zinc-200 dark:divide-zinc-700">
         {teams.map(team => {
           const assignedPos = posOfTeam(team.id)
 
@@ -116,13 +116,15 @@ export default function GroupCard({ groupName, teams, predictions, locked }: Pro
               key={team.id}
               className={[
                 'flex items-center gap-3 px-4 py-2.5 transition-colors',
-                assignedPos ? 'bg-emerald-50/60 dark:bg-emerald-950/20' : 'hover:bg-muted/30',
+                assignedPos
+                  ? 'bg-emerald-50 dark:bg-emerald-950/30'
+                  : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/50',
               ].join(' ')}
             >
               {/* Bandera + nombre */}
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <TeamFlag code={team.flag_emoji} label={team.name_es} className="h-5 w-7 shrink-0" />
-                <span className="text-sm font-medium truncate text-foreground">{team.name_es}</span>
+                <span className="text-sm font-medium truncate text-zinc-900 dark:text-zinc-100">{team.name_es}</span>
               </div>
 
               {/* Botones de posición */}
@@ -146,8 +148,8 @@ export default function GroupCard({ groupName, teams, predictions, locked }: Pro
                         isThis
                           ? POS_STYLE[pos]
                           : takenByOther
-                            ? 'opacity-30 bg-muted text-muted-foreground border-border'
-                            : POS_INACTIVE,
+                            ? 'opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600 border-zinc-300 dark:border-zinc-600'
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-300 dark:border-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700',
                       ].join(' ')}
                     >
                       {isSavingThis
