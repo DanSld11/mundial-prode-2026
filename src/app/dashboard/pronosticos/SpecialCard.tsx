@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Loader2, Check, Lock } from 'lucide-react'
 import { saveSpecialPredictionAction } from './actions'
 import { toast } from 'sonner'
+import { TeamFlag } from '@/components/team-flag'
 
 interface Team {
   id: string
@@ -177,13 +178,23 @@ function SingleSpecialCard({
             <div>
               <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1">Tu predicción</p>
               {config.pickPlayer ? (
-                chosenPlayer
-                  ? <p className="font-bold text-lg">{chosenPlayer.name} <span className="text-sm font-normal text-muted-foreground">{teams.find(t => t.id === (prediction?.team_id ?? teamId))?.flag_emoji}</span></p>
-                  : <p className="text-sm text-muted-foreground italic bg-background/50 px-3 py-2 rounded-lg border border-border/50">No seleccionaste</p>
+                chosenPlayer ? (
+                  <div className="flex items-center gap-2">
+                    <TeamFlag code={teams.find(t => t.id === (prediction?.team_id ?? teamId))?.flag_emoji ?? ''} label="" className="h-5 w-7 shrink-0" />
+                    <p className="font-bold text-base">{chosenPlayer.name}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic bg-background/50 px-3 py-2 rounded-lg border border-border/50">No seleccionaste</p>
+                )
               ) : (
-                prediction?.team_id
-                  ? <p className="font-bold text-lg">{chosenTeam?.flag_emoji} {chosenTeam?.name_es}</p>
-                  : <p className="text-sm text-muted-foreground italic bg-background/50 px-3 py-2 rounded-lg border border-border/50">No seleccionaste</p>
+                prediction?.team_id ? (
+                  <div className="flex items-center gap-2">
+                    <TeamFlag code={chosenTeam?.flag_emoji ?? ''} label={chosenTeam?.name_es} className="h-5 w-7 shrink-0" />
+                    <p className="font-bold text-base">{chosenTeam?.name_es}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic bg-background/50 px-3 py-2 rounded-lg border border-border/50">No seleccionaste</p>
+                )
               )}
             </div>
             
@@ -208,17 +219,24 @@ function SingleSpecialCard({
             {config.pickPlayer && (
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Selección</label>
-                <select
-                  value={teamId}
-                  onChange={e => handleTeamChange(e.target.value)}
-                  className="w-full h-11 rounded-xl border border-border/50 bg-background/80 px-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-red transition-all hover:bg-background cursor-pointer appearance-none shadow-sm"
-                  style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
-                >
-                  <option value="">— Elegir selección —</option>
-                  {teams.map(t => (
-                    <option key={t.id} value={t.id}>{t.flag_emoji} {t.name_es}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  {teamId && (
+                    <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 z-10">
+                      <TeamFlag code={teams.find(t => t.id === teamId)?.flag_emoji ?? ''} label="" className="h-4 w-6" />
+                    </div>
+                  )}
+                  <select
+                    value={teamId}
+                    onChange={e => handleTeamChange(e.target.value)}
+                    className={`w-full h-11 rounded-xl border border-border/50 bg-background/80 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-red transition-all hover:bg-background cursor-pointer appearance-none shadow-sm ${teamId ? 'pl-11 pr-8' : 'px-3'}`}
+                    style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
+                  >
+                    <option value="">— Elegir selección —</option>
+                    {teams.map(t => (
+                      <option key={t.id} value={t.id}>{t.name_es}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
 
@@ -244,17 +262,24 @@ function SingleSpecialCard({
             ) : (
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Equipo</label>
-                <select
-                  value={teamId}
-                  onChange={e => handleTeamChange(e.target.value)}
-                  className="w-full h-11 rounded-xl border border-border/50 bg-background/80 px-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-red transition-all hover:bg-background cursor-pointer appearance-none shadow-sm"
-                  style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
-                >
-                  <option value="">— Elegir equipo —</option>
-                  {teams.map(t => (
-                    <option key={t.id} value={t.id}>{t.flag_emoji} {t.name_es}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  {teamId && (
+                    <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 z-10">
+                      <TeamFlag code={teams.find(t => t.id === teamId)?.flag_emoji ?? ''} label="" className="h-4 w-6" />
+                    </div>
+                  )}
+                  <select
+                    value={teamId}
+                    onChange={e => handleTeamChange(e.target.value)}
+                    className={`w-full h-11 rounded-xl border border-border/50 bg-background/80 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-red transition-all hover:bg-background cursor-pointer appearance-none shadow-sm ${teamId ? 'pl-11 pr-8' : 'px-3'}`}
+                    style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
+                  >
+                    <option value="">— Elegir equipo —</option>
+                    {teams.map(t => (
+                      <option key={t.id} value={t.id}>{t.name_es}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
 
