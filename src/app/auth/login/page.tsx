@@ -61,7 +61,14 @@ function LoginForm() {
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input name="email" type="email" placeholder="Email" required className="h-10" />
-          <Input name="password" type="password" placeholder="Contraseña" required className="h-10" />
+          <div className="space-y-1">
+            <Input name="password" type="password" placeholder="Contraseña" required className="h-10" />
+            <div className="text-right">
+              <Link href="/auth/forgot-password" className="text-xs text-muted-foreground hover:text-brand-red transition-colors">
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+          </div>
           <Button type="submit" disabled={loading} className="w-full h-10 bg-brand-red hover:bg-red-700 text-white">
             {loading ? 'Ingresando...' : 'Ingresar'}
           </Button>

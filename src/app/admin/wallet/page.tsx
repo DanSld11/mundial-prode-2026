@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Gem, Users, Trophy, Loader2, CheckCircle2, Plus, Minus, UserX, ChevronDown, ChevronUp, Lock } from 'lucide-react'
+import { Gem, Users, Trophy, Loader2, CheckCircle2, Plus, Minus, UserX, ChevronDown, ChevronUp, Lock, AlertTriangle, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { adminGetAllWallets, adminGiveCoinsAction, adminGetAllPools, adminPayoutPoolAction, adminUpdatePoolStatus, adminGetPoolMembers, adminKickFromPoolAction } from './actions'
 
@@ -19,6 +19,8 @@ export default function AdminWalletPage() {
   const [poolMembers,   setPoolMembers  ] = useState<Record<string, any[]>>({})
   const [loadingMembers,setLoadingMembers] = useState<string | null>(null)
   const [kickingUser,   setKickingUser  ] = useState<string | null>(null)
+  // Modal de confirmación de expulsión
+  const [kickModal, setKickModal] = useState<{ poolId: string; userId: string; username: string; poolName: string; isOpen: boolean; refundable: boolean } | null>(null)
 
   // Give/remove coins form
   const [target,    setTarget   ] = useState<string>('all')
@@ -76,14 +78,19 @@ export default function AdminWalletPage() {
     }
   }
 
-  async function handleKick(poolId: string, userId: string, username: string) {
-    if (!confirm(`¿Expulsar a @${username} de esta polla?`)) return
+  function handleKick(poolId: string, userId: string, username: string, poolName: string, poolStatus: string) {
+    setKickModal({ poolId, userId, username, poolName, isOpen: true, refundable: poolStatus === 'open' })
+  }
+
+  async function confirmKick() {
+    if (!kickModal) return
+    const { poolId, userId, username } = kickModal
+    setKickModal(null)
     setKickingUser(userId)
     const res = await adminKickFromPoolAction(poolId, userId)
     setKickingUser(null)
     if (res.error) { toast.error(res.error); return }
     toast.success(`@${username} expulsado${res.refunded ? ' — entrada devuelta' : ''}`)
-    // Actualizar lista de miembros y pools
     const [updatedMembers, updatedPools] = await Promise.all([
       adminGetPoolMembers(poolId),
       adminGetAllPools(),
@@ -301,7 +308,7 @@ export default function AdminWalletPage() {
                             {pool.status !== 'paid' && (
                               <button
                                 disabled={kickingUser === m.user_id}
-                                onClick={() => handleKick(pool.id, m.user_id, m.profile?.username)}
+                                onClick={() => handleKick(pool.id, m.user_id, m.profile?.username, pool.name, pool.status)}
                                 className="ml-2 flex items-center gap-1 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-2.5 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition disabled:opacity-50"
                               >
                                 {kickingUser === m.user_id
@@ -321,6 +328,71 @@ export default function AdminWalletPage() {
           </div>
         )}
       </div>
+      {/* ── MODAL CONFIRMACIÓN EXPULSIÓN ── */}
+      {kickModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden">
+            {/* Header rojo */}
+            <div className="bg-gradient-to-br from-red-500 to-red-700 px-6 py-5">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <UserX className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-white text-lg leading-tight">Expulsar jugador</p>
+                    <p className="text-white/75 text-sm">{kickModal.poolName}</p>
+                  </div>
+                </div>
+                <button onClick={() => setKickModal(null)}
+                  className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
+                  <X className="h-4 w-4 text-white" />
+                </button>
+              </div>
+            </div>
+
+            {/* Cuerpo */}
+            <div className="px-6 py-5 space-y-4">
+              <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center font-bold text-red-600 dark:text-red-400 text-sm shrink-0">
+                  {kickModal.username?.[0]?.toUpperCase() ?? '?'}
+                </div>
+                <div>
+                  <p className="font-bold text-sm">@{kickModal.username}</p>
+                  <p className="text-xs text-muted-foreground">será eliminado de la polla</p>
+                </div>
+              </div>
+
+              {kickModal.refundable ? (
+                <div className="flex items-start gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 px-3 py-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">
+                    La polla está abierta — la entrada será <strong>devuelta automáticamente</strong> al usuario.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2.5">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                    La polla ya está en curso — <strong>no se devolverá</strong> la entrada al expulsar.
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button onClick={() => setKickModal(null)}
+                  className="h-10 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-background text-sm font-semibold hover:bg-muted transition">
+                  Cancelar
+                </button>
+                <button onClick={confirmKick}
+                  className="h-10 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition flex items-center justify-center gap-1.5">
+                  <UserX className="h-4 w-4" /> Expulsar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
