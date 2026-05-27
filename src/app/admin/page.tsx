@@ -5,16 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { seedTeamsAction, seedMatchesAction, seedPlayersAction, recalculateAllPointsAction } from './actions'
+import { seedTeamsAction, seedMatchesAction, seedPlayersAction, recalculateAllPointsAction, resetTournamentAction } from './actions'
 import { createAnonClient } from '@/lib/auth-client'
 import { formatPeruLongDateTime } from '@/lib/peru-time'
-import { Trophy, RefreshCw, Users, ShieldCheck, Database, CalendarDays, Coins, Activity, TrendingUp, BookOpen } from 'lucide-react'
+import { Trophy, RefreshCw, Users, ShieldCheck, Database, CalendarDays, Coins, Activity, TrendingUp, BookOpen, Trash2 } from 'lucide-react'
 
 export default function AdminPage() {
   const [loadingTeams, setLoadingTeams] = useState(false)
   const [loadingMatches, setLoadingMatches] = useState(false)
   const [loadingPlayers, setLoadingPlayers] = useState(false)
   const [loadingRecalc, setLoadingRecalc] = useState(false)
+  const [loadingReset, setLoadingReset] = useState(false)
   const [recentMatches, setRecentMatches] = useState<any[]>([])
 
   useEffect(() => {
@@ -58,6 +59,18 @@ export default function AdminPage() {
     if (result.error) toast.error(result.error)
     else toast.success(`Puntos recalculados en ${result.count ?? 0} partidos finalizados`)
     setLoadingRecalc(false)
+  }
+
+  async function resetTournament() {
+    if (!confirm('⚠️ ¿Estás seguro? Esto borrará TODAS las predicciones, resultados de partidos y puntos de todos los usuarios. Los usuarios y las pollas se mantienen. Esta acción NO se puede deshacer.')) return
+    setLoadingReset(true)
+    const result = await resetTournamentAction()
+    if (result.error) toast.error(result.error)
+    else {
+      toast.success('✅ Reset completo: predicciones borradas, partidos a 0, puntos reseteados.')
+      setRecentMatches([])
+    }
+    setLoadingReset(false)
   }
 
   return (
@@ -220,6 +233,30 @@ export default function AdminPage() {
             </a>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Reset zona de peligro */}
+      <div className="rounded-2xl border-2 border-red-500/30 bg-red-500/5 p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+              <Trash2 className="h-5 w-5" />
+              Zona de Reset — Inicio del Torneo
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Borra predicciones, resultados y puntos. Mantiene usuarios y pollas.
+            </p>
+          </div>
+          <Button
+            onClick={resetTournament}
+            disabled={loadingReset}
+            variant="outline"
+            className="shrink-0 border-red-500 text-red-600 hover:bg-red-500 hover:text-white transition-all h-11 px-6 rounded-xl font-semibold"
+          >
+            <Trash2 className={`mr-2 h-4 w-4 ${loadingReset ? 'animate-spin' : ''}`} />
+            {loadingReset ? 'Reseteando...' : 'Reset completo'}
+          </Button>
+        </div>
       </div>
 
       {/* Recent activity log */}

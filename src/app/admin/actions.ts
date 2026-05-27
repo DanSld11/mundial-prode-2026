@@ -290,6 +290,66 @@ async function calculatePointsFallback(
   }
 }
 
+export async function resetTournamentAction() {
+  let adminClient: ReturnType<typeof createServiceRoleClient>
+  try {
+    adminClient = createServiceRoleClient()
+  } catch (e: any) {
+    return { error: e.message }
+  }
+
+  // 1. Borrar predicciones de partidos
+  const { error: e1 } = await adminClient
+    .from('predictions')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000')
+  if (e1) return { error: `predictions: ${e1.message}` }
+
+  // 2. Borrar predicciones de grupos
+  const { error: e2 } = await adminClient
+    .from('group_predictions')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000')
+  if (e2) return { error: `group_predictions: ${e2.message}` }
+
+  // 3. Borrar goleadores de partidos
+  const { error: e3 } = await adminClient
+    .from('match_goal_scorers')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000')
+  if (e3) return { error: `match_goal_scorers: ${e3.message}` }
+
+  // 4. Resetear resultados de partidos a pendiente
+  const { error: e4 } = await adminClient
+    .from('matches')
+    .update({
+      home_score: null,
+      away_score: null,
+      winner_team_id: null,
+      is_draw: false,
+      status: 'scheduled',
+      predictions_locked: false,
+    })
+    .neq('id', '00000000-0000-0000-0000-000000000000')
+  if (e4) return { error: `matches reset: ${e4.message}` }
+
+  // 5. Resetear puntos de todos los usuarios a 0
+  const { error: e5 } = await adminClient
+    .from('profiles')
+    .update({ total_points: 0 })
+    .neq('id', '00000000-0000-0000-0000-000000000000')
+  if (e5) return { error: `profiles reset: ${e5.message}` }
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/partidos')
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/fixture')
+  revalidatePath('/dashboard/predicciones')
+  revalidatePath('/dashboard/tabla')
+
+  return { success: true }
+}
+
 export async function recalculateAllPointsAction() {
   let adminClient: ReturnType<typeof createServiceRoleClient>
   try {
