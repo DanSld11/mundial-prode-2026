@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Trophy, ArrowLeft, Mail, CheckCircle2, Loader2 } from 'lucide-react'
+import { Trophy, ArrowLeft, Mail, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
+import { sendPasswordRecoveryAction } from './actions'
 
 export default function ForgotPasswordPage() {
   const [email,   setEmail  ] = useState('')
@@ -15,24 +16,12 @@ export default function ForgotPasswordPage() {
     setError('')
     setLoading(true)
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/recover`,
-        {
-          method: 'POST',
-          headers: {
-            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            redirect_to: `${window.location.origin}/auth/reset-password`,
-          }),
-        }
+      const result = await sendPasswordRecoveryAction(
+        email,
+        `${window.location.origin}/auth/reset-password`
       )
-      // Supabase devuelve 200 incluso si el email no existe (seguridad)
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        setError(data.msg || data.error_description || 'Error al enviar el correo.')
+      if (result.error) {
+        setError(result.error)
       } else {
         setSent(true)
       }
@@ -86,8 +75,9 @@ export default function ForgotPasswordPage() {
               </p>
 
               {error && (
-                <div className="rounded-xl bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive">
-                  {error}
+                <div className="flex items-start gap-2.5 rounded-xl bg-red-50 border border-red-200 px-3 py-3 dark:bg-red-950/20 dark:border-red-800/50">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+                  <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
                 </div>
               )}
 
