@@ -63,7 +63,7 @@ function FlagSelect({ teams, value, allSelected, pos, disabled, onChange }: Flag
         type="button"
         disabled={disabled}
         onClick={() => setOpen(o => !o)}
-        className="w-full h-10 rounded-xl border border-border bg-background text-foreground px-3 text-sm font-medium flex items-center gap-2.5 focus:outline-none focus:ring-2 focus:ring-brand-red disabled:opacity-50 transition-colors hover:bg-muted/30 dark:bg-muted/20"
+        className="w-full h-10 rounded-xl border border-border bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 px-3 text-sm font-medium flex items-center gap-2.5 focus:outline-none focus:ring-2 focus:ring-brand-red disabled:opacity-50 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-700 shadow-sm"
       >
         {chosen ? (
           <>
@@ -78,47 +78,48 @@ function FlagSelect({ teams, value, allSelected, pos, disabled, onChange }: Flag
 
       {/* Dropdown list */}
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-popover border border-border rounded-xl shadow-xl overflow-hidden">
+        <div className="absolute z-[100] top-full mt-1 left-0 right-0 rounded-xl border border-border bg-white dark:bg-zinc-900 shadow-2xl overflow-auto max-h-56">
           {/* Clear option */}
           <button
             type="button"
             onClick={() => { onChange(''); setOpen(false) }}
-            className="w-full px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted text-left transition-colors"
+            className="w-full px-3 py-2.5 text-sm text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left transition-colors border-b border-border"
           >
             — Elegir equipo —
           </button>
-          <div className="divide-y divide-border/40">
-            {teams.map(t => {
-              const usedAt = Object.entries(allSelected).find(
-                ([p, tid]) => tid === t.id && Number(p) !== pos
-              )
-              const isSelected = value === t.id
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  disabled={!!usedAt}
-                  onClick={() => { if (!usedAt) { onChange(t.id); setOpen(false) } }}
-                  className={[
-                    'w-full px-3 py-2.5 text-sm flex items-center gap-2.5 text-left transition-colors',
-                    usedAt ? 'opacity-40 cursor-not-allowed' : 'hover:bg-muted cursor-pointer',
-                    isSelected ? 'bg-brand-red/10 font-semibold' : '',
-                  ].join(' ')}
-                >
-                  <TeamFlag code={t.flag_emoji} label={t.name_es} className="h-4 w-6 shrink-0" />
-                  <span className="truncate flex-1">{t.name_es}</span>
-                  {usedAt && (
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      ya en {POSITION_LABELS[Number(usedAt[0])]}
-                    </span>
-                  )}
-                  {isSelected && !usedAt && (
-                    <Check className="h-3.5 w-3.5 text-brand-red shrink-0" />
-                  )}
-                </button>
-              )
-            })}
-          </div>
+          {teams.map(t => {
+            const usedAt = Object.entries(allSelected).find(
+              ([p, tid]) => tid === t.id && Number(p) !== pos
+            )
+            const isSelected = value === t.id
+            return (
+              <button
+                key={t.id}
+                type="button"
+                disabled={!!usedAt}
+                onClick={() => { if (!usedAt) { onChange(t.id); setOpen(false) } }}
+                className={[
+                  'w-full px-3 py-2.5 text-sm flex items-center gap-2.5 text-left transition-colors border-b border-border/30 last:border-b-0',
+                  usedAt
+                    ? 'opacity-40 cursor-not-allowed bg-transparent'
+                    : isSelected
+                      ? 'bg-red-50 dark:bg-red-950/40 cursor-pointer'
+                      : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer',
+                ].join(' ')}
+              >
+                <TeamFlag code={t.flag_emoji} label={t.name_es} className="h-4 w-6 shrink-0 rounded-sm" />
+                <span className="flex-1 truncate text-zinc-900 dark:text-zinc-100 font-medium">{t.name_es}</span>
+                {usedAt && (
+                  <span className="text-xs text-muted-foreground shrink-0 ml-1">
+                    ({POSITION_LABELS[Number(usedAt[0])]})
+                  </span>
+                )}
+                {isSelected && !usedAt && (
+                  <Check className="h-3.5 w-3.5 text-brand-red shrink-0 ml-1" />
+                )}
+              </button>
+            )
+          })}
         </div>
       )}
     </div>
@@ -168,7 +169,7 @@ export default function GroupCard({ groupName, teams, predictions, locked }: Pro
   }
 
   return (
-    <div className="rounded-3xl border border-border bg-card shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden relative group">
+    <div className="rounded-3xl border border-border bg-card shadow-lg hover:shadow-xl transition-all duration-300 relative group">
       <div className="absolute top-0 right-0 w-32 h-32 bg-brand-red/5 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-brand-red/10" />
 
       {/* Header */}
