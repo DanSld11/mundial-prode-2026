@@ -58,3 +58,23 @@ export async function enableUserAction(userId: string) {
   revalidatePath('/admin/usuarios')
   return { success: true }
 }
+
+export async function deleteUserAction(userId: string) {
+  const caller = await assertAdmin()
+  if (!caller) return { error: 'Sin permisos de administrador' }
+
+  // No permitir que el admin se elimine a sí mismo
+  if (caller.id === userId) return { error: 'No podés eliminar tu propia cuenta' }
+
+  const admin = createServiceRoleClient()
+
+  // Eliminar perfil primero (por si no hay CASCADE configurado)
+  await admin.from('profiles').delete().eq('id', userId)
+
+  // Eliminar de auth.users
+  const { error } = await admin.auth.admin.deleteUser(userId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/usuarios')
+  return { success: true }
+}

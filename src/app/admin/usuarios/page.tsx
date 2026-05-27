@@ -4,7 +4,7 @@ import { formatPeruShortDateTime } from '@/lib/peru-time'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, Trophy, ShieldCheck, UserX } from 'lucide-react'
-import { ResetPasswordModal, ToggleUserStatus } from './UserActions'
+import { ResetPasswordModal, ToggleUserStatus, DeleteUserModal } from './UserActions'
 
 export const dynamic = 'force-dynamic'
 
@@ -164,6 +164,7 @@ export default async function AdminUsuariosPage() {
                             username={user.username}
                             isDisabled={user.isDisabled}
                           />
+                          <DeleteUserModal userId={user.id} username={user.username} />
                         </div>
                       </td>
                     </tr>
