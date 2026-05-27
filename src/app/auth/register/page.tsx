@@ -14,9 +14,17 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError('')
-    setLoading(true)
 
     const fd = new FormData(e.currentTarget)
+    const email = (fd.get('email') as string).trim().toLowerCase()
+
+    // Solo se permiten cuentas @gmail.com
+    if (!email.endsWith('@gmail.com')) {
+      setError('Solo se permiten cuentas de Gmail (@gmail.com).')
+      return
+    }
+
+    setLoading(true)
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/signup`, {
@@ -68,7 +76,16 @@ export default function RegisterPage() {
           )}
           <form onSubmit={handleSubmit} className="space-y-3">
             <Input name="username" type="text" placeholder="Nombre de usuario" required minLength={3} maxLength={20} className="h-10" />
-            <Input name="email" type="email" placeholder="Email" required className="h-10" />
+            <div className="space-y-1">
+              <div className="relative">
+                <Input name="email" type="email" placeholder="tu@gmail.com" required className="h-10 pr-24" />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/></svg>
+                  Solo Gmail
+                </span>
+              </div>
+              <p className="text-[11px] text-muted-foreground px-1">Solo se aceptan cuentas @gmail.com</p>
+            </div>
             <Input name="password" type="password" placeholder="Contraseña (mín 8)" required minLength={8} className="h-10" />
             <Input name="favorite_team" type="text" placeholder="Equipo favorito (opcional)" className="h-10" />
             <Button type="submit" disabled={loading} className="w-full h-10 bg-brand-red hover:bg-red-700 text-white">
