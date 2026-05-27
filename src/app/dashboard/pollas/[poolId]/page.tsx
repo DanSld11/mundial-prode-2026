@@ -1,6 +1,6 @@
 import { getPoolDetail } from '../actions'
 import { notFound } from 'next/navigation'
-import { Trophy, Users, Gem, ChevronLeft, Clock } from 'lucide-react'
+import { Trophy, Users, Gem, ChevronLeft, Clock, Lock } from 'lucide-react'
 import Link from 'next/link'
 import { CopyCodeButton } from './CopyCodeButton'
 import { PoolTabs } from './PoolTabs'
@@ -26,6 +26,71 @@ export default async function PoolDetailPage({ params }: { params: { poolId: str
   const prize3 = Math.floor(pot * pool.prize_3rd / 100)
 
   const statusCfg = STATUS_CONFIG[pool.status] ?? STATUS_CONFIG.open
+
+  /* ── Polla pagada: acceso bloqueado ── */
+  if (pool.status === 'paid') {
+    const myMember = members.find((m: any) => m.user_id === myUserId) as any
+    return (
+      <div className="mx-auto max-w-2xl space-y-5 pb-24">
+        <Link href="/dashboard/pollas"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ChevronLeft className="h-4 w-4" /> Mis pollas
+        </Link>
+
+        <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-br from-purple-600 to-purple-800 px-6 py-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20">
+              <Lock className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="font-bold text-2xl text-white mb-1">{pool.name}</h1>
+            <span className="inline-block rounded-full bg-white/20 px-3 py-1 text-sm font-semibold text-white">
+              Pagada ✓ — Polla cerrada
+            </span>
+          </div>
+
+          {/* Resultados finales */}
+          <div className="p-6 space-y-4">
+            <p className="text-center text-sm text-muted-foreground">
+              Esta polla ha finalizado y los premios fueron distribuidos.
+            </p>
+
+            {/* Mi posición final */}
+            {myMember?.final_position && (
+              <div className="rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30 px-5 py-4 text-center">
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mb-1">Tu posición final</p>
+                <p className="text-3xl font-extrabold text-purple-700 dark:text-purple-300">
+                  {myMember.final_position === 1 ? '🥇' : myMember.final_position === 2 ? '🥈' : myMember.final_position === 3 ? '🥉' : `#${myMember.final_position}`}
+                </p>
+                {myMember.prize_earned > 0 && (
+                  <p className="mt-1 text-sm font-bold text-yellow-600 dark:text-yellow-400">
+                    +{myMember.prize_earned.toLocaleString()} coins ganados 🪙
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Distribución final */}
+            {pot > 0 && (
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { pos: '1°', pct: pool.prize_1st, coins: prize1, icon: '🥇', cls: 'border-yellow-200 dark:border-yellow-800/50 bg-yellow-50 dark:bg-yellow-950/20' },
+                  { pos: '2°', pct: pool.prize_2nd, coins: prize2, icon: '🥈', cls: 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/20' },
+                  { pos: '3°', pct: pool.prize_3rd, coins: prize3, icon: '🥉', cls: 'border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20' },
+                ].map(p => (
+                  <div key={p.pos} className={`rounded-xl border p-3 text-center ${p.cls}`}>
+                    <p className="text-lg mb-0.5">{p.icon}</p>
+                    <p className="text-[10px] text-muted-foreground font-semibold">{p.pos}</p>
+                    <p className="font-bold text-xs tabular-nums">{p.coins.toLocaleString()} 🪙</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-5 pb-24">

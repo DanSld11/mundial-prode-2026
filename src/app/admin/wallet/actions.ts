@@ -162,3 +162,52 @@ export async function adminUpdatePoolStatus(poolId: string, status: string) {
   revalidatePath('/admin/wallet')
   return { success: true }
 }
+
+export async function adminGetPoolMembers(poolId: string) {
+  if (!await assertAdmin()) return []
+  const db = createServiceRoleClient()
+  const { data } = await db
+    .from('pool_members')
+    .select('user_id, joined_at, final_position, prize_earned, paid_out, profile:profiles(username, total_points)')
+    .eq('pool_id', poolId)
+    .order('joined_at', { ascending: true })
+  return data ?? []
+}
+
+export async function adminKickFromPoolAction(poolId: string, userId: string) {
+  if (!await assertAdmin()) return { error: 'Sin permisos de administrador' }
+  const db = createServiceRoleClient()
+
+  // Obtener datos del miembro y la polla
+  const { data: pool } = await db.from('pools').select('entry_fee, status, name').eq('id', poolId).single()
+  if (!pool) return { error: 'Polla no encontrada' }
+
+  const { data: member } = await db.from('pool_members').select('user_id').eq('pool_id', poolId).eq('user_id', userId).single()
+  if (!member) return { error: 'El usuario no está en esta polla' }
+
+  // Expulsar
+  const { error: deleteError } = await db.from('pool_members').delete().eq('pool_id', poolId).eq('user_id', userId)
+  if (deleteError) return { error: deleteError.message }
+
+  // Si la polla todavía acepta participantes (open), devolver la entrada pagada
+  if (pool.status === 'open' && pool.entry_fee > 0) {
+    const { data: wallet } = await db.from('wallets').select('balance, total_deposited, total_wagered').eq('user_id', userId).single()
+    if (wallet) {
+      const newBalance   = wallet.balance + pool.entry_fee
+      const newWagered   = Math.max(0, (wallet.total_wagered ?? 0) - pool.entry_fee)
+      await db.from('wallets').update({ balance: newBalance, total_wagered: newWagered, updated_at: new Date().toISOString() }).eq('user_id', userId)
+      await db.from('wallet_transactions').insert({
+        user_id: userId,
+        amount: pool.entry_fee,
+        balance_after: newBalance,
+        type: 'admin_adjustment',
+        description: `Devolución por expulsión de la polla "${pool.name}"`,
+        pool_id: poolId,
+      })
+    }
+  }
+
+  revalidatePath('/admin/wallet')
+  revalidatePath('/dashboard/pollas')
+  return { success: true, refunded: pool.status === 'open' && pool.entry_fee > 0 }
+}
