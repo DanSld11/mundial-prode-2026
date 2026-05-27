@@ -8,7 +8,8 @@ import { toast } from 'sonner'
 import { seedTeamsAction, seedMatchesAction, seedPlayersAction, recalculateAllPointsAction, resetTournamentAction } from './actions'
 import { createAnonClient } from '@/lib/auth-client'
 import { formatPeruLongDateTime } from '@/lib/peru-time'
-import { Trophy, RefreshCw, Users, ShieldCheck, Database, CalendarDays, Coins, Activity, TrendingUp, BookOpen, Trash2 } from 'lucide-react'
+import { Trophy, RefreshCw, Users, ShieldCheck, Database, CalendarDays, Coins, Activity, TrendingUp, BookOpen, Trash2, AlertTriangle } from 'lucide-react'
+import { Modal } from '@/components/ui/modal'
 
 export default function AdminPage() {
   const [loadingTeams, setLoadingTeams] = useState(false)
@@ -16,6 +17,7 @@ export default function AdminPage() {
   const [loadingPlayers, setLoadingPlayers] = useState(false)
   const [loadingRecalc, setLoadingRecalc] = useState(false)
   const [loadingReset, setLoadingReset] = useState(false)
+  const [showResetModal, setShowResetModal] = useState(false)
   const [recentMatches, setRecentMatches] = useState<any[]>([])
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export default function AdminPage() {
   }
 
   async function resetTournament() {
-    if (!confirm('⚠️ ¿Estás seguro? Esto borrará TODAS las predicciones, resultados de partidos y puntos de todos los usuarios. Los usuarios y las pollas se mantienen. Esta acción NO se puede deshacer.')) return
+    setShowResetModal(false)
     setLoadingReset(true)
     const result = await resetTournamentAction()
     if (result.error) toast.error(result.error)
@@ -236,28 +238,59 @@ export default function AdminPage() {
       </div>
 
       {/* Reset zona de peligro */}
-      <div className="rounded-2xl border-2 border-red-500/30 bg-red-500/5 p-5">
+      <div className="rounded-2xl border-2 border-red-500/40 bg-red-500/5 p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h3 className="font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
-              <Trash2 className="h-5 w-5" />
-              Zona de Reset — Inicio del Torneo
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Borra predicciones, resultados y puntos. Mantiene usuarios y pollas.
-            </p>
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+            </div>
+            <div>
+              <h3 className="font-bold text-red-600 dark:text-red-400">Zona de Reset — Inicio del Torneo</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Borra predicciones, resultados y puntos. Mantiene usuarios y pollas.</p>
+            </div>
           </div>
           <Button
-            onClick={resetTournament}
+            onClick={() => setShowResetModal(true)}
             disabled={loadingReset}
             variant="outline"
-            className="shrink-0 border-red-500 text-red-600 hover:bg-red-500 hover:text-white transition-all h-11 px-6 rounded-xl font-semibold"
+            className="shrink-0 border-red-500 text-red-600 hover:bg-red-500 hover:text-white transition-all h-10 px-5 rounded-xl font-semibold text-sm"
           >
             <Trash2 className={`mr-2 h-4 w-4 ${loadingReset ? 'animate-spin' : ''}`} />
             {loadingReset ? 'Reseteando...' : 'Reset completo'}
           </Button>
         </div>
       </div>
+
+      {/* Modal de confirmación reset */}
+      <Modal open={showResetModal} onClose={() => setShowResetModal(false)}>
+        <div className="flex flex-col items-center text-center gap-4 pt-2">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+            <AlertTriangle className="h-8 w-8 text-red-500" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold">¿Resetear el torneo?</h3>
+            <p className="mt-2 text-sm text-muted-foreground">Esta acción <strong>no se puede deshacer</strong>. Se borrarán:</p>
+            <ul className="mt-3 space-y-1 text-sm text-left mx-auto max-w-xs">
+              <li className="flex items-center gap-2 text-red-600 dark:text-red-400"><Trash2 className="h-3.5 w-3.5 shrink-0" />Todas las predicciones de partidos</li>
+              <li className="flex items-center gap-2 text-red-600 dark:text-red-400"><Trash2 className="h-3.5 w-3.5 shrink-0" />Todas las predicciones de grupos</li>
+              <li className="flex items-center gap-2 text-red-600 dark:text-red-400"><Trash2 className="h-3.5 w-3.5 shrink-0" />Resultados y goleadores de partidos</li>
+              <li className="flex items-center gap-2 text-red-600 dark:text-red-400"><Trash2 className="h-3.5 w-3.5 shrink-0" />Puntos de todos los usuarios → 0</li>
+            </ul>
+            <p className="mt-3 text-xs text-muted-foreground">✅ Se mantienen los usuarios y las pollas creadas.</p>
+          </div>
+          <div className="flex w-full gap-3 pt-2">
+            <Button variant="outline" className="flex-1" onClick={() => setShowResetModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              onClick={resetTournament}
+            >
+              Sí, resetear todo
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Recent activity log */}
       <div className="pt-4">

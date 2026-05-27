@@ -312,11 +312,11 @@ export async function resetTournamentAction() {
     .neq('id', '00000000-0000-0000-0000-000000000000')
   if (e2) return { error: `group_predictions: ${e2.message}` }
 
-  // 3. Borrar goleadores de partidos
+  // 3. Borrar goleadores de partidos (tabla sin columna id — usar match_id)
   const { error: e3 } = await adminClient
     .from('match_goal_scorers')
     .delete()
-    .neq('id', '00000000-0000-0000-0000-000000000000')
+    .not('match_id', 'is', null)
   if (e3) return { error: `match_goal_scorers: ${e3.message}` }
 
   // 4. Resetear resultados de partidos a pendiente
