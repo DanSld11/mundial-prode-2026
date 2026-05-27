@@ -74,7 +74,7 @@ export default function GruposPage() {
           <p className="text-sm text-muted-foreground/60 mt-1">Ejecutá el seed desde el panel de admin.</p>
         </div>
       ) : (
-        <div className="mx-auto grid max-w-7xl gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mx-auto grid max-w-7xl gap-4 md:grid-cols-2 xl:grid-cols-3">
           {groups.map((g) => {
             const groupTeams = teams.filter((t) => t.group_name === g) as Team[]
             const groupMatches = matches.filter((m) => m.group_name === g) as Match[]
@@ -95,23 +95,35 @@ export default function GruposPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <div className="w-full overflow-x-auto">
+                    <table className="w-full min-w-[420px] text-xs table-fixed">
+                      <colgroup>
+                        <col className="w-7" />   {/* # */}
+                        <col />                    {/* Selección — flexible */}
+                        <col className="w-8" />   {/* PJ */}
+                        <col className="w-8" />   {/* PG */}
+                        <col className="w-8" />   {/* PE */}
+                        <col className="w-8" />   {/* PP */}
+                        <col className="w-8" />   {/* GF */}
+                        <col className="w-8" />   {/* GC */}
+                        <col className="w-9" />   {/* DG */}
+                        <col className="w-9" />   {/* Pts */}
+                      </colgroup>
+                      <thead className="bg-muted/40 text-[10px] uppercase tracking-wide text-muted-foreground">
                         <tr>
-                          <th className="w-6 px-2 py-2 text-center">#</th>
-                          <th className="min-w-[90px] px-2 py-2 text-left">Selección</th>
-                          <th className="w-7 px-1 py-2 text-center" title="Partidos jugados">PJ</th>
-                          <th className="w-7 px-1 py-2 text-center" title="Ganados">PG</th>
-                          <th className="w-7 px-1 py-2 text-center" title="Empatados">PE</th>
-                          <th className="w-7 px-1 py-2 text-center" title="Perdidos">PP</th>
-                          <th className="w-7 px-1 py-2 text-center" title="Goles a favor">GF</th>
-                          <th className="w-7 px-1 py-2 text-center" title="Goles en contra">GC</th>
-                          <th className="w-7 px-1 py-2 text-center" title="Diferencia de goles">DG</th>
-                          <th className="w-8 px-2 py-2 text-center font-bold" title="Puntos">Pts</th>
+                          <th className="py-2 text-center">#</th>
+                          <th className="py-2 pl-2 text-left">Selección</th>
+                          <th className="py-2 text-center" title="Partidos jugados">PJ</th>
+                          <th className="py-2 text-center" title="Ganados">PG</th>
+                          <th className="py-2 text-center" title="Empatados">PE</th>
+                          <th className="py-2 text-center" title="Perdidos">PP</th>
+                          <th className="py-2 text-center" title="Goles a favor">GF</th>
+                          <th className="py-2 text-center" title="Goles en contra">GC</th>
+                          <th className="py-2 text-center" title="Diferencia de goles">DG</th>
+                          <th className="py-2 text-center font-bold" title="Puntos">Pts</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y">
+                      <tbody className="divide-y divide-border/50">
                         {standings.map((standing, index) => {
                           const team = standing.team
                           const qualifies = index < 2
@@ -125,33 +137,30 @@ export default function GruposPage() {
                                   : 'hover:bg-muted/20',
                               ].join(' ')}
                             >
-                              <td className="px-2 py-2 text-center align-middle">
+                              <td className="py-2 text-center align-middle">
                                 <span className={`text-xs font-bold tabular-nums ${qualifies ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>
                                   {index + 1}
                                 </span>
                               </td>
-                              <td className="px-2 py-2 align-middle">
-                                <div className="flex min-w-0 items-center gap-1.5">
+                              <td className="py-2 pl-2 pr-1 align-middle">
+                                <div className="flex items-center gap-1.5 min-w-0">
                                   <TeamFlag code={team.flag_emoji} label={team.name_es} className="h-3.5 w-5 shrink-0" />
-                                  <div className="min-w-0">
-                                    <p className="truncate text-xs font-semibold leading-tight">{team.name_es}</p>
-                                    <p className="text-[9px] uppercase text-muted-foreground leading-tight">{team.code}</p>
-                                  </div>
+                                  <span className="truncate text-xs font-semibold leading-tight">{team.name_es}</span>
                                 </div>
                               </td>
-                              <td className="px-1 py-2 text-center tabular-nums">{standing.played}</td>
-                              <td className="px-1 py-2 text-center tabular-nums text-emerald-700 dark:text-emerald-400 font-medium">{standing.won}</td>
-                              <td className="px-1 py-2 text-center tabular-nums text-muted-foreground">{standing.drawn}</td>
-                              <td className="px-1 py-2 text-center tabular-nums text-red-600 dark:text-red-400">{standing.lost}</td>
-                              <td className="px-1 py-2 text-center tabular-nums">{standing.goalsFor}</td>
-                              <td className="px-1 py-2 text-center tabular-nums text-muted-foreground">{standing.goalsAgainst}</td>
-                              <td className={`px-1 py-2 text-center tabular-nums font-semibold ${
+                              <td className="py-2 text-center tabular-nums">{standing.played}</td>
+                              <td className="py-2 text-center tabular-nums font-medium text-emerald-700 dark:text-emerald-400">{standing.won}</td>
+                              <td className="py-2 text-center tabular-nums text-muted-foreground">{standing.drawn}</td>
+                              <td className="py-2 text-center tabular-nums text-red-600 dark:text-red-400">{standing.lost}</td>
+                              <td className="py-2 text-center tabular-nums">{standing.goalsFor}</td>
+                              <td className="py-2 text-center tabular-nums text-muted-foreground">{standing.goalsAgainst}</td>
+                              <td className={`py-2 text-center tabular-nums font-semibold ${
                                 standing.goalDifference > 0 ? 'text-emerald-600 dark:text-emerald-400' :
                                 standing.goalDifference < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
                               }`}>
                                 {standing.goalDifference > 0 ? '+' : ''}{standing.goalDifference}
                               </td>
-                              <td className="px-2 py-2 text-center">
+                              <td className="py-2 text-center">
                                 <span className={`font-extrabold tabular-nums text-sm ${qualifies ? 'text-emerald-700 dark:text-emerald-300' : ''}`}>
                                   {standing.points}
                                 </span>
