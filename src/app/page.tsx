@@ -88,6 +88,17 @@ export default function LandingPage() {
   const [countdown, setCountdown] = useState<{ days: number; hours: number; mins: number } | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
 
+  // Interceptar tokens de Supabase en el hash (ej: reset de contraseña)
+  useEffect(() => {
+    const hash = window.location.hash
+    if (!hash) return
+    const params = new URLSearchParams(hash.replace('#', ''))
+    const type = params.get('type')
+    if (type === 'recovery') {
+      window.location.replace('/auth/reset-password' + hash)
+    }
+  }, [])
+
   useEffect(() => {
     setCountdown(getCountdown())
     const t = setInterval(() => setCountdown(getCountdown()), 60_000)
