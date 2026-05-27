@@ -53,13 +53,13 @@ export default function GroupCard({ groupName, teams, predictions, locked }: Pro
     }
 
     const prev = selected[position]
-    
+
     if (teamId === '') {
       setSelected(s => { const n = { ...s }; delete n[position]; return n })
     } else {
       setSelected(s => ({ ...s, [position]: teamId }))
     }
-    
+
     setSaving(position)
 
     const res = await saveGroupPredictionAction(groupName, position, teamId || null)
@@ -83,49 +83,59 @@ export default function GroupCard({ groupName, teams, predictions, locked }: Pro
   }
 
   return (
-    <div className="rounded-3xl border border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden relative group">
+    <div className="rounded-3xl border border-border bg-card shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden relative group">
       <div className="absolute top-0 right-0 w-32 h-32 bg-brand-red/5 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-brand-red/10"></div>
       {/* Header */}
-      <div className="relative z-10 flex items-center justify-between px-5 py-4 border-b border-border/50 bg-gradient-to-r from-muted/50 to-transparent">
+      <div className="relative z-10 flex items-center justify-between px-5 py-4 border-b border-border bg-muted/40">
         <h3 className="font-extrabold text-sm tracking-widest text-foreground uppercase flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-brand-red"></span>
           Grupo {groupName}
         </h3>
-        <span className="text-xs font-medium text-muted-foreground bg-background/50 px-2 py-1 rounded-md border border-border/50 backdrop-blur-sm">
+        <span className="text-xs font-medium text-muted-foreground bg-background px-2 py-1 rounded-md border border-border">
           {teams.length} equipos
         </span>
       </div>
 
       {/* Positions */}
-      <div className="divide-y divide-border/30 relative z-10">
+      <div className="divide-y divide-border/50 relative z-10">
         {[1, 2, 3].map(pos => {
           const chosen = teams.find(t => t.id === selected[pos])
           const isSaving = saving === pos
 
           return (
-            <div key={pos} className="flex items-center gap-4 px-5 py-4 hover:bg-muted/20 transition-colors">
+            <div key={pos} className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors">
               {/* Position badge */}
               <span className={`w-9 h-9 flex items-center justify-center rounded-xl text-sm font-extrabold shrink-0 shadow-md border border-white/10
-                ${pos === 1 ? 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-600 text-yellow-950 shadow-yellow-500/20' 
-                : pos === 2 ? 'bg-gradient-to-br from-slate-200 via-slate-300 to-slate-400 text-slate-800 shadow-slate-400/20' 
+                ${pos === 1 ? 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-600 text-yellow-950 shadow-yellow-500/20'
+                : pos === 2 ? 'bg-gradient-to-br from-slate-200 via-slate-300 to-slate-400 text-slate-800 shadow-slate-400/20'
                 : 'bg-gradient-to-br from-orange-300 via-orange-400 to-orange-600 text-orange-950 shadow-orange-500/20'}`}>
                 {pos}°
               </span>
 
-              {/* Select */}
+              {/* Flag of selected team (only when not locked and a team is chosen) */}
+              {!locked && (
+                <span className="text-xl shrink-0 w-7 text-center">
+                  {chosen ? chosen.flag_emoji : '🏳️'}
+                </span>
+              )}
+
+              {/* Select / locked display */}
               <div className="flex-1 min-w-0">
                 {locked ? (
-                  <div className="flex items-center gap-3 text-sm font-semibold bg-background/50 px-3 py-2 rounded-xl border border-border/50">
+                  <div className="flex items-center gap-2.5 text-sm font-semibold bg-muted/50 px-3 py-2 rounded-xl border border-border">
                     {chosen
-                      ? <><span className="text-lg">{chosen.flag_emoji}</span><span>{chosen.name_es}</span></>
-                      : <span className="text-muted-foreground italic">Sin seleccionar</span>}
+                      ? <>
+                          <span className="text-xl shrink-0">{chosen.flag_emoji}</span>
+                          <span className="truncate">{chosen.name_es}</span>
+                        </>
+                      : <span className="text-muted-foreground italic text-xs">Sin seleccionar</span>}
                   </div>
                 ) : (
                   <select
                     disabled={locked}
                     value={selected[pos] ?? ''}
                     onChange={e => handleChange(pos, e.target.value)}
-                    className="w-full h-11 rounded-xl border border-border/50 bg-background/80 pl-3 pr-8 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-red disabled:opacity-50 transition-all hover:bg-background cursor-pointer appearance-none shadow-sm"
+                    className="w-full h-10 rounded-xl border border-border bg-background text-foreground pl-3 pr-8 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-red disabled:opacity-50 transition-all hover:bg-muted/30 cursor-pointer appearance-none shadow-sm dark:bg-muted/20"
                     style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.6rem center', backgroundSize: '0.9em' }}
                   >
                     <option value="">— Elegir equipo —</option>

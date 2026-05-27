@@ -100,13 +100,13 @@ export default function GruposPage() {
                       <thead className="bg-muted/30 text-[10px] uppercase tracking-wide text-muted-foreground">
                         <tr>
                           <th className="w-6 px-2 py-2 text-center">#</th>
-                          <th className="min-w-[100px] px-2 py-2 text-left">Selección</th>
+                          <th className="min-w-[90px] px-2 py-2 text-left">Selección</th>
                           <th className="w-7 px-1 py-2 text-center" title="Partidos jugados">PJ</th>
-                          <th className="w-7 px-1 py-2 text-center hidden sm:table-cell" title="Ganados">PG</th>
-                          <th className="w-7 px-1 py-2 text-center hidden sm:table-cell" title="Empatados">PE</th>
-                          <th className="w-7 px-1 py-2 text-center hidden sm:table-cell" title="Perdidos">PP</th>
-                          <th className="w-7 px-1 py-2 text-center hidden sm:table-cell" title="Goles a favor">GF</th>
-                          <th className="w-7 px-1 py-2 text-center hidden sm:table-cell" title="Goles en contra">GC</th>
+                          <th className="w-7 px-1 py-2 text-center" title="Ganados">PG</th>
+                          <th className="w-7 px-1 py-2 text-center" title="Empatados">PE</th>
+                          <th className="w-7 px-1 py-2 text-center" title="Perdidos">PP</th>
+                          <th className="w-7 px-1 py-2 text-center" title="Goles a favor">GF</th>
+                          <th className="w-7 px-1 py-2 text-center" title="Goles en contra">GC</th>
                           <th className="w-7 px-1 py-2 text-center" title="Diferencia de goles">DG</th>
                           <th className="w-8 px-2 py-2 text-center font-bold" title="Puntos">Pts</th>
                         </tr>
@@ -140,11 +140,11 @@ export default function GruposPage() {
                                 </div>
                               </td>
                               <td className="px-1 py-2 text-center tabular-nums">{standing.played}</td>
-                              <td className="px-1 py-2 text-center tabular-nums text-emerald-700 dark:text-emerald-400 font-medium hidden sm:table-cell">{standing.won}</td>
-                              <td className="px-1 py-2 text-center tabular-nums text-muted-foreground hidden sm:table-cell">{standing.drawn}</td>
-                              <td className="px-1 py-2 text-center tabular-nums text-red-600 dark:text-red-400 hidden sm:table-cell">{standing.lost}</td>
-                              <td className="px-1 py-2 text-center tabular-nums hidden sm:table-cell">{standing.goalsFor}</td>
-                              <td className="px-1 py-2 text-center tabular-nums text-muted-foreground hidden sm:table-cell">{standing.goalsAgainst}</td>
+                              <td className="px-1 py-2 text-center tabular-nums text-emerald-700 dark:text-emerald-400 font-medium">{standing.won}</td>
+                              <td className="px-1 py-2 text-center tabular-nums text-muted-foreground">{standing.drawn}</td>
+                              <td className="px-1 py-2 text-center tabular-nums text-red-600 dark:text-red-400">{standing.lost}</td>
+                              <td className="px-1 py-2 text-center tabular-nums">{standing.goalsFor}</td>
+                              <td className="px-1 py-2 text-center tabular-nums text-muted-foreground">{standing.goalsAgainst}</td>
                               <td className={`px-1 py-2 text-center tabular-nums font-semibold ${
                                 standing.goalDifference > 0 ? 'text-emerald-600 dark:text-emerald-400' :
                                 standing.goalDifference < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
