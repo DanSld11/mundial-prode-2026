@@ -24,11 +24,16 @@ export async function adminGetAllWallets() {
   return data ?? []
 }
 
-export async function adminGiveCoinsAction(targetUserId: string | 'all', amount: number, description: string) {
+export async function adminGiveCoinsAction(
+  targetUserId: string | 'all',
+  amount: number,       // positivo = agregar, negativo = quitar
+  description: string,
+) {
   if (!await assertAdmin()) return { error: 'Sin permisos de administrador' }
-  if (!amount || amount <= 0) return { error: 'El monto debe ser mayor a 0' }
+  if (!amount || amount === 0) return { error: 'El monto debe ser distinto de 0' }
 
   const db = createServiceRoleClient()
+  const isDeduction = amount < 0
 
   // Obtener usuarios destino
   let userIds: string[] = []
@@ -40,21 +45,32 @@ export async function adminGiveCoinsAction(targetUserId: string | 'all', amount:
   }
 
   let errors = 0
+  let skipped = 0
   for (const uid of userIds) {
     const { data: wallet } = await db.from('wallets').select('balance, total_deposited').eq('user_id', uid).single()
     if (!wallet) continue
-    const newBalance   = wallet.balance + amount
-    const newDeposited = wallet.total_deposited + amount
+
+    const newBalance = wallet.balance + amount
+    // No permitir saldo negativo al quitar coins
+    if (newBalance < 0) { skipped++; continue }
+
+    const newDeposited = isDeduction
+      ? wallet.total_deposited  // no tocar total_deposited al quitar
+      : wallet.total_deposited + amount
+
     const { error } = await db.from('wallets')
       .update({ balance: newBalance, total_deposited: newDeposited, updated_at: new Date().toISOString() })
       .eq('user_id', uid)
     if (error) { errors++; continue }
+
     await db.from('wallet_transactions').insert({
       user_id: uid,
-      amount,
+      amount,                   // negativo queda registrado como tal
       balance_after: newBalance,
       type: 'admin_adjustment',
-      description: description || `Recarga de ${amount} coins`,
+      description: description || (isDeduction
+        ? `Deducción de ${Math.abs(amount)} coins por admin`
+        : `Recarga de ${amount} coins por admin`),
     })
   }
 
@@ -62,7 +78,7 @@ export async function adminGiveCoinsAction(targetUserId: string | 'all', amount:
   revalidatePath('/dashboard/wallet')
 
   if (errors > 0) return { error: `${errors} errores al procesar` }
-  return { success: true, count: userIds.length }
+  return { success: true, count: userIds.length - skipped, skipped }
 }
 
 export async function adminGetAllPools() {

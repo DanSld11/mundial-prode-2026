@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Gem, Users, Trophy, Loader2, Send, CheckCircle2 } from 'lucide-react'
+import { Gem, Users, Trophy, Loader2, Send, CheckCircle2, Plus, Minus } from 'lucide-react'
 import { toast } from 'sonner'
 import { adminGetAllWallets, adminGiveCoinsAction, adminGetAllPools, adminPayoutPoolAction, adminUpdatePoolStatus } from './actions'
 
@@ -15,11 +15,12 @@ export default function AdminWalletPage() {
   const [pools,   setPools  ] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Give coins form
-  const [target, setTarget]   = useState<string>('all')
-  const [amount, setAmount]   = useState('')
-  const [desc,   setDesc]     = useState('')
-  const [sending, setSending] = useState(false)
+  // Give/remove coins form
+  const [target,    setTarget   ] = useState<string>('all')
+  const [amount,    setAmount   ] = useState('')
+  const [desc,      setDesc     ] = useState('')
+  const [operation, setOperation] = useState<'add' | 'remove'>('add')
+  const [sending,   setSending  ] = useState(false)
 
   useEffect(() => {
     Promise.all([adminGetAllWallets(), adminGetAllPools()])
@@ -30,12 +31,15 @@ export default function AdminWalletPage() {
   async function handleGiveCoins(e: React.FormEvent) {
     e.preventDefault()
     const n = parseInt(amount)
-    if (!n || n <= 0) { toast.error('Ingresá un monto válido'); return }
+    if (!n || n <= 0) { toast.error('Ingresá un monto válido (mayor a 0)'); return }
+    const signed = operation === 'remove' ? -n : n
     setSending(true)
-    const res = await adminGiveCoinsAction(target, n, desc)
+    const res = await adminGiveCoinsAction(target, signed, desc)
     setSending(false)
     if (res.error) { toast.error(res.error); return }
-    toast.success(`Coins enviadas a ${res.count} usuario${res.count !== 1 ? 's' : ''}`)
+    const verb = operation === 'add' ? 'enviadas a' : 'quitadas de'
+    const skippedMsg = res.skipped ? ` (${res.skipped} sin saldo suficiente)` : ''
+    toast.success(`${Math.abs(n)} coins ${verb} ${res.count} usuario${res.count !== 1 ? 's' : ''}${skippedMsg}`)
     setAmount(''); setDesc('')
     const updated = await adminGetAllWallets()
     setWallets(updated)
@@ -65,11 +69,44 @@ export default function AdminWalletPage() {
         <p className="text-sm text-muted-foreground">Gestión de coins y grupos de apuesta</p>
       </div>
 
-      {/* ── GIVE COINS ── */}
+      {/* ── GIVE / REMOVE COINS ── */}
       <div className="rounded-2xl border bg-card p-5 shadow-sm">
         <h3 className="mb-4 flex items-center gap-2 font-semibold">
-          <Gem className="h-5 w-5 text-brand-red" /> Dar MundialCoins
+          <Gem className="h-5 w-5 text-brand-red" /> Gestionar MundialCoins
         </h3>
+
+        {/* Toggle agregar / quitar */}
+        <div className="mb-4 inline-flex rounded-xl border overflow-hidden text-sm font-semibold">
+          <button
+            type="button"
+            onClick={() => setOperation('add')}
+            className={`flex items-center gap-1.5 px-4 py-2 transition-colors ${
+              operation === 'add'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-background text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            <Plus className="h-3.5 w-3.5" /> Agregar coins
+          </button>
+          <button
+            type="button"
+            onClick={() => setOperation('remove')}
+            className={`flex items-center gap-1.5 px-4 py-2 transition-colors ${
+              operation === 'remove'
+                ? 'bg-red-600 text-white'
+                : 'bg-background text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            <Minus className="h-3.5 w-3.5" /> Quitar coins
+          </button>
+        </div>
+
+        {operation === 'remove' && (
+          <p className="mb-3 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+            ⚠️ Si el usuario no tiene saldo suficiente, se omitirá sin error.
+          </p>
+        )}
+
         <form onSubmit={handleGiveCoins} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-1 lg:col-span-1">
             <label className="text-xs font-medium text-muted-foreground">Usuario destino</label>
@@ -90,13 +127,20 @@ export default function AdminWalletPage() {
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Descripción (opcional)</label>
             <input value={desc} onChange={e => setDesc(e.target.value)}
-              placeholder="Ej: Bienvenida al torneo"
+              placeholder={operation === 'add' ? 'Ej: Bienvenida al torneo' : 'Ej: Corrección de saldo'}
               className="h-10 w-full rounded-xl border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-red" />
           </div>
           <div className="flex items-end">
             <button type="submit" disabled={sending}
-              className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-brand-red px-4 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition">
-              {sending ? <><Loader2 className="h-4 w-4 animate-spin" /> Enviando...</> : <><Send className="h-4 w-4" /> Enviar coins</>}
+              className={`flex h-10 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition ${
+                operation === 'remove' ? 'bg-red-600' : 'bg-emerald-600'
+              }`}>
+              {sending
+                ? <><Loader2 className="h-4 w-4 animate-spin" /> Procesando...</>
+                : operation === 'add'
+                  ? <><Plus className="h-4 w-4" /> Agregar coins</>
+                  : <><Minus className="h-4 w-4" /> Quitar coins</>
+              }
             </button>
           </div>
         </form>
