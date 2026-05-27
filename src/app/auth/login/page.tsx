@@ -29,14 +29,15 @@ function LoginForm() {
         },
         body: JSON.stringify({ email: fd.get('email'), password: fd.get('password') }),
       })
-      const data = await res.json()
+      let data: any = {}
+      try { data = await res.json() } catch { /* ignore parse error */ }
       if (!res.ok) { setError(data.msg || data.error_description || 'Email o contraseña incorrectos'); setLoading(false); return }
 
       document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=14400; SameSite=Lax'
       const redirectTo = searchParams.get('redirectTo') || '/dashboard'
       window.location.href = redirectTo
-    } catch (err: any) {
-      setError(err.message)
+    } catch {
+      setError('Error de conexión. Verificá tu internet e intentá de nuevo.')
       setLoading(false)
     }
   }
