@@ -31,3 +31,17 @@ export async function getWalletData() {
     transactions: txRes.data ?? [],
   }
 }
+
+export async function getMyAdminNotifications() {
+  const uid = await getAuthUserId()
+  if (!uid) return []
+  const db = createServiceRoleClient()
+  const { data } = await db
+    .from('wallet_transactions')
+    .select('id, amount, description, balance_after, created_at')
+    .eq('user_id', uid)
+    .eq('type', 'admin_adjustment')
+    .order('created_at', { ascending: false })
+    .limit(30)
+  return data ?? []
+}

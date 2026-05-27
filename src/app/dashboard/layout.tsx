@@ -4,6 +4,7 @@ import { AlbumProvider } from '@/components/album/AlbumContext'
 import { AlbumModal } from '@/components/album/AlbumModal'
 import { SidebarProvider } from '@/components/layout/sidebar-context'
 import { SidebarShell } from '@/components/layout/sidebar-shell'
+import { AdminCoinNotification } from '@/components/admin-coin-notification'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -16,6 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </SidebarShell>
           <FloatingAlbumButton />
           <AlbumModal />
+          <AdminCoinNotification />
         </div>
       </SidebarProvider>
     </AlbumProvider>
