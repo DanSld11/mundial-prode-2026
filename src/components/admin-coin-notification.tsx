@@ -34,9 +34,14 @@ export function AdminCoinNotification() {
 
   useEffect(() => {
     getMyAdminNotifications().then((txns: any[]) => {
-      const seen    = getSeenIds()
-      const unseen  = txns.filter(t => !seen.includes(t.id))
+      const seen   = getSeenIds()
+      const unseen = txns.filter(t => !seen.includes(t.id))
       if (unseen.length === 0) return
+
+      // Marcar TODAS como vistas de inmediato para que no repitan
+      // aunque el usuario cierre el modal sin hacer click en "Entendido"
+      unseen.forEach(t => markSeen(t.id))
+
       setQueue(unseen.slice(1))
       setCurrent(unseen[0])
       // Pequeño delay para que el modal entre con animación
