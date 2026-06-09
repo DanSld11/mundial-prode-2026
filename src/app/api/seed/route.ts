@@ -232,9 +232,10 @@ export async function GET(request: Request) {
       for (const [group, fixtures] of Object.entries(GROUPS_FIXTURE)) {
         for (const f of fixtures) {
           // Parse timezone offset based on city
-          let tz = '-04:00' // Eastern default
-          if (f.city.includes('Vancouver') || f.city.includes('Seattle') || f.city.includes('Santa Clara') || f.city.includes('Inglewood') || f.city.includes('San')) tz = '-07:00'
-          else if (f.city.includes('Mexico') || f.city.includes('Zapopan') || f.city.includes('Guadalupe') || f.city.includes('Kansas') || f.city.includes('Arlington') || f.city.includes('Houston')) tz = '-05:00'
+          let tz = '-04:00' // Eastern default (EDT)
+          if (f.city.includes('Vancouver') || f.city.includes('Seattle') || f.city.includes('Santa Clara') || f.city.includes('Inglewood') || f.city.includes('San')) tz = '-07:00' // PDT
+          else if (f.city.includes('Mexico') || f.city.includes('Zapopan') || f.city.includes('Guadalupe')) tz = '-06:00' // CST (México abolió DST en 2023, UTC-6 todo el año)
+          else if (f.city.includes('Kansas') || f.city.includes('Arlington') || f.city.includes('Houston')) tz = '-05:00' // CDT (EEUU Central en verano)
           
           matches.push({
             match_number: n++,
