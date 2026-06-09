@@ -51,6 +51,12 @@ export default function MatchPredictionPage() {
   } | null>(null)
 
   const supabase = useMemo(() => createAnonClient(), [])
+  // Reloj que ticks cada segundo: activa el bloqueo exacto cuando empieza el partido
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1_000)
+    return () => clearInterval(id)
+  }, [])
 
   useEffect(() => {
     async function load() {
@@ -115,7 +121,7 @@ export default function MatchPredictionPage() {
 
   // La predicción se bloquea solo si: el admin la cerró O ya empezó el partido
   // Los usuarios pueden editar su predicción hasta que comience el partido
-  const isMatchLocked = !!match && (match.predictions_locked || new Date(match.match_date) < new Date())
+  const isMatchLocked = !!match && (match.predictions_locked || new Date(match.match_date).getTime() <= now)
   const isUserConfirmed = !!prediction  // ya tiene una predicción guardada (editable si no está bloqueado)
   const isLocked = isMatchLocked        // solo el partido bloquea, no el haber confirmado antes
   const isFinished = match?.status === 'finished'
@@ -289,12 +295,23 @@ export default function MatchPredictionPage() {
         )}
 
         {/* Banner: partido cerrado por tiempo/admin */}
-        {isMatchLocked && !isUserConfirmed && (
-          <div className="flex items-center gap-3 rounded-xl border bg-muted/50 px-4 py-3">
-            <Lock className="h-5 w-5 shrink-0 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Las predicciones para este partido ya están cerradas.
-            </p>
+        {isMatchLocked && (
+          <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${
+            isUserConfirmed
+              ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800/50 dark:bg-emerald-900/20'
+              : 'border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-900/20'
+          }`}>
+            <Lock className={`h-5 w-5 shrink-0 ${isUserConfirmed ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`} />
+            <div>
+              <p className={`text-sm font-semibold ${isUserConfirmed ? 'text-emerald-800 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300'}`}>
+                {isUserConfirmed ? 'Predicción registrada · apuestas cerradas' : 'Apuestas cerradas para este partido'}
+              </p>
+              <p className={`text-xs mt-0.5 ${isUserConfirmed ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                {isUserConfirmed
+                  ? 'Tu predicción quedó guardada. Los resultados se calcularán al finalizar el partido.'
+                  : 'El partido ya comenzó. No es posible realizar predicciones una vez iniciado el encuentro.'}
+              </p>
+            </div>
           </div>
         )}
 

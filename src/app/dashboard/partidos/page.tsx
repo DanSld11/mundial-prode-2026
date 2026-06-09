@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { CalendarDays, CheckCircle2, Clock, MapPin, Wifi } from 'lucide-react'
+import { AlertCircle, CalendarDays, CheckCircle2, Clock, Lock, MapPin, Wifi } from 'lucide-react'
 import { TeamFlag } from '@/components/team-flag'
 import { formatPeruDateLabel, formatPeruTime, peruDateKey } from '@/lib/peru-time'
 import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
@@ -47,6 +47,13 @@ export default function PartidosPage() {
   const [loading, setLoading] = useState(true)
   const [liveIndicator, setLiveIndicator] = useState(false)
   const [activeGroup, setActiveGroup] = useState<string>('todos')
+  // Reloj que ticks cada segundo: permite re-evaluar isLocked en tiempo real
+  // cuando el partido empieza, sin necesidad de recargar la página
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1_000)
+    return () => clearInterval(id)
+  }, [])
 
   useEffect(() => {
     // Show cached data immediately (optimistic)
@@ -131,7 +138,7 @@ export default function PartidosPage() {
   const predictionsMap = new Map(predictions.map((p: any) => [p.match_id, p]))
 
   // Progreso de predicciones (solo partidos que aún no empezaron y no están bloqueados)
-  const openMatches = matches.filter((m: any) => !m.predictions_locked && new Date(m.match_date) > new Date())
+  const openMatches = matches.filter((m: any) => !m.predictions_locked && new Date(m.match_date).getTime() > now)
   const completedPreds = openMatches.filter((m: any) => predictionsMap.has(m.id)).length
   const totalOpen = openMatches.length
   const progressPct = totalOpen > 0 ? Math.round((completedPreds / totalOpen) * 100) : 100
@@ -164,6 +171,15 @@ export default function PartidosPage() {
             <p className="text-sm text-muted-foreground">Fase de grupos oficial · 11-27 junio 2026 · Hora Perú</p>
           </div>
         </div>
+      </div>
+
+      {/* Aviso de bloqueo automático */}
+      <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800/50 dark:bg-amber-900/20">
+        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+        <p className="text-sm text-amber-800 dark:text-amber-300">
+          <span className="font-semibold">Las apuestas se cierran automáticamente al inicio de cada partido.</span>{' '}
+          Una vez que el partido comience, no podrás realizar ni modificar tu predicción.
+        </p>
       </div>
 
       {/* Banner de progreso de predicciones */}
@@ -229,7 +245,7 @@ export default function PartidosPage() {
               <div className="grid gap-3">
                 {dayMatches.map((match: any) => {
                   const pred = predictionsMap.get(match.id)
-                  const isLocked = match.predictions_locked || new Date(match.match_date) < new Date()
+                  const isLocked = match.predictions_locked || new Date(match.match_date).getTime() <= now
                   const isFinished = match.status === 'finished'
                   const homeFlag = match.home_team?.flag_emoji
                   const awayFlag = match.away_team?.flag_emoji
@@ -280,7 +296,7 @@ export default function PartidosPage() {
                               <span>Resultado, goleador y marcador exacto</span>
                             )}
                             {/* Countdown si faltan menos de 24h y el partido no cerró */}
-                            {!isLocked && !isFinished && (new Date(match.match_date).getTime() - Date.now()) < 86_400_000 && (
+                            {!isLocked && !isFinished && (new Date(match.match_date).getTime() - now) < 86_400_000 && (
                               <MatchCountdown matchDate={match.match_date} />
                             )}
                           </div>
