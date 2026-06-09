@@ -29,7 +29,7 @@ export async function seedTeamsAction() {
   }
 
   revalidatePath('/dashboard/grupos')
-  revalidatePath('/dashboard/fixture')
+  revalidatePath('/dashboard/partidos')
   return { success: true, count: SEED_TEAMS.length }
 }
 
@@ -74,7 +74,7 @@ export async function seedMatchesAction() {
     return { error: error.message }
   }
 
-  revalidatePath('/dashboard/fixture')
+  revalidatePath('/dashboard/partidos')
   revalidatePath('/dashboard/grupos')
   return { success: true, count: matchesToInsert.length }
 }
@@ -121,7 +121,7 @@ export async function seedPlayersAction() {
   }
 
   revalidatePath('/admin/jugadores')
-  revalidatePath('/dashboard/fixture')
+  revalidatePath('/dashboard/partidos')
   return { success: true, count: inserted }
 }
 
@@ -200,7 +200,7 @@ export async function updateMatchResultAction(formData: FormData) {
   }
 
   revalidatePath('/admin/partidos')
-  revalidatePath('/dashboard/fixture')
+  revalidatePath('/dashboard/partidos')
   revalidatePath('/dashboard/predicciones')
   revalidatePath('/dashboard/tabla')
   revalidatePath('/dashboard')
@@ -343,7 +343,7 @@ export async function resetTournamentAction() {
   revalidatePath('/admin')
   revalidatePath('/admin/partidos')
   revalidatePath('/dashboard')
-  revalidatePath('/dashboard/fixture')
+  revalidatePath('/dashboard/partidos')
   revalidatePath('/dashboard/predicciones')
   revalidatePath('/dashboard/tabla')
 
@@ -381,7 +381,7 @@ export async function recalculateAllPointsAction() {
   revalidatePath('/admin')
   revalidatePath('/admin/partidos')
   revalidatePath('/dashboard')
-  revalidatePath('/dashboard/fixture')
+  revalidatePath('/dashboard/partidos')
   revalidatePath('/dashboard/predicciones')
   revalidatePath('/dashboard/tabla')
 

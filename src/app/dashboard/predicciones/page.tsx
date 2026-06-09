@@ -142,7 +142,7 @@ export default function PrediccionesPage() {
           <Target className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
           <p className="font-semibold text-muted-foreground">Sin predicciones aquí</p>
           <p className="mt-1 text-sm text-muted-foreground/60">
-            {filter === 'todas' ? 'Andá al fixture para hacer tus predicciones.' : 'Probá otro filtro.'}
+            {filter === 'todas' ? 'Andá a Partidos para hacer tus predicciones.' : 'Probá otro filtro.'}
           </p>
         </div>
       ) : (

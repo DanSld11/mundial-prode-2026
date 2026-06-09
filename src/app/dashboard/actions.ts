@@ -60,7 +60,7 @@ export async function savePredictionAction(formData: FormData) {
     return { error: error.message }
   }
 
-  revalidatePath('/dashboard/fixture')
+  revalidatePath('/dashboard/partidos')
   revalidatePath('/dashboard/predicciones')
   return { success: true }
 }
@@ -101,7 +101,7 @@ export async function deletePredictionAction(matchId: string) {
     return { error: error.message }
   }
 
-  revalidatePath('/dashboard/fixture')
+  revalidatePath('/dashboard/partidos')
   revalidatePath('/dashboard/predicciones')
   return { success: true }
 }

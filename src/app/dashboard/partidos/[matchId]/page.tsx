@@ -205,11 +205,11 @@ export default function MatchPredictionPage() {
     <>
       <div className="mx-auto max-w-5xl space-y-5">
         <Link
-          href="/dashboard/fixture"
+          href="/dashboard/partidos"
           className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Volver al fixture
+          Volver a partidos
         </Link>
 
         {/* Cabecera del partido */}

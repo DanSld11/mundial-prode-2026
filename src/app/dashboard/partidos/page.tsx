@@ -41,7 +41,7 @@ function MatchCountdown({ matchDate }: { matchDate: string }) {
   )
 }
 
-export default function FixturePage() {
+export default function PartidosPage() {
   const [matches, setMatches] = useState<any[]>([])
   const [predictions, setPredictions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -155,7 +155,7 @@ export default function FixturePage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-bebas text-3xl tracking-wide sm:text-4xl">Fixture</h1>
+              <h1 className="font-bebas text-3xl tracking-wide sm:text-4xl">Partidos</h1>
               <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold transition-all ${liveIndicator ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-muted text-muted-foreground'}`}>
                 <Wifi className="h-2.5 w-2.5" />
                 {liveIndicator ? 'Actualizando...' : 'En vivo'}
@@ -285,7 +285,7 @@ export default function FixturePage() {
                             )}
                           </div>
                           <Link
-                            href={`/dashboard/fixture/${match.id}`}
+                            href={`/dashboard/partidos/${match.id}`}
                             className={`inline-flex h-8 w-full items-center justify-center rounded-lg px-3 text-sm font-medium transition-colors sm:w-auto ${
                               pred
                                 ? 'border bg-background hover:bg-muted'

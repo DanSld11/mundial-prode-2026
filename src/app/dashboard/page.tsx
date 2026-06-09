@@ -12,7 +12,7 @@ import { ActivityFeed } from '@/components/activity-feed'
 
 const quickLinks = [
   { href: '/dashboard/grupos',      title: 'Grupos',          description: 'Ver las 48 selecciones',  icon: Users },
-  { href: '/dashboard/fixture',     title: 'Fixture',         description: 'Predecir partidos',        icon: CalendarDays },
+  { href: '/dashboard/partidos',     title: 'Partidos',        description: 'Predecir partidos',        icon: CalendarDays },
   { href: '/dashboard/predicciones',title: 'Mis predicciones',description: 'Revisar tus picks',        icon: Target },
   { href: '/dashboard/tabla',       title: 'Tabla',           description: 'Ranking de jugadores',     icon: Medal },
 ]
@@ -259,8 +259,8 @@ export default function DashboardPage() {
               Revisa grupos, completa tus pronósticos y sigue la tabla de posiciones desde un solo lugar.
             </p>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <Link href="/dashboard/fixture" className="inline-flex h-9 items-center justify-center rounded-lg bg-brand-red px-4 text-sm font-medium text-white transition-colors hover:bg-red-700">
-                Ir al fixture <ArrowRight className="ml-2 h-4 w-4" />
+              <Link href="/dashboard/partidos" className="inline-flex h-9 items-center justify-center rounded-lg bg-brand-red px-4 text-sm font-medium text-white transition-colors hover:bg-red-700">
+                Ver partidos <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link href="/dashboard/grupos" className="inline-flex h-9 items-center justify-center rounded-lg border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted">
                 Ver grupos
@@ -293,12 +293,12 @@ export default function DashboardPage() {
                 <h2 className="text-sm font-semibold">Próximos partidos</h2>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-muted-foreground">Hora Perú</span>
-                  <Link href="/dashboard/fixture" className="text-xs font-medium text-brand-red hover:underline">Ver todos</Link>
+                  <Link href="/dashboard/partidos" className="text-xs font-medium text-brand-red hover:underline">Ver todos</Link>
                 </div>
               </div>
               <div className="space-y-3">
                 {nextMatches.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Todavía no hay fixture cargado.</p>
+                  <p className="text-sm text-muted-foreground">Todavía no hay partidos cargados.</p>
                 ) : (
                   nextMatches.map((match) => (
                     <div key={match.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-sm">
@@ -347,7 +347,7 @@ export default function DashboardPage() {
           <div className="space-y-2">
             {[
               { done: (userGroupPredCount ?? 0) > 0, label: 'Completá tus pronósticos de grupo', desc: 'Predecí las posiciones de los 9 grupos', href: '/dashboard/pronosticos' },
-              { done: (userPredCount ?? 0) >= 5,      label: 'Predecí al menos 5 partidos',       desc: `Ya tenés ${userPredCount ?? 0} predicción${(userPredCount ?? 0) !== 1 ? 'es' : ''} · meta: 5`, href: '/dashboard/fixture' },
+              { done: (userPredCount ?? 0) >= 5,      label: 'Predecí al menos 5 partidos',       desc: `Ya tenés ${userPredCount ?? 0} predicción${(userPredCount ?? 0) !== 1 ? 'es' : ''} · meta: 5`, href: '/dashboard/partidos' },
               { done: (userPoolCount ?? 0) > 0,       label: 'Unite a una polla',                  desc: 'Competí con tus amigos',              href: '/dashboard/pollas' },
             ].map((step) => (
               <Link

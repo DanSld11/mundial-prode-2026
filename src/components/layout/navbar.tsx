@@ -29,7 +29,7 @@ import { useSidebar } from '@/components/layout/sidebar-context'
 const navItems = [
   { href: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
   { href: '/dashboard/grupos', label: 'Grupos', icon: Users },
-  { href: '/dashboard/fixture', label: 'Fixture', icon: CalendarDays },
+  { href: '/dashboard/partidos', label: 'Partidos', icon: CalendarDays },
   { href: '/dashboard/predicciones', label: 'Predicciones', icon: Target },
   { href: '/dashboard/pronosticos', label: 'Pronósticos', icon: BarChart3 },
   { href: '/dashboard/pollas', label: 'Pollas', icon: Trophy },
@@ -232,7 +232,7 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
         <div className="mx-auto grid max-w-md grid-cols-6 gap-0.5">
           {[
             { href: '/dashboard',              label: 'Inicio',   icon: LayoutDashboard },
-            { href: '/dashboard/fixture',      label: 'Fixture',  icon: CalendarDays },
+            { href: '/dashboard/partidos',      label: 'Partidos', icon: CalendarDays },
             { href: '/dashboard/predicciones', label: 'Pred.',    icon: Target },
             { href: '/dashboard/pronosticos',  label: 'Pronóst.', icon: BarChart3 },
             { href: '/dashboard/pollas',       label: 'Pollas',   icon: Trophy },
