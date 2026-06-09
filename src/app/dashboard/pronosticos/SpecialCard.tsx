@@ -89,6 +89,7 @@ interface Props {
   players: Player[]
   predictions: SpecialPred[]
   results: SpecialResult[]
+  tournamentStarted?: boolean
 }
 
 function SingleSpecialCard({
@@ -97,14 +98,17 @@ function SingleSpecialCard({
   players,
   prediction,
   result,
+  tournamentStarted = false,
 }: {
   config: CardConfig
   teams: Team[]
   players: Player[]
   prediction?: SpecialPred
   result?: SpecialResult
+  tournamentStarted?: boolean
 }) {
-  const locked = result?.locked ?? false
+  // Bloqueado si el admin lo cerró manualmente O si el torneo ya comenzó
+  const locked = (result?.locked ?? false) || tournamentStarted
 
   const [teamId, setTeamId]   = useState<string>(prediction?.team_id   ?? '')
   const [playerId, setPlayerId] = useState<string>(prediction?.player_id ?? '')
@@ -300,7 +304,7 @@ function SingleSpecialCard({
   )
 }
 
-export default function SpecialCards({ teams, players, predictions, results }: Props) {
+export default function SpecialCards({ teams, players, predictions, results, tournamentStarted = false }: Props) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {CARDS.map(cfg => (
@@ -311,6 +315,7 @@ export default function SpecialCards({ teams, players, predictions, results }: P
           players={players}
           prediction={predictions.find(p => p.type === cfg.type)}
           result={results.find(r => r.type === cfg.type)}
+          tournamentStarted={tournamentStarted}
         />
       ))}
     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Lock } from 'lucide-react'
 import { saveGroupPredictionAction } from './actions'
 import { toast } from 'sonner'
 import { TeamFlag } from '@/components/team-flag'
@@ -99,10 +99,13 @@ export default function GroupCard({ groupName, teams, predictions, locked }: Pro
           <span className="w-2 h-2 rounded-full bg-brand-red shrink-0" />
           Grupo {groupName}
         </h3>
-        <div className="flex gap-1 text-[10px] font-bold text-muted-foreground">
-          <span className="w-7 text-center">1°</span>
-          <span className="w-7 text-center">2°</span>
-          <span className="w-7 text-center">3°</span>
+        <div className="flex items-center gap-1">
+          {locked && <Lock className="h-3 w-3 text-amber-500" />}
+          <div className="flex gap-1 text-[10px] font-bold text-muted-foreground">
+            <span className="w-7 text-center">1°</span>
+            <span className="w-7 text-center">2°</span>
+            <span className="w-7 text-center">3°</span>
+          </div>
         </div>
       </div>
 

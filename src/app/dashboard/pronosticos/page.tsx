@@ -1,12 +1,15 @@
 import { getPronosticosData } from './actions'
 import GroupCard from './GroupCard'
 import SpecialCards from './SpecialCard'
-import { Info } from 'lucide-react'
+import { Info, Lock } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
 export default async function PronosticosPage() {
-  const { uid, teams, groupPreds, specialPreds, specialResults, players } = await getPronosticosData()
+  const { uid, teams, groupPreds, specialPreds, specialResults, players, tournamentStart } = await getPronosticosData()
+
+  // El torneo bloqueó los pronósticos si ya arrancó el primer partido
+  const isLocked = !!tournamentStart && new Date(tournamentStart) <= new Date()
 
   if (!uid) {
     return (
@@ -35,14 +38,26 @@ export default async function PronosticosPage() {
         </p>
       </div>
 
-      {/* Info banner */}
-      <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 px-4 py-3 text-sm text-blue-800 dark:text-blue-300">
-        <Info className="h-4 w-4 mt-0.5 shrink-0" />
-        <p>
-          Los pronósticos de grupo se guardan automáticamente al seleccionar. Cada equipo solo puede
-          aparecer una vez por grupo. Las predicciones se cierran al inicio del torneo.
-        </p>
-      </div>
+      {/* Info / lock banner */}
+      {isLocked ? (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-900/20 px-4 py-3">
+          <Lock className="h-4 w-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Pronósticos cerrados — el torneo ya comenzó</p>
+            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+              Ya no es posible modificar tus pronósticos. Los puntos se calcularán al finalizar la fase de grupos.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 px-4 py-3 text-sm text-blue-800 dark:text-blue-300">
+          <Info className="h-4 w-4 mt-0.5 shrink-0" />
+          <p>
+            Los pronósticos de grupo se guardan automáticamente al seleccionar. Cada equipo solo puede
+            aparecer una vez por grupo. <strong>Las predicciones se cierran automáticamente al inicio del torneo.</strong>
+          </p>
+        </div>
+      )}
 
       {/* ── Fase de Grupos ── */}
       <section>
@@ -57,7 +72,7 @@ export default async function PronosticosPage() {
                 groupName={gName}
                 teams={groupMap[gName]}
                 predictions={groupPreds.filter((p: any) => p.group_name === gName)}
-                locked={false}
+                locked={isLocked}
               />
             ))}
           </div>
@@ -72,6 +87,7 @@ export default async function PronosticosPage() {
           players={players}
           predictions={specialPreds}
           results={specialResults}
+          tournamentStarted={isLocked}
         />
       </section>
     </div>

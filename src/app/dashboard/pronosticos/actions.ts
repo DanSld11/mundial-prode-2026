@@ -18,7 +18,7 @@ export async function getPronosticosData() {
   const uid = await getAuthUserId()
   const db  = createServiceRoleClient()
 
-  const [teamsRes, groupPredsRes, specialPredsRes, specialResultsRes, playersRes] = await Promise.all([
+  const [teamsRes, groupPredsRes, specialPredsRes, specialResultsRes, playersRes, firstMatchRes] = await Promise.all([
     db.from('teams').select('id, name_es, flag_emoji, code, group_name').order('group_name').order('name_es'),
     uid
       ? db.from('group_predictions').select('group_name, position, team_id').eq('user_id', uid)
@@ -28,7 +28,10 @@ export async function getPronosticosData() {
       : Promise.resolve({ data: [] }),
     db.from('special_results').select('type, player_id, locked'),
     db.from('players').select('id, name, team_id, position').order('name'),
+    db.from('matches').select('match_date').order('match_date', { ascending: true }).limit(1),
   ])
+
+  const tournamentStart: string | null = firstMatchRes.data?.[0]?.match_date ?? null
 
   return {
     uid,
@@ -37,6 +40,7 @@ export async function getPronosticosData() {
     specialPreds:   specialPredsRes.data ?? [],
     specialResults: specialResultsRes.data ?? [],
     players:        playersRes.data ?? [],
+    tournamentStart,
   }
 }
 
@@ -50,6 +54,13 @@ export async function saveGroupPredictionAction(
   if (!uid) return { error: 'No autenticado' }
 
   const db = createServiceRoleClient()
+
+  // Bloquear si el torneo ya comenzó
+  const { data: firstMatch } = await db
+    .from('matches').select('match_date').order('match_date', { ascending: true }).limit(1).single()
+  if (firstMatch?.match_date && new Date(firstMatch.match_date) <= new Date()) {
+    return { error: 'Los pronósticos de grupo están cerrados. El torneo ya comenzó.' }
+  }
 
   if (!teamId) {
     await db.from('group_predictions')
@@ -97,8 +108,16 @@ export async function saveSpecialPredictionAction(
   const uid = await getAuthUserId()
   if (!uid) return { error: 'No autenticado' }
 
-  // Verificar que el tipo no esté bloqueado
   const db = createServiceRoleClient()
+
+  // Bloquear si el torneo ya comenzó
+  const { data: firstMatch } = await db
+    .from('matches').select('match_date').order('match_date', { ascending: true }).limit(1).single()
+  if (firstMatch?.match_date && new Date(firstMatch.match_date) <= new Date()) {
+    return { error: 'Los pronósticos especiales están cerrados. El torneo ya comenzó.' }
+  }
+
+  // Verificar que el tipo no esté bloqueado manualmente por el admin
   const { data: result } = await db.from('special_results').select('locked').eq('type', type).single()
   if (result?.locked) return { error: 'Este pronóstico ya está cerrado' }
 
