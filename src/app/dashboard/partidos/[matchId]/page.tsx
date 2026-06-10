@@ -425,7 +425,7 @@ export default function MatchPredictionPage() {
                     'h-14 text-center text-2xl font-bold tabular-nums',
                     isLocked ? 'bg-muted/30' : '',
                   ].join(' ')}
-                  placeholder="0"
+                  placeholder="-"
                 />
                 <span className="text-xl font-bold text-muted-foreground">-</span>
                 <Input
@@ -439,7 +439,7 @@ export default function MatchPredictionPage() {
                     'h-14 text-center text-2xl font-bold tabular-nums',
                     isLocked ? 'bg-muted/30' : '',
                   ].join(' ')}
-                  placeholder="0"
+                  placeholder="-"
                 />
               </div>
               {isFinished && (
