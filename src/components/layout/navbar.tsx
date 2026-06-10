@@ -19,6 +19,7 @@ import {
   BookOpen,
   Menu,
   X,
+  Gem,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -33,6 +34,7 @@ const navItems = [
   { href: '/dashboard/predicciones', label: 'Predicciones', icon: Target },
   { href: '/dashboard/pronosticos', label: 'Pronósticos', icon: BarChart3 },
   { href: '/dashboard/pollas', label: 'Pollas', icon: Trophy },
+  { href: '/dashboard/wallet', label: 'MundialCoins', icon: Gem },
   { href: '/dashboard/reglas', label: 'Reglas', icon: BookOpen },
   { href: '/dashboard/tabla', label: 'Tabla', icon: Table2 },
 ]
@@ -43,10 +45,10 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
   const { open: sidebarOpen, toggle: toggleSidebar } = useSidebar()
   const [detectedAdmin, setDetectedAdmin] = useState(isAdmin)
   const [username, setUsername] = useState('')
+  const [coinBalance, setCoinBalance] = useState<number | null>(null)
   const showAdmin = isAdmin || detectedAdmin
 
   useEffect(() => {
-    if (isAdmin) return
     const token = getAccessToken()
     if (!token) return
     const supabase = createAuthedClient(token)
@@ -58,8 +60,16 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
         .eq('id', userId)
         .single()
         .then(({ data: profile }) => {
-          setDetectedAdmin(profile?.role === 'admin')
+          if (!isAdmin) setDetectedAdmin(profile?.role === 'admin')
           if (profile?.username) setUsername(profile.username)
+        })
+      supabase
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', userId)
+        .single()
+        .then(({ data: wallet }) => {
+          if (wallet?.balance != null) setCoinBalance(wallet.balance)
         })
     })
   }, [isAdmin])
@@ -76,6 +86,7 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
           const active = item.href === '/dashboard'
             ? pathname === '/dashboard'
             : pathname.startsWith(item.href)
+          const isWallet = item.href === '/dashboard/wallet'
           return (
             <Link
               key={item.href}
@@ -89,7 +100,17 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
               )}
             >
               <item.icon className="h-4 w-4 shrink-0 transition-transform group-hover:scale-110" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {isWallet && coinBalance != null && (
+                <span className={cn(
+                  'text-[11px] font-bold tabular-nums rounded-full px-2 py-0.5',
+                  active
+                    ? 'bg-white/20 text-white'
+                    : 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400'
+                )}>
+                  {coinBalance.toLocaleString('es-PE')}
+                </span>
+              )}
             </Link>
           )
         })}
@@ -229,13 +250,14 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
 
       {/* MOBILE BOTTOM NAV */}
       <nav className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t bg-card/90 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1.5 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-        <div className="mx-auto grid max-w-md grid-cols-6 gap-0.5">
+        <div className="mx-auto grid max-w-md grid-cols-7 gap-0.5">
           {[
             { href: '/dashboard',              label: 'Inicio',   icon: LayoutDashboard },
             { href: '/dashboard/partidos',      label: 'Partidos', icon: CalendarDays },
             { href: '/dashboard/predicciones', label: 'Pred.',    icon: Target },
             { href: '/dashboard/pronosticos',  label: 'Pronóst.', icon: BarChart3 },
             { href: '/dashboard/pollas',       label: 'Pollas',   icon: Trophy },
+            { href: '/dashboard/wallet',       label: 'Coins',    icon: Gem },
             { href: '/dashboard/tabla',        label: 'Tabla',    icon: Table2 },
           ].map((item) => {
             const active = item.href === '/dashboard'
