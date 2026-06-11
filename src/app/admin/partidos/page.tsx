@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { TeamFlag } from '@/components/team-flag'
 import { formatPeruShortDateTime } from '@/lib/peru-time'
 import { updateMatchResultAction } from '../actions'
+import { getAdminPartidosData } from './actions'
 import { toast } from 'sonner'
 import { CheckCircle2, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 
@@ -19,16 +19,11 @@ export default function AdminPartidosPage() {
   const [saving, setSaving] = useState<string | null>(null)
 
   useEffect(() => {
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
-    Promise.all([
-      supabase.from('matches').select(`*, home_team:teams!matches_home_team_id_fkey(name_es,flag_emoji,code), away_team:teams!matches_away_team_id_fkey(name_es,flag_emoji,code)`).order('match_date', { ascending: true }),
-      supabase.from('players').select('*, team:teams(id,name_es,code,flag_emoji)').eq('active', true).order('name').limit(2000),
-      supabase.from('match_goal_scorers').select('match_id, player_id'),
-    ]).then(([m, p, s]) => {
-      setMatches(m.data ?? [])
-      setPlayers(p.data ?? [])
+    getAdminPartidosData().then(({ matches: m, players: p, scorers: s }) => {
+      setMatches(m)
+      setPlayers(p)
       const map = new Map<string, Set<string>>()
-      ;(s.data ?? []).forEach((row: any) => {
+      s.forEach((row: any) => {
         if (!map.has(row.match_id)) map.set(row.match_id, new Set())
         map.get(row.match_id)!.add(row.player_id)
       })
