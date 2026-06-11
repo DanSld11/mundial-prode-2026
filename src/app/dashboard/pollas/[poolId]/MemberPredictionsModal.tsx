@@ -85,20 +85,27 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
           ) : (
             <div className="space-y-4">
               {/* Mini stats */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-xl border bg-muted/30 p-3 text-center">
+              <div className="grid grid-cols-4 gap-1.5">
+                <div className="rounded-xl border bg-muted/30 p-2.5 text-center">
                   <Trophy className="mx-auto h-4 w-4 text-brand-red mb-1" />
                   <p className="text-lg font-extrabold tabular-nums">{totalPts}</p>
                   <p className="text-[10px] text-muted-foreground">puntos</p>
                 </div>
-                <div className="rounded-xl border bg-muted/30 p-3 text-center">
+                <div className="rounded-xl border bg-muted/30 p-2.5 text-center">
                   <Target className="mx-auto h-4 w-4 text-emerald-500 mb-1" />
                   <p className="text-lg font-extrabold tabular-nums">
                     {preds.filter((p) => p.outcome_points > 0).length}
                   </p>
-                  <p className="text-[10px] text-muted-foreground">aciertos</p>
+                  <p className="text-[10px] text-muted-foreground">ganador</p>
                 </div>
-                <div className="rounded-xl border bg-muted/30 p-3 text-center">
+                <div className="rounded-xl border bg-muted/30 p-2.5 text-center">
+                  <span className="block text-base leading-none mb-1">👟</span>
+                  <p className="text-lg font-extrabold tabular-nums">
+                    {preds.filter((p) => p.scorer_points > 0).length}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">goleador</p>
+                </div>
+                <div className="rounded-xl border bg-muted/30 p-2.5 text-center">
                   <Medal className="mx-auto h-4 w-4 text-brand-gold mb-1" />
                   <p className="text-lg font-extrabold tabular-nums">{exactCount}</p>
                   <p className="text-[10px] text-muted-foreground">exactos</p>
