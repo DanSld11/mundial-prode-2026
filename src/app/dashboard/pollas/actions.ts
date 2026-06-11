@@ -283,7 +283,9 @@ export async function getMemberPredictionsAction(poolId: string, targetUserId: s
     .from('predictions')
     .select(`
       id, predicted_home_score, predicted_away_score, predicted_outcome,
-      points_earned, is_exact_score, outcome_points, exact_score_points,
+      predicted_scorer_id,
+      predicted_scorer:players(name, shirt_number),
+      points_earned, is_exact_score, outcome_points, exact_score_points, scorer_points,
       match:matches(
         id, home_score, away_score, status, match_date,
         home_team:teams!matches_home_team_id_fkey(name_es, code, flag_emoji),
