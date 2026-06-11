@@ -182,6 +182,9 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
                                   <span className="font-semibold truncate">{outcomeTeam?.code ?? '?'}</span>
                                 </div>
                               )}
+                              {pred.outcome_points > 0 && (
+                                <span className="ml-auto shrink-0 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 opacity-70">+{pred.outcome_points}</span>
+                              )}
                             </div>
                           ) : (
                             <span className="text-muted-foreground/50 italic">—</span>
@@ -198,6 +201,9 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
                                 : <XCircle className="h-3 w-3 shrink-0 text-muted-foreground/40" />
                               }
                               <span className="font-semibold truncate">{pred.predicted_scorer.name}</span>
+                              {pred.scorer_points > 0 && (
+                                <span className="ml-auto shrink-0 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 opacity-70">+{pred.scorer_points}</span>
+                              )}
                             </div>
                           ) : (
                             <span className="text-muted-foreground/50 italic">—</span>
@@ -208,7 +214,7 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
                         <div className="px-2.5 py-2 space-y-1">
                           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Marcador</p>
                           {pred.predicted_home_score != null ? (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 flex-wrap">
                               {pred.is_exact_score
                                 ? <span className="text-sm leading-none">🎯</span>
                                 : <XCircle className="h-3 w-3 shrink-0 text-muted-foreground/40" />
@@ -219,6 +225,9 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
                               <span className="text-muted-foreground/50 tabular-nums">
                                 ({actualHome ?? '?'}–{actualAway ?? '?'})
                               </span>
+                              {pred.exact_score_points > 0 && (
+                                <span className="ml-auto shrink-0 text-[10px] font-bold text-amber-600 dark:text-amber-400 opacity-70">+{pred.exact_score_points}</span>
+                              )}
                             </div>
                           ) : (
                             <span className="text-muted-foreground/50 italic">—</span>
