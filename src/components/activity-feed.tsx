@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { createAnonClient } from '@/lib/auth-client'
 
 interface ActivityItem {
@@ -140,6 +141,14 @@ export function ActivityFeed() {
           </div>
         )
       })}
+
+      {/* Ver todos */}
+      <Link
+        href="/dashboard/actividad"
+        className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed bg-muted/20 py-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+      >
+        Ver toda la actividad →
+      </Link>
     </div>
   )
 }
