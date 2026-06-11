@@ -47,7 +47,7 @@ export default function PerfilClient() {
 
       const [profileRes, leaderboardRes, predsRes] = await Promise.all([
         supabase.from('profiles').select('username').eq('id', uid).single(),
-        supabase.from('leaderboard').select('position, total_points, predictions_correct, exact_scores').eq('id', uid).single(),
+        supabase.from('leaderboard').select('position, total_points, predictions_correct, exact_scores').eq('id', uid).maybeSingle(),
         supabase.from('predictions').select(`
           id, points_earned, is_exact_score, predicted_home_score, predicted_away_score,
           predicted_outcome, outcome_points, scorer_points, exact_score_points,
