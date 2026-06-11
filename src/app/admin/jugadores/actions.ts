@@ -1,14 +1,16 @@
 'use server'
 
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { cookies } from 'next/headers'
 import { createServiceRoleClient } from '@/lib/server-client'
 import { revalidatePath } from 'next/cache'
 
 async function assertAdmin() {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return false
+  const cookieStore = await cookies()
+  const token = cookieStore.get('sb-access-token')?.value
+  if (!token) return false
   const db = createServiceRoleClient()
+  const { data: { user } } = await db.auth.getUser(token)
+  if (!user) return false
   const { data: profile } = await db.from('profiles').select('role').eq('id', user.id).single()
   return profile?.role === 'admin'
 }
@@ -18,7 +20,11 @@ export async function getPlayersAdminData() {
   const db = createServiceRoleClient()
   const [{ data: teams }, { data: players }] = await Promise.all([
     db.from('teams').select('*').order('group_name').order('name_es'),
-    db.from('players').select('*, team:teams(id,name_es,code,flag_emoji)').order('name').limit(2000),
+    db.from('players')
+      .select('id, name, shirt_number, position, active, team_id, team:teams(id,name_es,code,flag_emoji,group_name)')
+      .order('shirt_number', { ascending: true, nullsFirst: false })
+      .order('name')
+      .limit(5000),
   ])
   return { teams: teams ?? [], players: players ?? [] }
 }
