@@ -103,7 +103,7 @@ export default function TablaPage() {
           <div className="flex items-start gap-2 rounded-xl border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
             <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
             <span>
-              <strong>Aciertos</strong> muestra cuántos resultados de partido predijiste correctamente.
+              <strong>Ganador</strong> · <strong>Goleador</strong> · <strong>Marcador</strong> cuentan aciertos por partido.
               {' '}<strong>Grupos</strong> y <strong>Especiales</strong> se activarán cuando se puntúen los pronósticos del torneo.
             </span>
           </div>
@@ -116,10 +116,11 @@ export default function TablaPage() {
                   <TableHead className="w-14">Pos</TableHead>
                   <TableHead>Jugador</TableHead>
                   <TableHead className="text-center">Total</TableHead>
-                  <TableHead className="text-center hidden md:table-cell">Aciertos</TableHead>
+                  <TableHead className="text-center hidden sm:table-cell">Ganador</TableHead>
+                  <TableHead className="text-center hidden sm:table-cell">Goleador</TableHead>
+                  <TableHead className="text-center hidden sm:table-cell">Marcador</TableHead>
                   <TableHead className="text-center hidden md:table-cell">Grupos</TableHead>
                   <TableHead className="text-center hidden md:table-cell">Especiales</TableHead>
-                  <TableHead className="text-center hidden sm:table-cell">Exactos</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -144,7 +145,7 @@ export default function TablaPage() {
                           <span className="font-semibold text-sm">{e.username}</span>
                           {idx === 0 && <span className="ml-1 text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide">líder</span>}
                           <p className="text-[10px] text-muted-foreground sm:hidden">
-                            {e.predictions_correct} aciertos · {e.exact_scores} exactos
+                            {e.outcomes_correct ?? e.predictions_correct ?? 0} gan. · {e.scorers_correct ?? 0} gol. · {e.exact_scores} exact.
                           </p>
                         </div>
                       </div>
@@ -157,10 +158,15 @@ export default function TablaPage() {
                         'bg-muted text-muted-foreground'
                       }`}>{e.total_points}</span>
                     </TableCell>
-                    <TableCell className="text-center hidden md:table-cell tabular-nums text-sm font-medium">{e.predictions_correct}</TableCell>
-                    <TableCell className="text-center hidden md:table-cell text-xs text-muted-foreground">—</TableCell>
-                    <TableCell className="text-center hidden md:table-cell text-xs text-muted-foreground">—</TableCell>
+                    <TableCell className="text-center hidden sm:table-cell tabular-nums text-sm font-medium">{e.outcomes_correct ?? e.predictions_correct ?? 0}</TableCell>
+                    <TableCell className="text-center hidden sm:table-cell tabular-nums text-sm font-medium">{e.scorers_correct ?? 0}</TableCell>
                     <TableCell className="text-center hidden sm:table-cell tabular-nums text-sm">{e.exact_scores}</TableCell>
+                    <TableCell className="text-center hidden md:table-cell text-sm tabular-nums">
+                      {e.group_points > 0 ? e.group_points : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
+                    <TableCell className="text-center hidden md:table-cell text-sm tabular-nums">
+                      {e.special_points > 0 ? e.special_points : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
