@@ -22,7 +22,7 @@ export default function AdminPartidosPage() {
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
     Promise.all([
       supabase.from('matches').select(`*, home_team:teams!matches_home_team_id_fkey(name_es,flag_emoji,code), away_team:teams!matches_away_team_id_fkey(name_es,flag_emoji,code)`).order('match_date', { ascending: true }),
-      supabase.from('players').select('*, team:teams(id,name_es,code,flag_emoji)').eq('active', true).order('name'),
+      supabase.from('players').select('*, team:teams(id,name_es,code,flag_emoji)').eq('active', true).order('name').limit(2000),
       supabase.from('match_goal_scorers').select('match_id, player_id'),
     ]).then(([m, p, s]) => {
       setMatches(m.data ?? [])

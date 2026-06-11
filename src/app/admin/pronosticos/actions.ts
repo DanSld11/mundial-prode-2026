@@ -23,7 +23,7 @@ export async function getAdminPronosticosData() {
     db.from('teams').select('id, name_es, flag_emoji, code, group_name').order('group_name').order('name_es'),
     db.from('group_results').select('group_name, position, team_id'),
     db.from('special_results').select('type, player_id, team_id, locked'),
-    db.from('players').select('id, name, team_id, position').order('name'),
+    db.from('players').select('id, name, team_id, position').order('name').limit(2000),
   ])
 
   return {

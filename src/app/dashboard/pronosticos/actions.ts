@@ -27,7 +27,7 @@ export async function getPronosticosData() {
       ? db.from('special_predictions').select('type, player_id, team_id, points_earned').eq('user_id', uid)
       : Promise.resolve({ data: [] }),
     db.from('special_results').select('type, player_id, locked'),
-    db.from('players').select('id, name, team_id, position').order('name'),
+    db.from('players').select('id, name, team_id, position').order('name').limit(2000),
     db.from('matches').select('match_date').order('match_date', { ascending: true }).limit(1),
   ])
 

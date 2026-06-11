@@ -18,7 +18,7 @@ export async function getPlayersAdminData() {
   const db = createServiceRoleClient()
   const [{ data: teams }, { data: players }] = await Promise.all([
     db.from('teams').select('*').order('group_name').order('name_es'),
-    db.from('players').select('*, team:teams(id,name_es,code,flag_emoji)').order('name'),
+    db.from('players').select('*, team:teams(id,name_es,code,flag_emoji)').order('name').limit(2000),
   ])
   return { teams: teams ?? [], players: players ?? [] }
 }
