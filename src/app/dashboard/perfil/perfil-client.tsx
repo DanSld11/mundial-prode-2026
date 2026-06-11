@@ -121,10 +121,32 @@ export default function PerfilClient() {
     const token = getAccessToken()
     if (!token) return
     setSavingPassword(true)
-    const supabase = createAuthedClient(token)
-    const { error } = await supabase.auth.updateUser({ password })
-    if (error) { toast.error(error.message) }
-    else { toast.success('Contraseña actualizada'); setPassword(''); setPasswordConfirm('') }
+    // supabase.auth.updateUser() requiere sesión GoTrue interna que no se inicializa
+    // con createAuthedClient (persistSession: false). Usamos la REST API directamente.
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`,
+        {
+          method: 'PUT',
+          headers: {
+            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ password }),
+        }
+      )
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.msg || data.error_description || 'Error al cambiar la contraseña.')
+      } else {
+        toast.success('Contraseña actualizada correctamente')
+        setPassword('')
+        setPasswordConfirm('')
+      }
+    } catch {
+      toast.error('Error de conexión. Intentá de nuevo.')
+    }
     setSavingPassword(false)
   }
 
