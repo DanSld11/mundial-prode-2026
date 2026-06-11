@@ -137,19 +137,49 @@ function MatchCard({
           <button onClick={() => setShowScorers((v) => !v)}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
             {showScorers ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-            Goleadores {selectedScorers.size > 0 && `· ${selectedScorers.size} seleccionado${selectedScorers.size !== 1 ? 's' : ''}`}
+            Goleadores · {matchPlayers.length} jugadores
+            {selectedScorers.size > 0 && ` · ${selectedScorers.size} seleccionado${selectedScorers.size !== 1 ? 's' : ''}`}
           </button>
           {showScorers && (
-            <div className="mt-2 grid grid-cols-2 gap-1 max-h-40 overflow-y-auto rounded-lg border p-2 bg-muted/30">
-              {matchPlayers.map((player) => (
-                <label key={player.id} className="flex items-center gap-1.5 cursor-pointer text-xs hover:bg-muted rounded px-1 py-0.5">
-                  <input type="checkbox" checked={selectedScorers.has(player.id)} onChange={() => toggleScorer(player.id)} className="h-3.5 w-3.5 shrink-0" />
-                  <span className={`font-mono text-[10px] shrink-0 ${player.team_id === match.home_team_id ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                    {player.team_id === match.home_team_id ? match.home_team?.code : match.away_team?.code}
-                  </span>
-                  <span className="truncate">{player.name}</span>
-                </label>
-              ))}
+            <div className="mt-2 space-y-2">
+              {[
+                { teamId: match.home_team_id, team: match.home_team, colorCls: 'text-blue-600 dark:text-blue-400', borderCls: 'border-blue-200 dark:border-blue-800' },
+                { teamId: match.away_team_id, team: match.away_team, colorCls: 'text-amber-600 dark:text-amber-400', borderCls: 'border-amber-200 dark:border-amber-800' },
+              ].map(({ teamId, team, colorCls, borderCls }) => {
+                const teamPlayers = matchPlayers
+                  .filter((p) => p.team_id === teamId)
+                  .sort((a, b) => (a.shirt_number ?? 99) - (b.shirt_number ?? 99))
+                if (teamPlayers.length === 0) return null
+                return (
+                  <div key={teamId} className={`rounded-lg border ${borderCls} overflow-hidden`}>
+                    {/* Team header */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/40 border-b">
+                      <TeamFlag code={team?.flag_emoji} label={team?.name_es} />
+                      <span className={`text-xs font-bold ${colorCls}`}>{team?.name_es}</span>
+                      <span className="ml-auto text-[10px] text-muted-foreground">{teamPlayers.length} jug.</span>
+                    </div>
+                    {/* Players grid */}
+                    <div className="grid grid-cols-2 gap-0 p-1.5 bg-muted/10">
+                      {teamPlayers.map((player) => (
+                        <label key={player.id} className="flex items-center gap-1.5 cursor-pointer text-xs hover:bg-muted rounded px-2 py-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedScorers.has(player.id)}
+                            onChange={() => toggleScorer(player.id)}
+                            className="h-3.5 w-3.5 shrink-0"
+                          />
+                          {player.shirt_number != null && (
+                            <span className={`font-mono text-[10px] shrink-0 w-5 text-right ${colorCls}`}>
+                              {player.shirt_number}
+                            </span>
+                          )}
+                          <span className="truncate">{player.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
