@@ -52,7 +52,7 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
 
   return (
     <>
-      <button onClick={handleOpen} className="cursor-pointer">
+      <button onClick={handleOpen} className="w-full block cursor-pointer">
         {children}
       </button>
 
