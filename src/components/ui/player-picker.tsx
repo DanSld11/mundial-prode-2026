@@ -217,7 +217,7 @@ export function PlayerPicker({
                 <button
                   key={p.id}
                   type="button"
-                  onPointerDown={e => { e.preventDefault(); pick(p.id) }}
+                  onClick={() => pick(p.id)}
                   className={[
                     'flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/60 active:bg-muted',
                     p.id === value ? 'bg-red-50 dark:bg-red-950/30' : '',
