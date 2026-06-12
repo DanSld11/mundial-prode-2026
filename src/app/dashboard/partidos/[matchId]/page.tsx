@@ -413,34 +413,48 @@ export default function MatchPredictionPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                <Input
-                  disabled={isLocked}
-                  type="number"
-                  min={0}
-                  max={20}
-                  value={homeScore}
-                  onChange={(e) => setHomeScore(e.target.value)}
-                  className={[
-                    'h-14 text-center text-2xl font-bold tabular-nums',
-                    isLocked ? 'bg-muted/30' : '',
-                  ].join(' ')}
-                  placeholder="-"
-                />
-                <span className="text-xl font-bold text-muted-foreground">-</span>
-                <Input
-                  disabled={isLocked}
-                  type="number"
-                  min={0}
-                  max={20}
-                  value={awayScore}
-                  onChange={(e) => setAwayScore(e.target.value)}
-                  className={[
-                    'h-14 text-center text-2xl font-bold tabular-nums',
-                    isLocked ? 'bg-muted/30' : '',
-                  ].join(' ')}
-                  placeholder="-"
-                />
+              <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+                {/* Local */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-center gap-1.5">
+                    <TeamFlag code={match.home_team?.flag_emoji} label={match.home_team?.name_es} className="h-4 w-5 shrink-0" />
+                    <span className="text-[11px] font-semibold text-muted-foreground truncate">{match.home_team?.name_es}</span>
+                  </div>
+                  <Input
+                    disabled={isLocked}
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={homeScore}
+                    onChange={(e) => setHomeScore(e.target.value)}
+                    className={[
+                      'h-14 text-center text-2xl font-bold tabular-nums',
+                      isLocked ? 'bg-muted/30' : '',
+                    ].join(' ')}
+                    placeholder="-"
+                  />
+                </div>
+                <span className="text-xl font-bold text-muted-foreground pb-2">-</span>
+                {/* Visitante */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-center gap-1.5">
+                    <TeamFlag code={match.away_team?.flag_emoji} label={match.away_team?.name_es} className="h-4 w-5 shrink-0" />
+                    <span className="text-[11px] font-semibold text-muted-foreground truncate">{match.away_team?.name_es}</span>
+                  </div>
+                  <Input
+                    disabled={isLocked}
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={awayScore}
+                    onChange={(e) => setAwayScore(e.target.value)}
+                    className={[
+                      'h-14 text-center text-2xl font-bold tabular-nums',
+                      isLocked ? 'bg-muted/30' : '',
+                    ].join(' ')}
+                    placeholder="-"
+                  />
+                </div>
               </div>
               {isFinished && (
                 <div className="flex items-center justify-between pt-1">
