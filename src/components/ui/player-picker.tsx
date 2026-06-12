@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { Search, X, ChevronDown, ChevronUp } from 'lucide-react'
 import { TeamFlag } from '@/components/team-flag'
@@ -49,9 +49,11 @@ export function PlayerPicker({
   const [mounted, setMounted] = useState(false)
   const [coords, setCoords]   = useState({ top: 0, bottom: 0, left: 0, width: 0, openUp: false })
 
-  const triggerRef  = useRef<HTMLButtonElement>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)   // ref on the PORTAL div
-  const inputRef    = useRef<HTMLInputElement>(null)
+  const triggerRef       = useRef<HTMLButtonElement>(null)
+  const dropdownRef      = useRef<HTMLDivElement>(null)
+  const inputRef         = useRef<HTMLInputElement>(null)
+  // Prevents closing the dropdown right after the mobile keyboard is dismissed
+  const ignoringCloseRef = useRef(false)
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -59,9 +61,10 @@ export function PlayerPicker({
   useEffect(() => {
     if (!open) return
     function handlePointerDown(e: PointerEvent) {
+      if (ignoringCloseRef.current) return          // keyboard was just dismissed — ignore
       const target = e.target as Node
-      if (triggerRef.current?.contains(target))  return  // clicked trigger → toggle handles it
-      if (dropdownRef.current?.contains(target)) return  // clicked inside dropdown → keep open
+      if (triggerRef.current?.contains(target))  return
+      if (dropdownRef.current?.contains(target)) return
       setOpen(false)
       setQuery('')
     }
@@ -69,10 +72,20 @@ export function PlayerPicker({
     return () => document.removeEventListener('pointerdown', handlePointerDown)
   }, [open])
 
-  // Auto-focus search when dropdown opens
+  // Auto-focus search only on desktop (mouse/trackpad); on mobile the keyboard pops up
+  // automatically and closing it would trigger an outside-click that shuts the dropdown
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 40)
+    if (!open) return
+    const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    if (isDesktop) setTimeout(() => inputRef.current?.focus(), 40)
   }, [open])
+
+  // When the search input loses focus (e.g. keyboard dismissed on mobile),
+  // ignore outside-click events for 400 ms so the dropdown stays open
+  const handleInputBlur = useCallback(() => {
+    ignoringCloseRef.current = true
+    setTimeout(() => { ignoringCloseRef.current = false }, 400)
+  }, [])
 
   function computeCoords() {
     if (!triggerRef.current) return
@@ -166,6 +179,7 @@ export function PlayerPicker({
           ref={inputRef}
           value={query}
           onChange={e => setQuery(e.target.value)}
+          onBlur={handleInputBlur}
           placeholder="Nombre, equipo o código..."
           className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
         />
