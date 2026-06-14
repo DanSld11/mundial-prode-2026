@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { createServiceRoleClient } from '@/lib/server-client'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, unstable_noStore as noStore } from 'next/cache'
 
 async function assertAdmin() {
   const cookieStore = await cookies()
@@ -16,6 +16,7 @@ async function assertAdmin() {
 }
 
 export async function getPlayersAdminData() {
+  noStore()
   if (!await assertAdmin()) return { error: 'Sin permisos', teams: [], players: [] }
   const db = createServiceRoleClient()
   const [{ data: teams }, { data: players }] = await Promise.all([
