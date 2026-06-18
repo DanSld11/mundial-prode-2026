@@ -1,35 +1,39 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-function getTokenExpiry(token: string): number | null {
-  try {
-    const payload = token.split('.')[1]
-    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
-    return typeof decoded.exp === 'number' ? decoded.exp : null
-  } catch {
-    return null
-  }
-}
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request })
 
-export function middleware(request: NextRequest) {
-  const token = request.cookies.get('sb-access-token')?.value
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
 
-  if (!token) {
+  // getUser() refresca el access token automáticamente si expiró,
+  // y escribe los nuevos tokens en las cookies via setAll()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
     const loginUrl = new URL('/auth/login', request.url)
     loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  const exp = getTokenExpiry(token)
-  if (exp !== null && exp * 1000 < Date.now()) {
-    const loginUrl = new URL('/auth/login', request.url)
-    loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
-    const response = NextResponse.redirect(loginUrl)
-    response.cookies.delete('sb-access-token')
-    return response
-  }
-
-  return NextResponse.next()
+  return supabaseResponse
 }
 
 export const config = {

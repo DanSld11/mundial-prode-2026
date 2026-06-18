@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { getAccessToken, createAuthedClient } from '@/lib/auth-client'
-import { Bell, BellOff, CheckCircle2, Lock, Medal, Share2, Target, Trophy, TrendingUp, UserRound, XCircle } from 'lucide-react'
+import { Bell, BellOff, CheckCircle2, Lock, LogOut, Medal, Share2, Target, Trophy, TrendingUp, UserRound, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -403,6 +403,17 @@ export default function PerfilClient() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Logout */}
+      <form action="/auth/logout" method="post">
+        <button
+          type="submit"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/40"
+        >
+          <LogOut className="h-4 w-4" />
+          Cerrar sesión
+        </button>
+      </form>
     </div>
   )
 }

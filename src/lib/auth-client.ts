@@ -2,7 +2,30 @@ import { createClient } from '@supabase/supabase-js'
 
 export function getAccessToken(): string | null {
   if (typeof document === 'undefined') return null
-  return document.cookie.split('; ').find((row) => row.startsWith('sb-access-token='))?.split('=')[1] ?? null
+
+  const cookies: Record<string, string> = {}
+  document.cookie.split('; ').forEach((c) => {
+    const idx = c.indexOf('=')
+    if (idx > 0) cookies[c.slice(0, idx)] = c.slice(idx + 1)
+  })
+
+  // Legacy format (older Supabase JS client)
+  if (cookies['sb-access-token']) return cookies['sb-access-token']
+
+  // @supabase/ssr format: sb-<projectRef>-auth-token (may be chunked as .0, .1, ...)
+  const projectRef = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').match(/\/\/(.+?)\.supabase/)?.[1]
+  if (projectRef) {
+    const key = `sb-${projectRef}-auth-token`
+    const raw = cookies[key] ?? cookies[`${key}.0`]
+    if (raw) {
+      try {
+        const session = JSON.parse(decodeURIComponent(raw))
+        if (session?.access_token) return session.access_token as string
+      } catch {}
+    }
+  }
+
+  return null
 }
 
 function hasSupabaseConfig() {
