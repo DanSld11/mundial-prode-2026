@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 import { seedTeamsAction, seedMatchesAction, seedPlayersAction, recalculateAllPointsAction, resetTournamentAction } from './actions'
 import { createAnonClient } from '@/lib/auth-client'
 import { formatPeruLongDateTime } from '@/lib/peru-time'
-import { Trophy, RefreshCw, Users, ShieldCheck, Database, CalendarDays, Coins, Activity, TrendingUp, BookOpen, Trash2, AlertTriangle, Bell, Send } from 'lucide-react'
+import { Trophy, RefreshCw, Users, ShieldCheck, Database, CalendarDays, Coins, Activity, TrendingUp, BookOpen, Trash2, AlertTriangle, Bell, Send, GitBranch } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
@@ -269,6 +269,24 @@ export default function AdminPage() {
           <CardContent>
             <a href="/admin/pronosticos">
               <Button className="w-full bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 shadow-none border-0">Resolver Torneo</Button>
+            </a>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-brand-red/10 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-brand-red/20" />
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2 relative z-10">
+              <GitBranch className="h-5 w-5 text-brand-red" />
+              Bracket Eliminatorio
+            </CardTitle>
+            <CardDescription className="relative z-10">Asignar equipos a octavos, cuartos, semis y final.</CardDescription>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <a href="/admin/bracket">
+              <Button className="w-full bg-brand-red/10 text-brand-red hover:bg-brand-red/20 shadow-none border-0 font-semibold">
+                Gestionar Bracket
+              </Button>
             </a>
           </CardContent>
         </Card>

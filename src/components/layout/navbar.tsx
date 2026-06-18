@@ -20,6 +20,7 @@ import {
   Menu,
   X,
   Gem,
+  GitBranch,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -32,6 +33,7 @@ const navItems = [
   { href: '/dashboard/grupos', label: 'Grupos', icon: Users },
   { href: '/dashboard/partidos', label: 'Partidos', icon: CalendarDays },
   { href: '/dashboard/predicciones', label: 'Predicciones', icon: Target },
+  { href: '/dashboard/bracket', label: 'Bracket', icon: GitBranch },
   { href: '/dashboard/pronosticos', label: 'Pronósticos', icon: BarChart3 },
   { href: '/dashboard/pollas', label: 'Pollas', icon: Trophy },
   { href: '/dashboard/wallet', label: 'MundialCoins', icon: Gem },
@@ -259,7 +261,7 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
             { href: '/dashboard',              label: 'Inicio',   icon: LayoutDashboard },
             { href: '/dashboard/partidos',      label: 'Partidos', icon: CalendarDays },
             { href: '/dashboard/predicciones', label: 'Pred.',    icon: Target },
-            { href: '/dashboard/pronosticos',  label: 'Pronóst.', icon: BarChart3 },
+            { href: '/dashboard/bracket',      label: 'Bracket',  icon: GitBranch },
             { href: '/dashboard/pollas',       label: 'Pollas',   icon: Trophy },
             { href: '/dashboard/wallet',       label: 'Coins',    icon: Gem },
             { href: '/dashboard/tabla',        label: 'Tabla',    icon: Table2 },
