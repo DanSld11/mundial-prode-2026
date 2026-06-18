@@ -8,7 +8,9 @@ import { toast } from 'sonner'
 import { seedTeamsAction, seedMatchesAction, seedPlayersAction, recalculateAllPointsAction, resetTournamentAction } from './actions'
 import { createAnonClient } from '@/lib/auth-client'
 import { formatPeruLongDateTime } from '@/lib/peru-time'
-import { Trophy, RefreshCw, Users, ShieldCheck, Database, CalendarDays, Coins, Activity, TrendingUp, BookOpen, Trash2, AlertTriangle } from 'lucide-react'
+import { Trophy, RefreshCw, Users, ShieldCheck, Database, CalendarDays, Coins, Activity, TrendingUp, BookOpen, Trash2, AlertTriangle, Bell, Send } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 
 export default function AdminPage() {
@@ -19,6 +21,10 @@ export default function AdminPage() {
   const [loadingReset, setLoadingReset] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
   const [recentMatches, setRecentMatches] = useState<any[]>([])
+  const [notifTitle, setNotifTitle] = useState('')
+  const [notifBody, setNotifBody] = useState('')
+  const [loadingBroadcast, setLoadingBroadcast] = useState(false)
+  const [loadingTestNotif, setLoadingTestNotif] = useState(false)
 
   useEffect(() => {
     const supabase = createAnonClient()
@@ -61,6 +67,52 @@ export default function AdminPage() {
     if (result.error) toast.error(result.error)
     else toast.success(`Puntos recalculados en ${result.count ?? 0} partidos finalizados`)
     setLoadingRecalc(false)
+  }
+
+  async function sendTestNotification() {
+    setLoadingTestNotif(true)
+    try {
+      const res = await fetch('/api/push/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: '🔔 Prueba de notificación',
+          body: 'Las notificaciones push están funcionando correctamente.',
+          url: '/dashboard',
+        }),
+      })
+      const data = await res.json()
+      if (data.error) toast.error(data.error)
+      else toast.success(`Enviado a ${data.sent} dispositivo(s) · ${data.failed} fallidos`)
+    } catch {
+      toast.error('Error al enviar la notificación de prueba')
+    }
+    setLoadingTestNotif(false)
+  }
+
+  async function sendBroadcast() {
+    if (!notifTitle.trim() || !notifBody.trim()) {
+      toast.error('Completa el título y el mensaje')
+      return
+    }
+    setLoadingBroadcast(true)
+    try {
+      const res = await fetch('/api/push/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: notifTitle.trim(), body: notifBody.trim(), url: '/dashboard' }),
+      })
+      const data = await res.json()
+      if (data.error) toast.error(data.error)
+      else {
+        toast.success(`Comunicado enviado a ${data.sent} dispositivo(s)`)
+        setNotifTitle('')
+        setNotifBody('')
+      }
+    } catch {
+      toast.error('Error al enviar el comunicado')
+    }
+    setLoadingBroadcast(false)
   }
 
   async function resetTournament() {
@@ -233,6 +285,68 @@ export default function AdminPage() {
             <a href="/admin/album">
               <Button className="w-full bg-cyan-500/10 text-cyan-600 hover:bg-cyan-500/20 shadow-none border-0">Ajustes Álbum</Button>
             </a>
+          </CardContent>
+        </Card>
+
+        {/* Notificaciones Push */}
+        <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden md:col-span-2 lg:col-span-3">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-violet-500/20" />
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2 relative z-10">
+              <Bell className="h-5 w-5 text-violet-500" />
+              Notificaciones Push
+            </CardTitle>
+            <CardDescription className="relative z-10">Envía alertas a todos los usuarios que tienen las notificaciones activadas.</CardDescription>
+          </CardHeader>
+          <CardContent className="relative z-10 space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Test rápido */}
+              <div className="flex-1 rounded-2xl border border-violet-200/50 dark:border-violet-800/30 bg-violet-50/50 dark:bg-violet-950/20 p-4 space-y-3">
+                <p className="text-sm font-semibold text-violet-700 dark:text-violet-300">🔔 Prueba rápida</p>
+                <p className="text-xs text-muted-foreground">Envía una notificación de prueba a todos los dispositivos para verificar que funciona.</p>
+                <Button
+                  onClick={sendTestNotification}
+                  disabled={loadingTestNotif}
+                  size="sm"
+                  className="bg-violet-500/20 text-violet-700 dark:text-violet-300 hover:bg-violet-500/30 shadow-none border-0 font-semibold"
+                >
+                  <Bell className={`mr-2 h-3.5 w-3.5 ${loadingTestNotif ? 'animate-pulse' : ''}`} />
+                  {loadingTestNotif ? 'Enviando...' : 'Enviar prueba'}
+                </Button>
+              </div>
+
+              {/* Comunicado global */}
+              <div className="flex-[2] rounded-2xl border border-violet-200/50 dark:border-violet-800/30 bg-violet-50/50 dark:bg-violet-950/20 p-4 space-y-3">
+                <p className="text-sm font-semibold text-violet-700 dark:text-violet-300">📢 Comunicado global</p>
+                <Input
+                  placeholder="Título del comunicado"
+                  value={notifTitle}
+                  onChange={(e) => setNotifTitle(e.target.value)}
+                  maxLength={60}
+                  className="bg-background/70"
+                />
+                <Textarea
+                  placeholder="Mensaje para todos los usuarios..."
+                  value={notifBody}
+                  onChange={(e) => setNotifBody(e.target.value)}
+                  maxLength={200}
+                  rows={2}
+                  className="bg-background/70 resize-none"
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-muted-foreground">{notifBody.length}/200</span>
+                  <Button
+                    onClick={sendBroadcast}
+                    disabled={loadingBroadcast || !notifTitle.trim() || !notifBody.trim()}
+                    size="sm"
+                    className="bg-violet-600 hover:bg-violet-700 text-white shadow-sm"
+                  >
+                    <Send className={`mr-2 h-3.5 w-3.5 ${loadingBroadcast ? 'animate-pulse' : ''}`} />
+                    {loadingBroadcast ? 'Enviando...' : 'Enviar a todos'}
+                  </Button>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
