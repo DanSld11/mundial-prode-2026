@@ -13,6 +13,13 @@ import { cacheGet, cacheSet } from '@/lib/local-cache'
 const CACHE_KEY_MATCHES = 'fixture:matches'
 const CACHE_KEY_PREDS   = 'fixture:predictions'
 
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = atob(base64)
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)))
+}
+
 function MatchCountdown({ matchDate }: { matchDate: string }) {
   const [timeLeft, setTimeLeft] = useState('')
   useEffect(() => {
@@ -97,11 +104,37 @@ export default function PartidosPage() {
     } catch (_) {/* safari silently fails */}
   }
 
+  async function subscribeToPush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const existing = await reg.pushManager.getSubscription()
+      const sub = existing ?? await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
+      })
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub.toJSON()),
+      })
+    } catch (_) {/* push not supported or blocked */}
+  }
+
   async function requestNotifPermission() {
     if (!('Notification' in window)) return
     const result = await Notification.requestPermission()
     setNotifPerm(result)
+    if (result === 'granted') subscribeToPush()
   }
+
+  // Auto-subscribe if permission already granted on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      subscribeToPush()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const refreshPredictions = useCallback(async (userId: string) => {
     const token = getAccessToken()
