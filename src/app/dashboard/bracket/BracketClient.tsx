@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { saveBracketPrediction, STAGE_LABELS, STAGE_ORDER } from './actions'
+import { saveBracketPrediction } from './actions'
+import { STAGE_LABELS, STAGE_ORDER } from './constants'
 import { formatPeruDateLabel, formatPeruTime } from '@/lib/peru-time'
 import { Trophy, Lock, Info, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
