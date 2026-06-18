@@ -11,8 +11,12 @@ import { cacheGet, cacheSet } from '@/lib/local-cache'
 const CACHE_KEY = 'tabla:leaderboard'
 
 async function fetchLeaderboard(supabase: ReturnType<typeof createAnonClient>) {
-  const { data } = await supabase.from('leaderboard').select('*').order('position')
-  return data ?? []
+  const [{ data: entries }, { data: profiles }] = await Promise.all([
+    supabase.from('leaderboard').select('*').order('position'),
+    supabase.from('profiles').select('id, avatar_url').not('avatar_url', 'is', null),
+  ])
+  const avatarMap = new Map((profiles ?? []).map((p: any) => [p.id, p.avatar_url]))
+  return (entries ?? []).map((e: any) => ({ ...e, avatar_url: avatarMap.get(e.id) ?? null }))
 }
 
 export default function TablaPage() {
@@ -138,9 +142,17 @@ export default function TablaPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-brand-red flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
-                          {e.username?.charAt(0).toUpperCase()}
-                        </div>
+                        {e.avatar_url ? (
+                          <img
+                            src={e.avatar_url}
+                            alt={e.username}
+                            className="w-7 h-7 rounded-full object-cover shrink-0 shadow-sm"
+                          />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-brand-red flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm">
+                            {e.username?.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div>
                           <span className="font-semibold text-sm">{e.username}</span>
                           {idx === 0 && <span className="ml-1 text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide">líder</span>}
