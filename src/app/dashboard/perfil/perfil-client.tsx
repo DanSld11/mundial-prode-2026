@@ -86,16 +86,53 @@ export default function PerfilClient() {
     }
   }, [])
 
+  async function subscribePush(force = false): Promise<boolean> {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
+    try {
+      const reg = await navigator.serviceWorker.ready
+      let sub = await reg.pushManager.getSubscription()
+      if (force && sub) { await sub.unsubscribe(); sub = null }
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
+        })
+      }
+      const res = await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub.toJSON()),
+      })
+      return res.ok
+    } catch (err) {
+      console.error('[Push]', err)
+      return false
+    }
+  }
+
+  function urlBase64ToUint8Array(b64: string) {
+    const padding = '='.repeat((4 - (b64.length % 4)) % 4)
+    const base64 = (b64 + padding).replace(/-/g, '+').replace(/_/g, '/')
+    return Uint8Array.from([...atob(base64)].map((c) => c.charCodeAt(0)))
+  }
+
   async function requestNotifications() {
     if (typeof window === 'undefined' || !('Notification' in window)) return
     const permission = await Notification.requestPermission()
     setNotifPermission(permission)
     if (permission === 'granted') {
-      toast.success('¡Notificaciones activadas! Te avisaremos cuando haya resultados.')
-      new Notification('Mundial Perú 2026', { body: 'Las notificaciones están activadas 🎉', icon: '/icons/icon-192.png' })
+      const ok = await subscribePush(true)
+      if (ok) toast.success('¡Notificaciones activadas! Este dispositivo recibirá alertas.')
+      else toast.error('Permiso concedido pero falló el registro. Intenta de nuevo.')
     } else {
       toast.error('Notificaciones bloqueadas. Podés habilitarlas desde la configuración del navegador.')
     }
+  }
+
+  async function reRegisterPush() {
+    const ok = await subscribePush(true)
+    if (ok) toast.success('Dispositivo re-registrado correctamente.')
+    else toast.error('No se pudo re-registrar. Verifica que las notificaciones estén permitidas.')
   }
 
   async function updateProfile(event: React.FormEvent<HTMLFormElement>) {
@@ -304,9 +341,18 @@ export default function PerfilClient() {
           </CardHeader>
           <CardContent>
             {notifPermission === 'granted' ? (
-              <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400">
-                <Bell className="h-4 w-4 shrink-0" />
-                Notificaciones activadas correctamente.
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400">
+                  <Bell className="h-4 w-4 shrink-0" />
+                  Notificaciones activadas en este navegador.
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Si instalaste la app en tu celular y no recibes notificaciones, toca el botón de abajo para re-registrar este dispositivo.
+                </p>
+                <Button onClick={reRegisterPush} variant="outline" size="sm" className="gap-2">
+                  <Bell className="h-3.5 w-3.5" />
+                  Re-registrar este dispositivo
+                </Button>
               </div>
             ) : notifPermission === 'denied' ? (
               <p className="text-sm text-muted-foreground">Habilitá los permisos de notificación desde la configuración de tu navegador.</p>

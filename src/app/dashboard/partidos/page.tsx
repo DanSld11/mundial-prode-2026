@@ -104,31 +104,48 @@ export default function PartidosPage() {
     } catch (_) {/* safari silently fails */}
   }
 
-  async function subscribeToPush() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+  async function subscribeToPush(force = false): Promise<boolean> {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false
     try {
       const reg = await navigator.serviceWorker.ready
-      const existing = await reg.pushManager.getSubscription()
-      const sub = existing ?? await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
-      })
-      await fetch('/api/push/subscribe', {
+      let sub = await reg.pushManager.getSubscription()
+
+      // Force re-subscribe: unsubscribe existing and create fresh
+      if (force && sub) {
+        await sub.unsubscribe()
+        sub = null
+      }
+
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
+        })
+      }
+
+      const res = await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sub.toJSON()),
       })
-    } catch (_) {/* push not supported or blocked */}
+      return res.ok
+    } catch (err) {
+      console.error('[Push] subscribeToPush error:', err)
+      return false
+    }
   }
 
   async function requestNotifPermission() {
     if (!('Notification' in window)) return
     const result = await Notification.requestPermission()
     setNotifPerm(result)
-    if (result === 'granted') subscribeToPush()
+    if (result === 'granted') {
+      const ok = await subscribeToPush(true) // force re-register to ensure fresh subscription
+      if (!ok) console.warn('[Push] Subscription failed after permission grant')
+    }
   }
 
-  // Auto-subscribe if permission already granted on mount
+  // Auto-subscribe (or re-register) on mount if permission already granted
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
       subscribeToPush()
@@ -365,10 +382,14 @@ export default function PartidosPage() {
           {/* Notification permission button */}
           {notifPerm !== 'unsupported' && (
             notifPerm === 'granted' ? (
-              <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+              <button
+                onClick={() => subscribeToPush(true)}
+                title="Toca para re-registrar este dispositivo"
+                className="flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 transition-colors"
+              >
                 <Bell className="h-3.5 w-3.5" />
                 Notif. activas
-              </div>
+              </button>
             ) : notifPerm === 'denied' ? (
               <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-[11px] font-semibold text-muted-foreground" title="Activa las notificaciones desde la configuración de tu navegador">
                 <BellOff className="h-3.5 w-3.5" />
