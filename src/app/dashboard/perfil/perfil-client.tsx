@@ -22,6 +22,7 @@ export default function PerfilClient() {
   const [userId, setUserId] = useState('')
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
@@ -46,7 +47,7 @@ export default function PerfilClient() {
       setEmail(userData.user.email ?? '')
 
       const [profileRes, leaderboardRes, predsRes] = await Promise.all([
-        supabase.from('profiles').select('username').eq('id', uid).single(),
+        supabase.from('profiles').select('username, avatar_url').eq('id', uid).single(),
         supabase.from('leaderboard').select('position, total_points, predictions_correct, exact_scores').eq('id', uid).maybeSingle(),
         supabase.from('predictions').select(`
           id, points_earned, is_exact_score, predicted_home_score, predicted_away_score,
@@ -60,6 +61,7 @@ export default function PerfilClient() {
       ])
 
       setUsername(profileRes.data?.username ?? '')
+      setAvatarUrl(profileRes.data?.avatar_url ?? null)
 
       const allPreds = (predsRes.data ?? []) as any[]
       const pending = allPreds.filter((p: any) => p.match?.status !== 'finished').length
@@ -235,9 +237,13 @@ export default function PerfilClient() {
       {/* Header */}
       <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-red text-white shadow-sm text-2xl font-bold">
-            {username ? username.charAt(0).toUpperCase() : '?'}
-          </div>
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={username} className="h-16 w-16 rounded-2xl object-cover shadow-sm shrink-0" />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-red text-white shadow-sm text-2xl font-bold shrink-0">
+              {username ? username.charAt(0).toUpperCase() : '?'}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <h1 className="font-bebas text-3xl tracking-wide">{username || 'Mi Perfil'}</h1>
             <p className="text-sm text-muted-foreground">{email}</p>
