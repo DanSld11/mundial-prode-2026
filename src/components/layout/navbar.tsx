@@ -22,7 +22,7 @@ import {
   Gem,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { useTheme } from '@/components/theme-provider'
 import { useSidebar } from '@/components/layout/sidebar-context'
@@ -45,6 +45,7 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
   const { open: sidebarOpen, toggle: toggleSidebar } = useSidebar()
   const [detectedAdmin, setDetectedAdmin] = useState(isAdmin)
   const [username, setUsername] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [coinBalance, setCoinBalance] = useState<number | null>(null)
   const showAdmin = isAdmin || detectedAdmin
 
@@ -56,12 +57,13 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
       if (!userId) return
       supabase
         .from('profiles')
-        .select('role, username')
+        .select('role, username, avatar_url')
         .eq('id', userId)
         .single()
         .then(({ data: profile }) => {
           if (!isAdmin) setDetectedAdmin(profile?.role === 'admin')
           if (profile?.username) setUsername(profile.username)
+          if (profile?.avatar_url) setAvatarUrl(profile.avatar_url)
         })
       supabase
         .from('wallets')
@@ -129,6 +131,7 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
           )}
         >
           <Avatar className="h-6 w-6 shrink-0">
+            {avatarUrl && <AvatarImage src={avatarUrl} alt={username} />}
             <AvatarFallback className="bg-brand-red text-white text-xs font-bold">
               {username ? username.charAt(0).toUpperCase() : '?'}
             </AvatarFallback>
@@ -240,6 +243,7 @@ export function Navbar({ isAdmin = false }: { isAdmin?: boolean }) {
           </button>
           <Link href="/dashboard/perfil">
             <Avatar className="h-7 w-7">
+              {avatarUrl && <AvatarImage src={avatarUrl} alt={username} />}
               <AvatarFallback className="bg-brand-red text-white text-xs font-bold">
                 {username ? username.charAt(0).toUpperCase() : '?'}
               </AvatarFallback>
