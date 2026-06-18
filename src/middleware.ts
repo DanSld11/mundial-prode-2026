@@ -1,39 +1,53 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+function getTokenFromRequest(request: NextRequest): string | null {
+  // Legacy format: sb-access-token
+  const legacy = request.cookies.get('sb-access-token')?.value
+  if (legacy) return legacy
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
+  // @supabase/ssr format: sb-<projectRef>-auth-token (may be chunked as .0)
+  const projectRef = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').match(/\/\/(.+?)\.supabase/)?.[1]
+  if (projectRef) {
+    const key = `sb-${projectRef}-auth-token`
+    const raw = request.cookies.get(key)?.value ?? request.cookies.get(`${key}.0`)?.value
+    if (raw) {
+      try {
+        const session = JSON.parse(decodeURIComponent(raw))
+        if (session?.access_token) return session.access_token as string
+      } catch {}
     }
-  )
+  }
 
-  // getUser() refresca el access token automáticamente si expiró,
-  // y escribe los nuevos tokens en las cookies via setAll()
-  const { data: { user } } = await supabase.auth.getUser()
+  return null
+}
 
-  if (!user) {
+function getTokenExpiry(token: string): number | null {
+  try {
+    const payload = token.split('.')[1]
+    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+    return typeof decoded.exp === 'number' ? decoded.exp : null
+  } catch {
+    return null
+  }
+}
+
+export function middleware(request: NextRequest) {
+  const token = getTokenFromRequest(request)
+
+  if (!token) {
     const loginUrl = new URL('/auth/login', request.url)
     loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  return supabaseResponse
+  const exp = getTokenExpiry(token)
+  if (exp !== null && exp * 1000 < Date.now()) {
+    const loginUrl = new URL('/auth/login', request.url)
+    loginUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  return NextResponse.next()
 }
 
 export const config = {
