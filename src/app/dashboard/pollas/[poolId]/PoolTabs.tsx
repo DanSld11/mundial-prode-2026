@@ -86,9 +86,17 @@ export function PoolTabs({ poolId, members, myUserId, prize1, prize2, prize3 }: 
                       </div>
 
                       {/* Avatar */}
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-red text-white text-xs font-bold">
-                        {initial}
-                      </div>
+                      {member.profile?.avatar_url ? (
+                        <img
+                          src={member.profile.avatar_url}
+                          alt={username}
+                          className="h-8 w-8 shrink-0 rounded-full object-cover shadow-sm"
+                        />
+                      ) : (
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-red text-white text-xs font-bold">
+                          {initial}
+                        </div>
+                      )}
 
                       {/* Nombre + ver predicciones */}
                       <div className="flex-1 min-w-0">
