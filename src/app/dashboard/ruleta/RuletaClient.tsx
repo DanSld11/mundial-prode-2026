@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { spinRuletaAction, SlotDef, slotLabel } from './actions'
+import { spinRuletaAction, SlotDef } from './actions'
+import { slotLabel } from './constants'
 import { toast } from 'sonner'
 import { Coins, History, RotateCcw, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
