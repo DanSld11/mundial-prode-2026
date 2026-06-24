@@ -127,7 +127,14 @@ export async function spinRuletaAction(isFreeRetry: boolean) {
     }
   }
 
-  const resultIndex = Math.floor(Math.random() * slots.length)
+  // Weighted random selection
+  const totalWeight = slots.reduce((sum, s) => sum + (s.weight ?? 1), 0)
+  let rand = Math.random() * totalWeight
+  let resultIndex = slots.length - 1
+  for (let i = 0; i < slots.length; i++) {
+    rand -= (slots[i].weight ?? 1)
+    if (rand <= 0) { resultIndex = i; break }
+  }
   const slot = slots[resultIndex]
   const label = slotLabel(slot)
 

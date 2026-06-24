@@ -3,6 +3,7 @@ export interface SlotDef {
   type: 'points' | 'retry' | 'nothing'
   value: number
   color: string
+  weight?: number  // relative probability, default 1
 }
 
 export function slotLabel(slot: SlotDef): string {

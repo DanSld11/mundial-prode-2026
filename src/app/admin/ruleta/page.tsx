@@ -54,6 +54,15 @@ export default function AdminRuletaPage() {
     setSlots(prev => prev.map(s => s.id === id ? { ...s, value } : s))
   }
 
+  function updateSlotWeight(id: number, weight: number) {
+    setSlots(prev => prev.map(s => s.id === id ? { ...s, weight: Math.max(1, weight) } : s))
+  }
+
+  function slotProbability(slot: Slot): string {
+    const total = slots.reduce((sum, s) => sum + (s.weight ?? 1), 0)
+    return ((( slot.weight ?? 1) / total) * 100).toFixed(0) + '%'
+  }
+
   function handleSaveConfig() {
     startTransition(async () => {
       await updateRuletaConfigAction({ is_active: isActive, price_coins: priceCoins, slots })
@@ -155,27 +164,46 @@ export default function AdminRuletaPage() {
 
           {/* Slots */}
           <div className="rounded-xl border bg-card p-4 space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Premios / casillas (10 slots)
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Premios / probabilidades (10 slots)
+              </p>
+              <p className="text-[10px] text-muted-foreground">Peso = probabilidad relativa</p>
+            </div>
             <div className="space-y-2">
               {slots.map(slot => (
-                <div key={slot.id} className="flex items-center gap-3">
+                <div key={slot.id} className="flex items-center gap-2">
                   <SlotColorDot color={slot.color} />
-                  <span className="w-24 text-xs text-muted-foreground">{slot.type}</span>
-                  {slot.type === 'points' ? (
+                  <span className="w-20 text-xs font-medium truncate">{slotLabel(slot)}</span>
+                  {slot.type === 'points' && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground">pts:</span>
+                      <Input
+                        type="number"
+                        value={slot.value}
+                        onChange={e => updateSlotValue(slot.id, parseInt(e.target.value) || 0)}
+                        className="w-16 h-7 text-xs"
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1 ml-auto">
+                    <span className="text-[10px] text-muted-foreground">peso:</span>
                     <Input
                       type="number"
-                      value={slot.value}
-                      onChange={e => updateSlotValue(slot.id, parseInt(e.target.value) || 0)}
-                      className="w-24 h-8 text-sm"
+                      min={1}
+                      value={slot.weight ?? 1}
+                      onChange={e => updateSlotWeight(slot.id, parseInt(e.target.value) || 1)}
+                      className="w-14 h-7 text-xs"
                     />
-                  ) : (
-                    <span className="text-sm text-muted-foreground italic">{slotLabel(slot)}</span>
-                  )}
-                  <span className="text-xs font-medium">{slotLabel({ ...slot })}</span>
+                    <span className="text-[10px] font-semibold w-8 text-right text-muted-foreground">
+                      {slotProbability(slot)}
+                    </span>
+                  </div>
                 </div>
               ))}
+            </div>
+            <div className="rounded-lg bg-muted/50 px-3 py-2 text-[10px] text-muted-foreground">
+              💡 Peso mayor = sale más seguido. Ej: Piña peso 4 vs +3 pts peso 1 → Piña sale 4× más.
             </div>
           </div>
 
