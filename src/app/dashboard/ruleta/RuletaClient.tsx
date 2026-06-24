@@ -65,7 +65,7 @@ function drawWheel(canvas: HTMLCanvasElement, slots: SlotDef[]) {
     ctx.translate(tx, ty)
     ctx.rotate(midAngle + Math.PI / 2)
     ctx.fillStyle = '#ffffff'
-    ctx.font = `bold ${size < 280 ? 10 : 12}px system-ui, sans-serif`
+    ctx.font = `bold ${size < 280 ? 11 : 15}px system-ui, sans-serif`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.shadowColor = 'rgba(0,0,0,0.6)'
@@ -278,10 +278,10 @@ export default function RuletaClient({
       {/* Wheel container */}
       <div className="flex flex-col items-center gap-4">
         {/* Pointer */}
-        <div className="relative flex justify-center w-full" style={{ maxWidth: 320 }}>
+        <div className="relative flex justify-center w-full" style={{ maxWidth: 420 }}>
           {/* Arrow pointing down into wheel */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 z-10">
-            <svg width="28" height="28" viewBox="0 0 28 28">
+            <svg width="34" height="34" viewBox="0 0 28 28">
               <polygon points="14,24 4,4 24,4" fill="#ef4444" stroke="white" strokeWidth="2" />
             </svg>
           </div>
@@ -297,9 +297,9 @@ export default function RuletaClient({
           >
             <canvas
               ref={canvasRef}
-              width={300}
-              height={300}
-              className="rounded-full shadow-2xl"
+              width={400}
+              height={400}
+              className="rounded-full shadow-2xl w-full"
             />
           </div>
         </div>

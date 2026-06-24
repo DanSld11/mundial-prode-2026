@@ -26,15 +26,15 @@ CREATE TABLE IF NOT EXISTS public.ruleta_config (
   price_coins INTEGER DEFAULT 50,
   slots JSONB DEFAULT '[
     {"id":1,"type":"points","value":1,"color":"#22c55e"},
-    {"id":2,"type":"points","value":2,"color":"#16a34a"},
-    {"id":3,"type":"points","value":3,"color":"#166534"},
-    {"id":4,"type":"points","value":-1,"color":"#ef4444"},
-    {"id":5,"type":"points","value":-2,"color":"#dc2626"},
-    {"id":6,"type":"points","value":-3,"color":"#991b1b"},
-    {"id":7,"type":"retry","value":0,"color":"#3b82f6"},
-    {"id":8,"type":"retry","value":0,"color":"#60a5fa"},
-    {"id":9,"type":"nothing","value":0,"color":"#f59e0b"},
-    {"id":10,"type":"nothing","value":0,"color":"#f97316"}
+    {"id":2,"type":"points","value":-2,"color":"#dc2626"},
+    {"id":3,"type":"nothing","value":0,"color":"#f59e0b"},
+    {"id":4,"type":"points","value":3,"color":"#166534"},
+    {"id":5,"type":"retry","value":0,"color":"#3b82f6"},
+    {"id":6,"type":"points","value":-1,"color":"#ef4444"},
+    {"id":7,"type":"points","value":2,"color":"#16a34a"},
+    {"id":8,"type":"nothing","value":0,"color":"#f97316"},
+    {"id":9,"type":"points","value":-3,"color":"#991b1b"},
+    {"id":10,"type":"retry","value":0,"color":"#60a5fa"}
   ]'::jsonb,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
