@@ -80,7 +80,7 @@ function MatchCard({
   const [homeScore, setHomeScore] = useState<number>(match.home_score ?? 0)
   const [awayScore, setAwayScore] = useState<number>(match.away_score ?? 0)
   const [selectedScorers, setSelectedScorers] = useState<Set<string>>(new Set(initialScorers))
-  const [showScorers, setShowScorers] = useState(false)
+  const [showScorers, setShowScorers] = useState(match.status === 'finished')
 
   const matchPlayers = players.filter((p) => p.team_id === match.home_team_id || p.team_id === match.away_team_id)
 
@@ -129,12 +129,19 @@ function MatchCard({
       {/* Goleadores colapsable */}
       {matchPlayers.length > 0 && (
         <div>
-          <button onClick={() => setShowScorers((v) => !v)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-            {showScorers ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-            Goleadores · {matchPlayers.length} jugadores
-            {selectedScorers.size > 0 && ` · ${selectedScorers.size} seleccionado${selectedScorers.size !== 1 ? 's' : ''}`}
-          </button>
+          <div className="flex items-center justify-between gap-2">
+            <button onClick={() => setShowScorers((v) => !v)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              {showScorers ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              Goleadores · {matchPlayers.length} jugadores
+              {selectedScorers.size > 0 && ` · ${selectedScorers.size} seleccionado${selectedScorers.size !== 1 ? 's' : ''}`}
+            </button>
+            {match.status === 'finished' && selectedScorers.size === 0 && (
+              <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 rounded px-1.5 py-0.5">
+                ⚠ Sin goleadores — puntos no calculados
+              </span>
+            )}
+          </div>
           {showScorers && (
             <div className="mt-2 space-y-2">
               {[
