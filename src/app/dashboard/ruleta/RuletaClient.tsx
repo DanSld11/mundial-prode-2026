@@ -163,6 +163,15 @@ function timeAgo(d: string) {
   return `${Math.floor(h / 24)}d`
 }
 
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export default function RuletaClient({
   isActive, hasAccess, priceCoins, slots, spins: initialSpins,
   coinBalance, totalPoints, isAdmin,
@@ -178,11 +187,13 @@ export default function RuletaClient({
   const [points, setPoints] = useState(totalPoints)
   const [pending, startTransition] = useTransition()
   const [showHistory, setShowHistory] = useState(false)
+  // Shuffle once on mount — each visit gets a different order
+  const [displaySlots] = useState<SlotDef[]>(() => shuffleArray(slots))
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (canvas) drawWheel(canvas, slots)
-  }, [slots])
+    if (canvas) drawWheel(canvas, displaySlots)
+  }, [displaySlots])
 
   function handleSpin() {
     if (spinning || pending) return
@@ -202,10 +213,11 @@ export default function RuletaClient({
         return
       }
 
-      // Calculate target rotation
-      const n = slots.length
+      // Find where this slot ended up in the shuffled display order
+      const n = displaySlots.length
       const segmentDeg = 360 / n
-      const targetIndex = res.resultIndex
+      const visualIndex = displaySlots.findIndex(s => s.id === res.slot.id)
+      const targetIndex = visualIndex >= 0 ? visualIndex : res.resultIndex
       // Spin at least 5 full rotations + land on target
       const diff = ((targetIndex * segmentDeg) - (rotation % 360) + 360) % 360
       const newRotation = rotation + diff + 5 * 360
