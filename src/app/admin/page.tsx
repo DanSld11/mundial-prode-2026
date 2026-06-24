@@ -306,6 +306,42 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
+        <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-emerald-500/20" />
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2 relative z-10">
+              <TrendingUp className="h-5 w-5 text-emerald-500" />
+              Ajuste de Puntos
+            </CardTitle>
+            <CardDescription className="relative z-10">Suma o resta puntos a usuarios con motivo.</CardDescription>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <a href="/admin/puntos">
+              <Button className="w-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 shadow-none border-0 font-semibold">
+                Ajustar Puntos
+              </Button>
+            </a>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-rose-500/20" />
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2 relative z-10">
+              <Coins className="h-5 w-5 text-rose-500" />
+              Ruleta MundialCoins
+            </CardTitle>
+            <CardDescription className="relative z-10">Activar, configurar premios y gestionar acceso.</CardDescription>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <a href="/admin/ruleta">
+              <Button className="w-full bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 shadow-none border-0 font-semibold">
+                Configurar Ruleta
+              </Button>
+            </a>
+          </CardContent>
+        </Card>
+
         {/* Notificaciones Push */}
         <Card className="border-border/50 bg-card/60 backdrop-blur-xl shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden md:col-span-2 lg:col-span-3">
           <div className="absolute top-0 right-0 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-all group-hover:bg-violet-500/20" />

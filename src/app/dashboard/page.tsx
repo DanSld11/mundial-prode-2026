@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CalendarDays, CheckCircle2, Circle, Crown, Download, Medal, Shield, Smartphone, Target, Trophy, Users, Zap } from 'lucide-react'
+import { ArrowRight, CalendarDays, CheckCircle2, Circle, Crown, Download, Medal, Shield, Smartphone, Sparkles, Target, Trophy, Users, Zap } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TeamFlag } from '@/components/team-flag'
 import { formatPeruShortDateTime } from '@/lib/peru-time'
 import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
 import { ActivityFeed } from '@/components/activity-feed'
+import { NotificationBanner } from '@/components/NotificationBanner'
 
 const quickLinks = [
   { href: '/dashboard/grupos',      title: 'Grupos',          description: 'Ver las 48 selecciones',  icon: Users },
@@ -188,6 +189,7 @@ export default function DashboardPage() {
   const [matches, setMatches] = useState<any[]>([])
   const [leaders, setLeaders] = useState<any[]>([])
   const [isAdmin, setIsAdmin] = useState(false)
+  const [hasRuletaAccess, setHasRuletaAccess] = useState(false)
   const [loading, setLoading] = useState(true)
   const [userPredCount, setUserPredCount] = useState<number | null>(null)
   const [userGroupPredCount, setUserGroupPredCount] = useState<number | null>(null)
@@ -216,8 +218,18 @@ export default function DashboardPage() {
       const authClient = createAuthedClient(token)
       getCurrentUserId(token).then((userId) => {
         if (!userId) return
-        authClient.from('profiles').select('role').eq('id', userId).single().then(({ data: profile }) => {
-          setIsAdmin(profile?.role === 'admin')
+        authClient.from('profiles').select('role').eq('id', userId).single().then(async ({ data: profile }) => {
+          const admin = profile?.role === 'admin'
+          setIsAdmin(admin)
+          if (!admin) {
+            const [accessRes, configRes] = await Promise.all([
+              authClient.from('ruleta_access').select('enabled').eq('user_id', userId).maybeSingle(),
+              authClient.from('ruleta_config').select('is_active').eq('id', 1).maybeSingle(),
+            ])
+            setHasRuletaAccess(accessRes.data?.enabled === true && configRes.data?.is_active === true)
+          } else {
+            setHasRuletaAccess(true)
+          }
         })
         Promise.all([
           authClient.from('predictions').select('id', { count: 'exact', head: true }).eq('user_id', userId),
@@ -240,6 +252,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5 sm:space-y-6">
+
+      {/* Notification banners (point adjustments, etc.) */}
+      <NotificationBanner />
 
       {/* Countdown */}
       <WorldCupCountdown />
@@ -367,6 +382,27 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Ruleta card — solo para usuarios con acceso */}
+      {hasRuletaAccess && (
+        <Link href="/dashboard/ruleta" className="group block overflow-hidden rounded-2xl border shadow-sm transition hover:shadow-md"
+          style={{ background: 'linear-gradient(135deg, #1e0a0a 0%, #3a0a0a 40%, #1a0000 100%)' }}>
+          <div className="flex items-center gap-4 px-5 py-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-red/80 text-white shadow-sm text-2xl">
+              🎡
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">Disponible para vos</p>
+              <p className="mt-0.5 font-bebas text-lg tracking-wide text-white">Ruleta MundialCoins</p>
+              <p className="text-xs text-white/60">Girá y ganate puntos del torneo</p>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <Sparkles className="h-5 w-5 text-amber-400 group-hover:animate-spin" />
+              <ArrowRight className="h-4 w-4 text-white/40 transition group-hover:translate-x-1 group-hover:text-white" />
+            </div>
+          </div>
+        </Link>
       )}
 
       {/* Pronósticos callout */}
