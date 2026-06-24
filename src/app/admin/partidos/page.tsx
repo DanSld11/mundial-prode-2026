@@ -9,7 +9,7 @@ import { formatPeruShortDateTime } from '@/lib/peru-time'
 import { updateMatchResultAction } from '../actions'
 import { getAdminPartidosData } from './actions'
 import { toast } from 'sonner'
-import { CheckCircle2, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronUp, History, Loader2 } from 'lucide-react'
 
 export default function AdminPartidosPage() {
   const [matches, setMatches] = useState<any[]>([])
@@ -17,6 +17,7 @@ export default function AdminPartidosPage() {
   const [scorerMap, setScorerMap] = useState<Map<string, Set<string>>>(new Map())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
+  const [showPast, setShowPast] = useState(false)
 
   useEffect(() => {
     getAdminPartidosData().then(({ matches: m, players: p, scorers: s }) => {
@@ -49,24 +50,72 @@ export default function AdminPartidosPage() {
 
   if (loading) return <div className="py-20 text-center text-sm text-muted-foreground">Cargando partidos...</div>
 
+  const pendingMatches  = matches.filter((m) => m.status !== 'finished')
+  const finishedMatches = matches.filter((m) => m.status === 'finished')
+  const missingScorerCount = finishedMatches.filter((m) => !(scorerMap.get(m.id)?.size)).length
+
   return (
     <div className="space-y-4">
       <div>
         <h2 className="text-xl font-bold">Gestión de Partidos</h2>
         <p className="text-sm text-muted-foreground">Cargá resultados para calcular puntos. Horarios en Hora Perú.</p>
       </div>
-      <div className="space-y-3">
-        {matches.map((match) => (
-          <MatchCard
-            key={match.id}
-            match={match}
-            players={players}
-            initialScorers={scorerMap.get(match.id) ?? new Set()}
-            saving={saving === match.id}
-            onSave={handleSave}
-          />
-        ))}
-      </div>
+
+      {/* Partidos pendientes */}
+      {pendingMatches.length === 0 ? (
+        <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          No hay partidos pendientes de calificar.
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {pendingMatches.map((match) => (
+            <MatchCard
+              key={match.id}
+              match={match}
+              players={players}
+              initialScorers={scorerMap.get(match.id) ?? new Set()}
+              saving={saving === match.id}
+              onSave={handleSave}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Botón encuentros pasados */}
+      {finishedMatches.length > 0 && (
+        <div className="space-y-3">
+          <button
+            onClick={() => setShowPast((v) => !v)}
+            className="flex w-full items-center justify-between rounded-xl border bg-muted/40 px-4 py-3 text-sm font-semibold hover:bg-muted/70 transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <History className="h-4 w-4 text-muted-foreground" />
+              Encuentros pasados calificados ({finishedMatches.length})
+              {missingScorerCount > 0 && (
+                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                  ⚠ {missingScorerCount} sin goleador
+                </span>
+              )}
+            </span>
+            {showPast ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          </button>
+
+          {showPast && (
+            <div className="space-y-3">
+              {finishedMatches.map((match) => (
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  players={players}
+                  initialScorers={scorerMap.get(match.id) ?? new Set()}
+                  saving={saving === match.id}
+                  onSave={handleSave}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
