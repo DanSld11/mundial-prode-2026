@@ -231,9 +231,13 @@ export default function RuletaClient({
       const segmentDeg = 360 / n
       const visualIndex = displaySlots.findIndex(s => s.id === res.slot.id)
       const targetIndex = visualIndex >= 0 ? visualIndex : res.resultIndex
-      // Spin at least 5 full rotations + land on target
-      const diff = ((targetIndex * segmentDeg) - (rotation % 360) + 360) % 360
-      const newRotation = rotation + diff + 5 * 360
+      // The center of segment i is at (i * segmentDeg + segmentDeg/2) degrees from the top.
+      // To bring it under the pointer (top=0°), we need the wheel at:
+      //   targetAngle = (360 - (i * segmentDeg + segmentDeg/2)) % 360
+      const targetAngle = (360 - (targetIndex * segmentDeg + segmentDeg / 2)) % 360
+      const currentAngle = rotation % 360
+      const diff = (targetAngle - currentAngle + 360) % 360
+      const newRotation = rotation + (diff === 0 ? 360 : diff) + 5 * 360
 
       setRotation(newRotation)
       if (!isFreeRetry && res.coinsSpent > 0) setCoins(c => c - res.coinsSpent)
