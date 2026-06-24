@@ -107,7 +107,7 @@ export default function TablaPage() {
           <div className="flex items-start gap-2 rounded-xl border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
             <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
             <span>
-              <strong>Ganador</strong> · <strong>Goleador</strong> · <strong>Marcador</strong> cuentan aciertos por partido.
+              <strong>Ganador</strong> y <strong>Marcador</strong> cuentan aciertos por partido. <strong>Goleador</strong> muestra la suma de puntos obtenidos por acertar el goleador.
               {' '}<strong>Grupos</strong> y <strong>Especiales</strong> se activarán cuando se puntúen los pronósticos del torneo.
             </span>
           </div>

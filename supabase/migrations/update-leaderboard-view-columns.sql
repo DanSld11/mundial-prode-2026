@@ -1,14 +1,14 @@
 -- Actualiza la vista leaderboard agregando columnas separadas:
--- outcomes_correct (ganador), scorers_correct (goleador),
+-- outcomes_correct (ganador), scorer_points_total (suma pts goleador),
 -- exact_scores (marcador), group_points (grupos), special_points (especiales)
 
 CREATE OR REPLACE VIEW public.leaderboard AS
   WITH match_stats AS (
     SELECT
       user_id,
-      COUNT(*) FILTER (WHERE outcome_points  > 0) AS outcomes_correct,
-      COUNT(*) FILTER (WHERE scorer_points   > 0) AS scorers_correct,
-      COUNT(*) FILTER (WHERE is_exact_score)       AS exact_scores
+      COUNT(*)  FILTER (WHERE outcome_points > 0)  AS outcomes_correct,
+      COALESCE(SUM(scorer_points), 0)               AS scorer_points_total,
+      COUNT(*)  FILTER (WHERE is_exact_score)        AS exact_scores
     FROM public.predictions
     GROUP BY user_id
   ),
@@ -28,9 +28,9 @@ CREATE OR REPLACE VIEW public.leaderboard AS
     p.avatar_url,
     p.favorite_team,
     p.total_points,
-    COALESCE(ms.outcomes_correct, 0) AS outcomes_correct,
-    COALESCE(ms.scorers_correct,  0) AS scorers_correct,
-    COALESCE(ms.exact_scores,     0) AS exact_scores,
+    COALESCE(ms.outcomes_correct,    0) AS outcomes_correct,
+    COALESCE(ms.scorer_points_total, 0) AS scorers_correct,
+    COALESCE(ms.exact_scores,        0) AS exact_scores,
     COALESCE(gs.group_points,     0) AS group_points,
     COALESCE(ss.special_points,   0) AS special_points,
     RANK() OVER (ORDER BY p.total_points DESC) AS position
