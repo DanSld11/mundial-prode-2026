@@ -16,6 +16,8 @@ interface Props {
   coinBalance: number
   totalPoints: number
   isAdmin: boolean
+  hasWeeklyFreeSpin: boolean
+  weeklyFreeSpinResetsAt: string | null
 }
 
 function drawWheel(canvas: HTMLCanvasElement, slots: SlotDef[]) {
@@ -172,9 +174,19 @@ function shuffleArray<T>(arr: T[]): T[] {
   return a
 }
 
+function timeUntil(iso: string): string {
+  const diff = new Date(iso).getTime() - Date.now()
+  if (diff <= 0) return 'pronto'
+  const h = Math.floor(diff / 3600000)
+  if (h < 24) return `${h}h`
+  const d = Math.floor(h / 24)
+  return `${d} día${d > 1 ? 's' : ''}`
+}
+
 export default function RuletaClient({
   isActive, hasAccess, priceCoins, slots, spins: initialSpins,
-  coinBalance, totalPoints, isAdmin,
+  coinBalance, totalPoints, isAdmin, hasWeeklyFreeSpin: initialHasFreeSpin,
+  weeklyFreeSpinResetsAt,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wheelRef  = useRef<HTMLDivElement>(null)
@@ -187,6 +199,7 @@ export default function RuletaClient({
   const [points, setPoints] = useState(totalPoints)
   const [pending, startTransition] = useTransition()
   const [showHistory, setShowHistory] = useState(false)
+  const [hasFreeSpin, setHasFreeSpin] = useState(initialHasFreeSpin)
   // Shuffle once on mount — each visit gets a different order
   const [displaySlots] = useState<SlotDef[]>(() => shuffleArray(slots))
 
@@ -223,7 +236,8 @@ export default function RuletaClient({
       const newRotation = rotation + diff + 5 * 360
 
       setRotation(newRotation)
-      if (!isFreeRetry) setCoins(c => c - res.coinsSpent)
+      if (!isFreeRetry && res.coinsSpent > 0) setCoins(c => c - res.coinsSpent)
+      if (!isFreeRetry && res.usedWeeklyFreeSpin) setHasFreeSpin(false)
       if (res.pointsChange !== 0) setPoints(p => Math.max(0, p + res.pointsChange))
 
       // Wait for animation to finish (4s) then show result
@@ -251,7 +265,7 @@ export default function RuletaClient({
     setIsFreeRetry(true)
   }
 
-  const canSpin = !spinning && !pending && (isFreeRetry || coins >= priceCoins) && isActive && hasAccess
+  const canSpin = !spinning && !pending && (isFreeRetry || hasFreeSpin || coins >= priceCoins) && isActive && hasAccess
 
   if (!hasAccess && !isAdmin) {
     return (
@@ -320,9 +334,11 @@ export default function RuletaClient({
         <button
           onClick={handleSpin}
           disabled={!canSpin}
-          className={`relative h-14 w-full max-w-[300px] rounded-2xl text-base font-extrabold tracking-wide text-white transition-all active:scale-95 shadow-lg ${
+          className={`relative h-14 w-full max-w-[420px] rounded-2xl text-base font-extrabold tracking-wide text-white transition-all active:scale-95 shadow-lg ${
             isFreeRetry
               ? 'bg-blue-500 hover:bg-blue-600 shadow-blue-500/30'
+              : canSpin && hasFreeSpin
+              ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30'
               : canSpin
               ? 'bg-brand-red hover:bg-red-600 shadow-brand-red/30'
               : 'bg-muted text-muted-foreground cursor-not-allowed shadow-none'
@@ -334,7 +350,11 @@ export default function RuletaClient({
             </span>
           ) : isFreeRetry ? (
             <span className="flex items-center justify-center gap-2">
-              <RotateCcw className="h-5 w-5" /> Giro gratis
+              <RotateCcw className="h-5 w-5" /> Giro gratis (otra vez)
+            </span>
+          ) : hasFreeSpin ? (
+            <span className="flex items-center justify-center gap-2">
+              <Sparkles className="h-5 w-5" /> Giro semanal gratuito 🎁
             </span>
           ) : (
             <span className="flex items-center justify-center gap-2">
@@ -345,7 +365,19 @@ export default function RuletaClient({
 
         {!canSpin && !spinning && !isFreeRetry && isActive && (
           <p className="text-xs text-muted-foreground text-center">
-            {coins < priceCoins ? `Te faltan ${priceCoins - coins} coins` : 'No disponible'}
+            {coins < priceCoins
+              ? `Te faltan ${priceCoins - coins} coins · próximo giro gratis ${weeklyFreeSpinResetsAt ? `en ${timeUntil(weeklyFreeSpinResetsAt)}` : 'pronto'}`
+              : 'No disponible'}
+          </p>
+        )}
+        {!spinning && !isFreeRetry && hasFreeSpin && isActive && (
+          <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium text-center">
+            ¡Tenés tu giro gratis semanal disponible!
+          </p>
+        )}
+        {!spinning && !isFreeRetry && !hasFreeSpin && weeklyFreeSpinResetsAt && isActive && (
+          <p className="text-xs text-muted-foreground text-center">
+            Próximo giro gratis en <strong>{timeUntil(weeklyFreeSpinResetsAt)}</strong>
           </p>
         )}
       </div>

@@ -28,6 +28,8 @@ export default async function RuletaPage() {
         coinBalance={data.coinBalance}
         totalPoints={data.totalPoints}
         isAdmin={data.isAdmin}
+        hasWeeklyFreeSpin={data.hasWeeklyFreeSpin}
+        weeklyFreeSpinResetsAt={data.weeklyFreeSpinResetsAt}
       />
     </div>
   )
