@@ -210,7 +210,7 @@ export default function RuletaClient({
 
   function handleSpin() {
     if (spinning || pending) return
-    if (!isFreeRetry && coins < priceCoins) {
+    if (!isFreeRetry && !hasFreeSpin && coins < priceCoins) {
       toast.error(`Necesitás ${priceCoins} coins para girar`)
       return
     }
