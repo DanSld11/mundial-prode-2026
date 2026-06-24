@@ -141,6 +141,7 @@ export default function MatchPredictionPage() {
   const outcomeLabel = outcomeOptions.find((o) => o.value === outcome)?.label ?? outcome
 
   const hasAnything = !!(outcome || scorerId || homeScore !== '' || awayScore !== '')
+  const hasIncompleteScore = (homeScore === '') !== (awayScore === '')
   // "Bold prediction" indicator — high score (≥3 goals per team or ≥5 total) or score entered
   const isBoldPrediction = (
     (homeScore !== '' && awayScore !== '' && (parseInt(homeScore) + parseInt(awayScore)) >= 5) ||
@@ -172,6 +173,12 @@ export default function MatchPredictionPage() {
 
     if (!accessToken || !userId || !match) {
       setErrorMessage('No se pudo identificar tu sesión.')
+      setSaving(false)
+      return
+    }
+
+    if ((homeScore === '') !== (awayScore === '')) {
+      setErrorMessage('Completá ambos campos del marcador o dejálos vacíos.')
       setSaving(false)
       return
     }
@@ -456,6 +463,12 @@ export default function MatchPredictionPage() {
                   />
                 </div>
               </div>
+              {!isLocked && hasIncompleteScore && (
+                <p className="flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 dark:bg-red-950/40 dark:text-red-400">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  Completá ambos campos del marcador o dejálos vacíos.
+                </p>
+              )}
               {isFinished && (
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-xs text-muted-foreground">
@@ -515,7 +528,7 @@ export default function MatchPredictionPage() {
         {/* Botón guardar — solo si puede editar */}
         {!isLocked && (
           <Button
-            disabled={saving || !hasAnything}
+            disabled={saving || !hasAnything || hasIncompleteScore}
             onClick={() => setShowConfirmModal(true)}
             className="w-full bg-brand-red text-white hover:bg-red-700 h-12 text-base font-semibold"
           >
