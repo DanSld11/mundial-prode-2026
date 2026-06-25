@@ -43,7 +43,10 @@ export default function RegisterPage() {
       if (!res.ok) { setError(data.msg || 'Error al registrarse'); setLoading(false); return }
 
       if (data.access_token) {
-        document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=14400; SameSite=Lax'
+        document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=3600; SameSite=Lax'
+        if (data.refresh_token) {
+          document.cookie = 'sb-refresh-token=' + data.refresh_token + '; path=/; max-age=15552000; SameSite=Lax'
+        }
         window.location.href = '/dashboard'
       } else {
         setError('Registro exitoso. Revisá tu email para confirmar.')

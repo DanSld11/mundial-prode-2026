@@ -6,6 +6,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { cookies } from 'next/headers'
 import type { Profile } from '@/types'
 
 // ── LOGIN ──
@@ -89,6 +90,9 @@ export async function registerAction(formData: FormData) {
 export async function logoutAction() {
   const supabase = await createServerSupabaseClient()
   await supabase.auth.signOut()
+  const cookieStore = await cookies()
+  cookieStore.delete('sb-access-token')
+  cookieStore.delete('sb-refresh-token')
   revalidatePath('/', 'layout')
   redirect('/')
 }

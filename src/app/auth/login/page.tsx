@@ -33,7 +33,10 @@ function LoginForm() {
       try { data = await res.json() } catch { /* ignore parse error */ }
       if (!res.ok) { setError(data.msg || data.error_description || 'Email o contraseña incorrectos'); setLoading(false); return }
 
-      document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=14400; SameSite=Lax'
+      document.cookie = 'sb-access-token=' + data.access_token + '; path=/; max-age=3600; SameSite=Lax'
+      if (data.refresh_token) {
+        document.cookie = 'sb-refresh-token=' + data.refresh_token + '; path=/; max-age=15552000; SameSite=Lax'
+      }
       const redirectTo = searchParams.get('redirectTo') || '/dashboard'
       window.location.href = redirectTo
     } catch {

@@ -25,18 +25,14 @@ export async function POST(request: Request) {
   const response = NextResponse.redirect(new URL('/dashboard', request.url))
 
   const { access_token, refresh_token } = data.session
-  const maxAge = 60 * 60 * 24 * 7
-  const cookieOpts = { path: '/', maxAge, sameSite: 'lax' as const, secure: true }
+  const cookieOpts = { path: '/', sameSite: 'lax' as const, secure: true }
 
-  // httpOnly: session object for server-side reads (middleware, server actions)
-  response.cookies.set(
-    'sb-anbfhgkaaaqvjeiwtojp-auth-token',
-    JSON.stringify([access_token, refresh_token, 'authenticated']),
-    { ...cookieOpts, httpOnly: true },
-  )
-
-  // Non-httpOnly: raw JWT readable by client-side JS (bracket page, prediction form, etc.)
-  response.cookies.set('sb-access-token', access_token, { ...cookieOpts, httpOnly: false })
+  // Access token (1h, matches JWT expiry)
+  response.cookies.set('sb-access-token', access_token, { ...cookieOpts, maxAge: 3600, httpOnly: false })
+  // Refresh token (6 months — allows auto-renewal without re-login)
+  if (refresh_token) {
+    response.cookies.set('sb-refresh-token', refresh_token, { ...cookieOpts, maxAge: 15552000, httpOnly: false })
+  }
 
   return response
 }
