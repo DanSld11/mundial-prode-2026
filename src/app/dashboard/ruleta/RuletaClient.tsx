@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { spinRuletaAction, SlotDef } from './actions'
 import { slotLabel } from './constants'
 import { toast } from 'sonner'
-import { Coins, History, RotateCcw, Sparkles } from 'lucide-react'
+import { History, RotateCcw, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface Props {
@@ -174,13 +174,25 @@ function shuffleArray<T>(arr: T[]): T[] {
   return a
 }
 
-function timeUntil(iso: string): string {
-  const diff = new Date(iso).getTime() - Date.now()
-  if (diff <= 0) return 'pronto'
-  const h = Math.floor(diff / 3600000)
-  if (h < 24) return `${h}h`
-  const d = Math.floor(h / 24)
-  return `${d} día${d > 1 ? 's' : ''}`
+function useCountdown(iso: string | null) {
+  const [text, setText] = useState('')
+  useEffect(() => {
+    if (!iso) return
+    function tick() {
+      const diff = new Date(iso!).getTime() - Date.now()
+      if (diff <= 0) { setText(''); return }
+      const d = Math.floor(diff / 86400000)
+      const h = Math.floor((diff % 86400000) / 3600000)
+      const m = Math.floor((diff % 3600000) / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      const pad = (n: number) => String(n).padStart(2, '0')
+      setText(d > 0 ? `${d}d ${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(h)}:${pad(m)}:${pad(s)}`)
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [iso])
+  return text
 }
 
 export default function RuletaClient({
@@ -202,6 +214,7 @@ export default function RuletaClient({
   const [hasFreeSpin, setHasFreeSpin] = useState(initialHasFreeSpin)
   // Shuffle once on mount — each visit gets a different order
   const [displaySlots] = useState<SlotDef[]>(() => shuffleArray(slots))
+  const countdown = useCountdown(!hasFreeSpin ? weeklyFreeSpinResetsAt : null)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -367,22 +380,22 @@ export default function RuletaClient({
           )}
         </button>
 
-        {!canSpin && !spinning && !isFreeRetry && isActive && (
-          <p className="text-xs text-muted-foreground text-center">
-            {coins < priceCoins
-              ? `Te faltan ${priceCoins - coins} coins · próximo giro gratis ${weeklyFreeSpinResetsAt ? `en ${timeUntil(weeklyFreeSpinResetsAt)}` : 'pronto'}`
-              : 'No disponible'}
-          </p>
-        )}
         {!spinning && !isFreeRetry && hasFreeSpin && isActive && (
           <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium text-center">
             ¡Tenés tu giro gratis semanal disponible!
           </p>
         )}
-        {!spinning && !isFreeRetry && !hasFreeSpin && weeklyFreeSpinResetsAt && isActive && (
-          <p className="text-xs text-muted-foreground text-center">
-            Próximo giro gratis en <strong>{timeUntil(weeklyFreeSpinResetsAt)}</strong>
-          </p>
+        {!spinning && !isFreeRetry && !hasFreeSpin && isActive && (
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-xs text-muted-foreground text-center">
+              {coins >= priceCoins
+                ? `Podés girar con ${priceCoins} coins · giro gratis en:`
+                : `Te faltan ${priceCoins - coins} coins · giro gratis en:`}
+            </p>
+            <span className="font-mono text-lg font-extrabold tabular-nums text-amber-500 tracking-widest">
+              {countdown || '—'}
+            </span>
+          </div>
         )}
       </div>
 

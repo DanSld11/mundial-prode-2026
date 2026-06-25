@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { getAdminRuletaData, updateRuletaConfigAction, toggleRuletaAccessAction } from './actions'
+import { getAdminRuletaData, updateRuletaConfigAction, toggleRuletaAccessAction, resetUserWeeklySpinAction } from './actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import { Sparkles, Users, Settings, BarChart3, Loader2 } from 'lucide-react'
+import { Sparkles, Users, Settings, BarChart3, Loader2, RotateCcw, Clock } from 'lucide-react'
 
 interface Slot {
   id: number
@@ -24,11 +24,36 @@ function SlotColorDot({ color }: { color: string }) {
   return <span className="inline-block h-3.5 w-3.5 rounded-full border border-white/20 shrink-0" style={{ background: color }} />
 }
 
+function SpinCountdown({ resetsAt }: { resetsAt: string }) {
+  const [text, setText] = useState('')
+  useEffect(() => {
+    function tick() {
+      const diff = new Date(resetsAt).getTime() - Date.now()
+      if (diff <= 0) { setText('disponible pronto'); return }
+      const d = Math.floor(diff / 86400000)
+      const h = Math.floor((diff % 86400000) / 3600000)
+      const m = Math.floor((diff % 3600000) / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      const pad = (n: number) => String(n).padStart(2, '0')
+      setText(d > 0 ? `${d}d ${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(h)}:${pad(m)}:${pad(s)}`)
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [resetsAt])
+  return (
+    <p className="flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-mono font-medium">
+      <Clock className="h-2.5 w-2.5" /> {text}
+    </p>
+  )
+}
+
 export default function AdminRuletaPage() {
   const [config, setConfig] = useState<any>(null)
   const [profiles, setProfiles] = useState<any[]>([])
   const [access, setAccess] = useState<any[]>([])
   const [recentSpins, setRecentSpins] = useState<any[]>([])
+  const [freeSpinMap, setFreeSpinMap] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [slots, setSlots] = useState<Slot[]>([])
   const [priceCoins, setPriceCoins] = useState(50)
@@ -45,7 +70,16 @@ export default function AdminRuletaPage() {
     setProfiles(d.profiles)
     setAccess(d.access)
     setRecentSpins(d.recentSpins)
+    setFreeSpinMap(d.freeSpinMap)
     setLoading(false)
+  }
+
+  function handleResetSpin(userId: string) {
+    startTransition(async () => {
+      await resetUserWeeklySpinAction(userId)
+      setFreeSpinMap(prev => { const next = { ...prev }; delete next[userId]; return next })
+      toast.success('Timer reseteado — el usuario puede girar gratis de nuevo')
+    })
   }
 
   useEffect(() => { load() }, [])
@@ -226,20 +260,43 @@ export default function AdminRuletaPage() {
           </p>
           {profiles.map(p => {
             const enabled = getUserAccess(p.id)
+            const resetsAt = freeSpinMap[p.id]
+            const usedFreeSpin = !!resetsAt
             return (
-              <div key={p.id} className="flex items-center justify-between rounded-xl border bg-card px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-red/10 text-brand-red text-xs font-bold">
-                    {p.username?.[0]?.toUpperCase() ?? '?'}
+              <div key={p.id} className="rounded-xl border bg-card px-4 py-3 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-red/10 text-brand-red text-xs font-bold">
+                      {p.username?.[0]?.toUpperCase() ?? '?'}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{p.username}</p>
+                      {usedFreeSpin ? (
+                        <SpinCountdown resetsAt={resetsAt} />
+                      ) : (
+                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Giro gratis disponible</p>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-sm font-medium">{p.username}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {usedFreeSpin && (
+                      <button
+                        onClick={() => handleResetSpin(p.id)}
+                        disabled={pending}
+                        title="Resetear timer para que pueda girar gratis"
+                        className="flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-400 transition-colors"
+                      >
+                        <RotateCcw className="h-3 w-3" /> Resetear
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleToggleAccess(p.id, enabled)}
+                      className={`relative h-6 w-11 rounded-full transition-colors ${enabled ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`}
+                    >
+                      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${enabled ? 'left-[22px]' : 'left-0.5'}`} />
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => handleToggleAccess(p.id, enabled)}
-                  className={`relative h-6 w-11 rounded-full transition-colors ${enabled ? 'bg-emerald-500' : 'bg-muted-foreground/30'}`}
-                >
-                  <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${enabled ? 'left-[22px]' : 'left-0.5'}`} />
-                </button>
               </div>
             )
           })}
