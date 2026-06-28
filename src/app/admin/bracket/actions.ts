@@ -52,7 +52,7 @@ export async function getAdminBracketData() {
     db.from('matches')
       .select(`
         id, match_number, stage, match_date, status, predictions_locked,
-        home_score, away_score, stadium,
+        home_score, away_score, venue,
         home_team_id, away_team_id,
         home_team:teams!matches_home_team_id_fkey(id, name_es, code, flag_emoji),
         away_team:teams!matches_away_team_id_fkey(id, name_es, code, flag_emoji)
@@ -113,7 +113,7 @@ export async function updateKnockoutMatch(
     home_team_id: homeTeamId || null,
     away_team_id: awayTeamId || null,
     match_date: matchDate,
-    stadium: stadium || null,
+    venue: stadium || null,
     updated_at: new Date().toISOString(),
   }).eq('id', matchId)
 

@@ -24,7 +24,7 @@ interface Match {
   predictions_locked: boolean
   home_score: number | null
   away_score: number | null
-  stadium: string | null
+  venue: string | null
   home_team_id: string | null
   away_team_id: string | null
   home_team: Team | null
@@ -60,7 +60,7 @@ function MatchRow({ match, teams }: { match: Match; teams: Team[] }) {
   const [homeTeamId, setHomeTeamId] = useState(match.home_team_id ?? '')
   const [awayTeamId, setAwayTeamId] = useState(match.away_team_id ?? '')
   const [matchDate, setMatchDate] = useState(toLocalDatetimeValue(match.match_date))
-  const [stadium, setStadium] = useState(match.stadium ?? '')
+  const [stadium, setStadium] = useState(match.venue ?? '')
   const [saved, setSaved] = useState(false)
   const [pending, startTransition] = useTransition()
 
@@ -87,7 +87,7 @@ function MatchRow({ match, teams }: { match: Match; teams: Team[] }) {
     homeTeamId !== (match.home_team_id ?? '') ||
     awayTeamId !== (match.away_team_id ?? '') ||
     matchDate !== toLocalDatetimeValue(match.match_date) ||
-    stadium !== (match.stadium ?? '')
+    stadium !== (match.venue ?? '')
 
   return (
     <div className="rounded-xl border bg-card p-4 space-y-3">
