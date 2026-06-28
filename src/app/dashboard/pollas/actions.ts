@@ -279,24 +279,43 @@ export async function getMemberPredictionsAction(poolId: string, targetUserId: s
 
   if (!targetMembership) return null
 
-  const { data } = await db
-    .from('predictions')
-    .select(`
-      id, predicted_home_score, predicted_away_score, predicted_outcome,
-      predicted_scorer_id,
-      predicted_scorer:players(name, shirt_number),
-      points_earned, is_exact_score, outcome_points, exact_score_points, scorer_points,
-      match:matches(
-        id, home_score, away_score, status, match_date,
-        home_team:teams!matches_home_team_id_fkey(name_es, code, flag_emoji),
-        away_team:teams!matches_away_team_id_fkey(name_es, code, flag_emoji)
-      )
-    `)
-    .eq('user_id', targetUserId)
-    .order('created_at', { ascending: false })
+  const [matchData, groupData, groupResultsData, teamsData] = await Promise.all([
+    db.from('predictions')
+      .select(`
+        id, predicted_home_score, predicted_away_score, predicted_outcome,
+        predicted_scorer_id,
+        predicted_scorer:players(name, shirt_number),
+        points_earned, is_exact_score, outcome_points, exact_score_points, scorer_points,
+        match:matches(
+          id, home_score, away_score, status, match_date,
+          home_team:teams!matches_home_team_id_fkey(name_es, code, flag_emoji),
+          away_team:teams!matches_away_team_id_fkey(name_es, code, flag_emoji)
+        )
+      `)
+      .eq('user_id', targetUserId)
+      .order('created_at', { ascending: false }),
+    db.from('group_predictions')
+      .select('group_name, position, team_id, points_earned')
+      .eq('user_id', targetUserId),
+    db.from('group_results').select('group_name, position, team_id, scored_at'),
+    db.from('teams').select('id, name_es, flag_emoji, code'),
+  ])
 
-  return (data ?? []).filter((p: any) => {
+  const matchPreds = (matchData.data ?? []).filter((p: any) => {
     if (!p.match) return false
     return p.match.status === 'finished' || new Date(p.match.match_date) <= new Date()
   })
+
+  // Only include groups that have been scored
+  const scoredGroupNames = new Set(
+    (groupResultsData.data ?? []).filter((r: any) => r.scored_at != null).map((r: any) => r.group_name)
+  )
+
+  return {
+    matchPreds,
+    groupPreds: groupData.data ?? [],
+    groupResults: groupResultsData.data ?? [],
+    teams: teamsData.data ?? [],
+    scoredGroupNames: [...scoredGroupNames],
+  }
 }

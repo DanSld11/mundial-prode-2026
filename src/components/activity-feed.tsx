@@ -37,7 +37,17 @@ interface RuletaItem {
   created_at: string
 }
 
-type ActivityItem = MatchItem | RuletaItem
+interface GroupItem {
+  kind: 'group'
+  user_id: string
+  username: string
+  group_name: string
+  group_points: number
+  positions_correct: number
+  scored_at: string
+}
+
+type ActivityItem = MatchItem | RuletaItem | GroupItem
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -87,6 +97,41 @@ function MatchCard({ item }: { item: MatchItem }) {
       <span className="mt-0.5 shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
         +{item.points_earned}
       </span>
+    </div>
+  )
+}
+
+function GroupActivityCard({ item }: { item: GroupItem }) {
+  const initial = item.username?.charAt(0).toUpperCase() ?? '?'
+  const hasPoints = item.group_points > 0
+
+  return (
+    <div className="flex items-start gap-3 rounded-xl border bg-card px-4 py-2.5 text-sm">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white text-xs font-bold mt-0.5">
+        {initial}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate">
+          <span className="font-semibold">{item.username}</span>
+          <span className="text-muted-foreground"> · Grupo {item.group_name} </span>
+          <span>{hasPoints ? '🏆' : '⚽'}</span>
+        </p>
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          {item.positions_correct > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800">
+              {item.positions_correct} {item.positions_correct === 1 ? 'pos. acertada' : 'pos. acertadas'}
+            </span>
+          )}
+          <span className="text-[10px] text-muted-foreground ml-1">
+            Pronósticos de grupo · {timeAgo(item.scored_at)}
+          </span>
+        </div>
+      </div>
+      {hasPoints && (
+        <span className="mt-0.5 shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+          +{item.group_points}
+        </span>
+      )}
     </div>
   )
 }
@@ -147,15 +192,17 @@ export function ActivityFeed() {
     Promise.all([
       supabase.from('activity_feed').select('*').order('scored_at', { ascending: false }).limit(15),
       supabase.from('ruleta_activity').select('*').order('created_at', { ascending: false }).limit(15),
-    ]).then(([matchRes, ruletaRes]) => {
+      supabase.from('group_scoring_activity').select('*').order('scored_at', { ascending: false }).limit(30),
+    ]).then(([matchRes, ruletaRes, groupRes]) => {
       const matchItems: MatchItem[] = (matchRes.data ?? []).map((d: any) => ({ kind: 'match', ...d }))
       const ruletaItems: RuletaItem[] = (ruletaRes.data ?? []).map((d: any) => ({ kind: 'ruleta', ...d }))
+      const groupItems: GroupItem[] = (groupRes.data ?? []).map((d: any) => ({ kind: 'group', ...d }))
 
-      const merged: ActivityItem[] = [...matchItems, ...ruletaItems].sort((a, b) => {
-        const ta = a.kind === 'match' ? a.scored_at : a.created_at
-        const tb = b.kind === 'match' ? b.scored_at : b.created_at
+      const merged: ActivityItem[] = [...matchItems, ...ruletaItems, ...groupItems].sort((a, b) => {
+        const ta = a.kind === 'match' ? a.scored_at : a.kind === 'group' ? a.scored_at : a.created_at
+        const tb = b.kind === 'match' ? b.scored_at : b.kind === 'group' ? b.scored_at : b.created_at
         return new Date(tb).getTime() - new Date(ta).getTime()
-      }).slice(0, 20)
+      }).slice(0, 25)
 
       setItems(merged)
       setLoading(false)
@@ -191,6 +238,8 @@ export function ActivityFeed() {
       {items.map((item) =>
         item.kind === 'match'
           ? <MatchCard key={`m-${item.id}`} item={item} />
+          : item.kind === 'group'
+          ? <GroupActivityCard key={`g-${item.user_id}-${item.group_name}`} item={item} />
           : <RuletaCard key={`r-${item.id}`} item={item} />
       )}
       <Link

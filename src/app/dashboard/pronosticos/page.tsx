@@ -6,7 +6,7 @@ import { Info, Lock } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 export default async function PronosticosPage() {
-  const { uid, teams, groupPreds, specialPreds, specialResults, players, tournamentStart } = await getPronosticosData()
+  const { uid, teams, groupPreds, specialPreds, specialResults, players, tournamentStart, groupResults } = await getPronosticosData()
 
   // El torneo bloqueó los pronósticos si ya arrancó el primer partido
   const isLocked = !!tournamentStart && new Date(tournamentStart) <= new Date()
@@ -66,15 +66,21 @@ export default async function PronosticosPage() {
           <p className="text-sm text-muted-foreground">No hay equipos cargados aún.</p>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {groupNames.map(gName => (
-              <GroupCard
-                key={gName}
-                groupName={gName}
-                teams={groupMap[gName]}
-                predictions={groupPreds.filter((p: any) => p.group_name === gName)}
-                locked={isLocked}
-              />
-            ))}
+            {groupNames.map(gName => {
+              const gResults = groupResults.filter((r: any) => r.group_name === gName)
+              const isScored = gResults.some((r: any) => r.scored_at != null)
+              return (
+                <GroupCard
+                  key={gName}
+                  groupName={gName}
+                  teams={groupMap[gName]}
+                  predictions={groupPreds.filter((p: any) => p.group_name === gName)}
+                  locked={isLocked}
+                  officialResults={gResults}
+                  isScored={isScored}
+                />
+              )
+            })}
           </div>
         )}
       </section>

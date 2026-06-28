@@ -18,10 +18,10 @@ export async function getPronosticosData() {
   const uid = await getAuthUserId()
   const db  = createServiceRoleClient()
 
-  const [teamsRes, groupPredsRes, specialPredsRes, specialResultsRes, playersRes, firstMatchRes] = await Promise.all([
+  const [teamsRes, groupPredsRes, specialPredsRes, specialResultsRes, playersRes, firstMatchRes, groupResultsRes] = await Promise.all([
     db.from('teams').select('id, name_es, flag_emoji, code, group_name').order('group_name').order('name_es'),
     uid
-      ? db.from('group_predictions').select('group_name, position, team_id').eq('user_id', uid)
+      ? db.from('group_predictions').select('group_name, position, team_id, points_earned').eq('user_id', uid)
       : Promise.resolve({ data: [] }),
     uid
       ? db.from('special_predictions').select('type, player_id, team_id, points_earned').eq('user_id', uid)
@@ -29,6 +29,7 @@ export async function getPronosticosData() {
     db.from('special_results').select('type, player_id, locked'),
     db.from('players').select('id, name, team_id, position').order('name').limit(2000),
     db.from('matches').select('match_date').order('match_date', { ascending: true }).limit(1),
+    db.from('group_results').select('group_name, position, team_id, scored_at'),
   ])
 
   const tournamentStart: string | null = firstMatchRes.data?.[0]?.match_date ?? null
@@ -41,6 +42,7 @@ export async function getPronosticosData() {
     specialResults: specialResultsRes.data ?? [],
     players:        playersRes.data ?? [],
     tournamentStart,
+    groupResults:   groupResultsRes.data ?? [],
   }
 }
 
