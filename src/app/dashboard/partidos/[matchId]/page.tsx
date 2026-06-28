@@ -183,17 +183,24 @@ export default function MatchPredictionPage() {
       return
     }
 
+    const hs = homeScore === '' ? null : parseInt(homeScore)
+    const as = awayScore === '' ? null : parseInt(awayScore)
+    // Si el usuario no eligió outcome explícitamente, inferirlo desde el marcador predicho
+    const effectiveOutcome =
+      outcome ||
+      (hs != null && as != null ? (hs > as ? 'home' : as > hs ? 'away' : 'draw') : null)
+
     const nextPrediction = {
       user_id: userId,
       match_id: matchId,
-      predicted_outcome: outcome || null,
+      predicted_outcome: effectiveOutcome,
       predicted_winner_id:
-        outcome === 'home' ? match.home_team_id :
-        outcome === 'away' ? match.away_team_id :
+        effectiveOutcome === 'home' ? match.home_team_id :
+        effectiveOutcome === 'away' ? match.away_team_id :
         null,
       predicted_scorer_id: scorerId || null,
-      predicted_home_score: homeScore === '' ? null : parseInt(homeScore),
-      predicted_away_score: awayScore === '' ? null : parseInt(awayScore),
+      predicted_home_score: hs,
+      predicted_away_score: as,
     }
 
     const authedSupabase = createAuthedClient(accessToken)

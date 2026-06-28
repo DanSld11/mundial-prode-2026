@@ -37,15 +37,15 @@ export function PredictionForm({ matchId, homeTeamName, awayTeamName, existingPr
       const { data: match } = await (s.from('matches') as any).select('predictions_locked, home_team_id, away_team_id').eq('id', matchId).single()
       if (!match || match.predictions_locked) { toast.error('Predicciones cerradas'); setLoading(false); return }
 
-      let predictedWinnerId = null
       const hs = parseInt(homeScore)
       const as = parseInt(awayScore)
-      if (hs > as) predictedWinnerId = match.home_team_id
-      else if (as > hs) predictedWinnerId = match.away_team_id
+      const predictedOutcome = hs > as ? 'home' : as > hs ? 'away' : 'draw'
+      const predictedWinnerId = hs > as ? match.home_team_id : as > hs ? match.away_team_id : null
 
       const { error } = await (s.from('predictions') as any).upsert({
         user_id: uid, match_id: matchId,
         predicted_home_score: hs, predicted_away_score: as,
+        predicted_outcome: predictedOutcome,
         predicted_winner_id: predictedWinnerId,
       }, { onConflict: 'user_id,match_id' })
 

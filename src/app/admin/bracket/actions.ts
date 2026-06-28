@@ -2,6 +2,7 @@
 
 import { createServiceRoleClient } from '@/lib/server-client'
 import { revalidatePath } from 'next/cache'
+import { scoreMatchAction } from '@/app/admin/actions'
 
 // Fechas aproximadas WC 2026 (hora Lima UTC-5)
 const KNOCKOUT_TEMPLATE = [
@@ -159,23 +160,28 @@ export async function saveMatchResult(
 
   if (fetchErr || !match) return { error: 'Partido no encontrado' }
 
-  // 2) Save score and mark as finished
+  // 2) Determine winner
+  let winnerId: string | null = null
+  if (homeScore > awayScore)       winnerId = match.home_team_id
+  else if (awayScore > homeScore)  winnerId = match.away_team_id
+  else                             winnerId = overrideWinnerId  // draw → admin picks
+
+  // 3) Save score, winner and mark as finished
   const { error: updateErr } = await db.from('matches').update({
     home_score: homeScore,
     away_score: awayScore,
+    winner_team_id: winnerId,
+    is_draw: homeScore === awayScore,
     status: 'finished',
     predictions_locked: true,
   }).eq('id', matchId)
 
   if (updateErr) return { error: updateErr.message }
 
-  // 3) Determine winner
-  let winnerId: string | null = null
-  if (homeScore > awayScore)       winnerId = match.home_team_id
-  else if (awayScore > homeScore)  winnerId = match.away_team_id
-  else                             winnerId = overrideWinnerId  // draw → admin picks
+  // 4) Calculate points for all predictions on this match
+  await scoreMatchAction(matchId, homeScore, awayScore)
 
-  // 4) Advance winner to next round
+  // 5) Advance winner to next round
   const winAdv = WINNER_ADVANCES[matchNumber]
   if (winAdv && winnerId) {
     const { data: nextMatch } = await db.from('matches')
@@ -185,7 +191,7 @@ export async function saveMatchResult(
     }
   }
 
-  // 5) Advance loser of SF to 3rd place
+  // 6) Advance loser of SF to 3rd place
   const loserAdv = LOSER_ADVANCES[matchNumber]
   if (loserAdv && winnerId) {
     const loserId = winnerId === match.home_team_id ? match.away_team_id : match.home_team_id
@@ -197,7 +203,10 @@ export async function saveMatchResult(
   }
 
   revalidatePath('/admin/bracket')
+  revalidatePath('/admin/partidos')
   revalidatePath('/dashboard/bracket')
+  revalidatePath('/dashboard/tabla')
+  revalidatePath('/dashboard')
   return { success: true }
 }
 

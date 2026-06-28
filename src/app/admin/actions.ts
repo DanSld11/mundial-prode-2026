@@ -6,6 +6,7 @@ import { SEED_TEAMS, generateGroupMatches } from '@/lib/seed-data'
 import { SEED_PLAYERS } from '@/lib/seed-players'
 import { revalidatePath } from 'next/cache'
 import type { Team } from '@/types'
+import { STAGE_MULTIPLIERS } from '@/types'
 
 export async function seedTeamsAction() {
   const supabase = await createServerSupabaseClient()
@@ -207,9 +208,9 @@ export async function updateMatchResultAction(formData: FormData) {
   return { success: true }
 }
 
-import { STAGE_MULTIPLIERS } from '@/types'
-
-// Lógica de cálculo de puntos con Multiplicador y Bono Batacazo
+// Lógica de cálculo de puntos con multiplicador por fase y bono batacazo.
+// Aplica a predicciones hechas desde el módulo Partidos (tabla predictions).
+// Para eliminatorias el multiplicador es 1.5×; para final es 3×; etc.
 async function calculatePointsFallback(
   adminClient: ReturnType<typeof createServiceRoleClient>,
   matchId: string,
@@ -218,7 +219,7 @@ async function calculatePointsFallback(
 ): Promise<string | null> {
   try {
     const { data: matchData } = await adminClient.from('matches').select('stage').eq('id', matchId).single()
-    const stageMultiplier = matchData?.stage ? (STAGE_MULTIPLIERS[matchData.stage as keyof typeof STAGE_MULTIPLIERS] ?? 1) : 1
+    const stageMultiplier = STAGE_MULTIPLIERS[(matchData?.stage ?? 'group') as keyof typeof STAGE_MULTIPLIERS] ?? 1
 
     const actualOutcome = homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'draw'
 
@@ -236,34 +237,48 @@ async function calculatePointsFallback(
 
     if (!predictions?.length) return null
 
-    // Calcular Bono Batacazo (Underdog Bonus)
-    // Si <= 20% de los que predijeron acertaron el resultado, reciben +2 pts extra
+    // Bono batacazo: si ≤20% acertaron el resultado → +2 pts
+    // Inferir outcome cuando predicted_outcome es null (predicciones hechas solo con marcador)
+    function inferOutcome(p: any): string | null {
+      if (p.predicted_outcome) return p.predicted_outcome
+      if (p.predicted_home_score != null && p.predicted_away_score != null) {
+        if (p.predicted_home_score > p.predicted_away_score) return 'home'
+        if (p.predicted_away_score > p.predicted_home_score) return 'away'
+        return 'draw'
+      }
+      return null
+    }
     const totalPredictions = predictions.length
-    const correctOutcomeCount = predictions.filter(p => p.predicted_outcome === actualOutcome).length
-    const isUnderdog = correctOutcomeCount > 0 && (correctOutcomeCount / totalPredictions) <= 0.20
+    const correctOutcomeCount = predictions.filter((p) => inferOutcome(p) === actualOutcome).length
+    const isUnderdog = correctOutcomeCount > 0 && correctOutcomeCount / totalPredictions <= 0.20
 
-    const { data: scorers } = await adminClient
-      .from('match_goal_scorers')
-      .select('player_id')
-      .eq('match_id', matchId)
-
+    const { data: scorers } = await adminClient.from('match_goal_scorers').select('player_id').eq('match_id', matchId)
     const scorerSet = new Set((scorers ?? []).map((s) => s.player_id))
 
     for (const pred of predictions) {
-      const isCorrectOutcome = pred.predicted_outcome === actualOutcome
+      // Inferir outcome desde marcadores si predicted_outcome no fue guardado explícitamente
+      const effectiveOutcome =
+        pred.predicted_outcome ||
+        (pred.predicted_home_score != null && pred.predicted_away_score != null
+          ? pred.predicted_home_score > pred.predicted_away_score
+            ? 'home'
+            : pred.predicted_away_score > pred.predicted_home_score
+            ? 'away'
+            : 'draw'
+          : null)
+
+      const isCorrectOutcome = effectiveOutcome === actualOutcome
       const baseOutcomePoints = isCorrectOutcome ? pts.outcome : 0
-      const underdogBonus = (isCorrectOutcome && isUnderdog) ? 2 : 0
-      
+      const underdogBonus = isCorrectOutcome && isUnderdog ? 2 : 0
       const scorerPoints = pred.predicted_scorer_id && scorerSet.has(pred.predicted_scorer_id) ? pts.scorer : 0
       const exactPoints =
         pred.predicted_home_score === homeScore && pred.predicted_away_score === awayScore ? pts.exact_score : 0
-      
-      const total = ((baseOutcomePoints + scorerPoints + exactPoints) * stageMultiplier) + underdogBonus
+      const total = (baseOutcomePoints + scorerPoints + exactPoints) * stageMultiplier + underdogBonus
 
       await adminClient
         .from('predictions')
         .update({
-          outcome_points: (baseOutcomePoints * stageMultiplier) + underdogBonus,
+          outcome_points: baseOutcomePoints * stageMultiplier + underdogBonus,
           scorer_points: scorerPoints * stageMultiplier,
           exact_score_points: exactPoints * stageMultiplier,
           points_earned: total,
@@ -273,13 +288,10 @@ async function calculatePointsFallback(
         .eq('id', pred.id)
     }
 
-    // Recalcular total de cada usuario afectado
+    // Recalcular total de cada usuario afectado (solo tabla predictions)
     const userIds = Array.from(new Set(predictions.map((p) => p.user_id)))
     for (const userId of userIds) {
-      const { data: userPreds } = await adminClient
-        .from('predictions')
-        .select('points_earned')
-        .eq('user_id', userId)
+      const { data: userPreds } = await adminClient.from('predictions').select('points_earned').eq('user_id', userId)
       const total = (userPreds ?? []).reduce((sum, p) => sum + (p.points_earned ?? 0), 0)
       await adminClient.from('profiles').update({ total_points: total, updated_at: new Date().toISOString() }).eq('id', userId)
     }
@@ -288,6 +300,18 @@ async function calculatePointsFallback(
   } catch (e: any) {
     return e.message
   }
+}
+
+// Función exportada para que otros módulos (ej: bracket admin) puedan calcular puntos
+export async function scoreMatchAction(matchId: string, homeScore: number, awayScore: number) {
+  const adminClient = createServiceRoleClient()
+  const err = await calculatePointsFallback(adminClient, matchId, homeScore, awayScore)
+  if (err) return { error: err }
+  revalidatePath('/dashboard/tabla')
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/partidos')
+  revalidatePath('/dashboard/predicciones')
+  return { success: true }
 }
 
 export async function resetTournamentAction() {
@@ -370,12 +394,20 @@ export async function recalculateAllPointsAction() {
   }
 
   let recalculated = 0
-  let rpcAvailable = true
 
+  // Paso 1: recalcular predictions.points_earned para cada partido finalizado
   for (const match of matches ?? []) {
     const errorCalculating = await calculatePointsFallback(adminClient, match.id, match.home_score, match.away_score)
     if (errorCalculating) return { error: errorCalculating }
     recalculated += 1
+  }
+
+  // Paso 2: recalcular el total de TODOS los usuarios desde cero (evita inconsistencias de orden)
+  const { data: allUsers } = await adminClient.from('profiles').select('id')
+  for (const user of allUsers ?? []) {
+    const { data: userPreds } = await adminClient.from('predictions').select('points_earned').eq('user_id', user.id)
+    const total = (userPreds ?? []).reduce((sum: number, p: any) => sum + (p.points_earned ?? 0), 0)
+    await adminClient.from('profiles').update({ total_points: total, updated_at: new Date().toISOString() }).eq('id', user.id)
   }
 
   revalidatePath('/admin')
