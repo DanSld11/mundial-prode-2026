@@ -130,14 +130,14 @@ export async function scoreGroupPredictionsAction(groupName: string) {
 
   if (!allPreds) return { error: 'Error al leer predicciones' }
 
-  const pts = { exactPos: 3, qualified: 1 }
+  // Puntos por posición exacta: 1°=3pts, 2°=2pts, 3°=1pt
+  const exactPts: Record<number, number> = { 1: 3, 2: 2, 3: 1 }
+
   const byUser: Record<string, { position: number; team_id: string }[]> = {}
   for (const p of allPreds) {
     if (!byUser[p.user_id]) byUser[p.user_id] = []
     byUser[p.user_id].push({ position: p.position, team_id: p.team_id })
   }
-
-  const qualifiedSet = new Set([resultMap[1], resultMap[2]].filter(Boolean))
 
   let updated = 0
   for (const [userId, preds] of Object.entries(byUser)) {
@@ -145,9 +145,7 @@ export async function scoreGroupPredictionsAction(groupName: string) {
       let points = 0
       const official = resultMap[pred.position]
       if (official && official === pred.team_id) {
-        points = pts.exactPos
-      } else if (qualifiedSet.has(pred.team_id) && pred.position <= 2) {
-        points = pts.qualified
+        points = exactPts[pred.position] ?? 0
       }
 
       await db.from('group_predictions')
