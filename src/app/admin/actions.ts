@@ -211,11 +211,14 @@ export async function updateMatchResultAction(formData: FormData) {
 // Lógica de cálculo de puntos con multiplicador por fase y bono batacazo.
 // Aplica a predicciones hechas desde el módulo Partidos (tabla predictions).
 // Para eliminatorias el multiplicador es 1.5×; para final es 3×; etc.
+// skipUserTotal=true cuando se llama en bucle masivo (recalculateAll), para evitar
+// N×M queries redundantes — el llamador actualiza totales al final en lote.
 async function calculatePointsFallback(
   adminClient: ReturnType<typeof createServiceRoleClient>,
   matchId: string,
   homeScore: number,
-  awayScore: number
+  awayScore: number,
+  skipUserTotal = false,
 ): Promise<string | null> {
   try {
     const { data: matchData } = await adminClient.from('matches').select('stage').eq('id', matchId).single()
@@ -288,19 +291,21 @@ async function calculatePointsFallback(
         .eq('id', pred.id)
     }
 
-    // Recalcular total de cada usuario sumando las 3 tablas de predicciones
-    const userIds = Array.from(new Set(predictions.map((p) => p.user_id)))
-    for (const userId of userIds) {
-      const [{ data: matchPts }, { data: groupPts }, { data: specialPts }] = await Promise.all([
-        adminClient.from('predictions').select('points_earned').eq('user_id', userId),
-        adminClient.from('group_predictions').select('points_earned').eq('user_id', userId),
-        adminClient.from('special_predictions').select('points_earned').eq('user_id', userId),
-      ])
-      const total =
-        (matchPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0) +
-        (groupPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0) +
-        (specialPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0)
-      await adminClient.from('profiles').update({ total_points: total, updated_at: new Date().toISOString() }).eq('id', userId)
+    if (!skipUserTotal) {
+      // Recalcular total de cada usuario sumando las 3 tablas de predicciones
+      const userIds = Array.from(new Set(predictions.map((p) => p.user_id)))
+      for (const userId of userIds) {
+        const [{ data: matchPts }, { data: groupPts }, { data: specialPts }] = await Promise.all([
+          adminClient.from('predictions').select('points_earned').eq('user_id', userId),
+          adminClient.from('group_predictions').select('points_earned').eq('user_id', userId),
+          adminClient.from('special_predictions').select('points_earned').eq('user_id', userId),
+        ])
+        const total =
+          (matchPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0) +
+          (groupPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0) +
+          (specialPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0)
+        await adminClient.from('profiles').update({ total_points: total, updated_at: new Date().toISOString() }).eq('id', userId)
+      }
     }
 
     return null
@@ -456,12 +461,12 @@ export async function recalculateAllPointsAction() {
 
   let recalculated = 0
 
-  // Paso 1: recalcular predictions.points_earned para cada partido finalizado
-  for (const match of matches ?? []) {
-    const errorCalculating = await calculatePointsFallback(adminClient, match.id, match.home_score, match.away_score)
-    if (errorCalculating) return { error: errorCalculating }
-    recalculated += 1
-  }
+  // Paso 1: recalcular predictions.points_earned para todos los partidos finalizados en paralelo
+  // skipUserTotal=true: omite actualización individual por usuario (Step 3 lo hace en lote al final)
+  await Promise.all((matches ?? []).map((match) =>
+    calculatePointsFallback(adminClient, match.id, match.home_score, match.away_score, true)
+  ))
+  recalculated = matches?.length ?? 0
 
   // Paso 2: score bracket_predictions para todos los partidos eliminatorios finalizados
   const KNOCKOUT_STAGES = ['round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'third_place', 'final']
@@ -496,10 +501,11 @@ export async function recalculateAllPointsAction() {
   }
 
   // Paso 3: recalcular total de TODOS los usuarios sumando las 4 tablas
-  const { data: allGroupPts } = await adminClient.from('group_predictions').select('user_id, points_earned')
-  const { data: allMatchPts } = await adminClient.from('predictions').select('user_id, points_earned')
-  const { data: allSpecialPts } = await adminClient.from('special_predictions').select('user_id, points_earned')
-  const { data: allBracketPts } = await adminClient.from('bracket_predictions').select('user_id, points_earned')
+  // Límite explícito para evitar truncado por defecto de Supabase (1000 filas)
+  const { data: allGroupPts } = await adminClient.from('group_predictions').select('user_id, points_earned').limit(50000)
+  const { data: allMatchPts } = await adminClient.from('predictions').select('user_id, points_earned').limit(50000)
+  const { data: allSpecialPts } = await adminClient.from('special_predictions').select('user_id, points_earned').limit(50000)
+  const { data: allBracketPts } = await adminClient.from('bracket_predictions').select('user_id, points_earned').limit(50000)
 
   const totals: Record<string, number> = {}
   for (const r of [
