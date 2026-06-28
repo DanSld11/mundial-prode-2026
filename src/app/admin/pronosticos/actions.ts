@@ -19,25 +19,34 @@ async function assertAdmin() {
 export async function getAdminPronosticosData() {
   const db = createServiceRoleClient()
 
-  const [teamsRes, groupResultsRes, specialResultsRes, playersRes, scoredGroupsRes, scoredSpecialsRes] = await Promise.all([
+  const [teamsRes, groupResultsRes, specialResultsRes, playersRes] = await Promise.all([
     db.from('teams').select('id, name_es, flag_emoji, code, group_name').order('group_name').order('name_es'),
-    db.from('group_results').select('group_name, position, team_id'),
-    db.from('special_results').select('type, player_id, team_id, locked'),
+    db.from('group_results').select('group_name, position, team_id, scored_at'),
+    db.from('special_results').select('type, player_id, team_id, locked, scored_at'),
     db.from('players').select('id, name, team_id, position').order('name').limit(2000),
-    // Grupos que ya fueron puntuados (tienen alguna predicción con points_earned NOT NULL)
-    db.from('group_predictions').select('group_name').not('points_earned', 'is', null),
-    // Especiales que ya fueron puntuados
-    db.from('special_predictions').select('type').not('points_earned', 'is', null),
   ])
 
-  const scoredGroups = [...new Set((scoredGroupsRes.data ?? []).map((r: any) => r.group_name as string))]
-  const scoredSpecials = [...new Set((scoredSpecialsRes.data ?? []).map((r: any) => r.type as string))]
+  // Grupos que ya fueron puntuados: tienen scored_at en al menos una fila de group_results
+  const scoredGroups = [...new Set(
+    (groupResultsRes.data ?? [])
+      .filter((r: any) => r.scored_at != null)
+      .map((r: any) => r.group_name as string)
+  )]
+
+  // Especiales que ya fueron puntuados
+  const scoredSpecials = (specialResultsRes.data ?? [])
+    .filter((r: any) => r.scored_at != null)
+    .map((r: any) => r.type as string)
+
+  // Limpiar scored_at antes de enviar a la página
+  const groupResults = (groupResultsRes.data ?? []).map(({ scored_at: _s, ...r }: any) => r)
+  const specialResults = (specialResultsRes.data ?? []).map(({ scored_at: _s, ...r }: any) => r)
 
   return {
-    teams:          teamsRes.data          ?? [],
-    groupResults:   groupResultsRes.data   ?? [],
-    specialResults: specialResultsRes.data ?? [],
-    players:        playersRes.data        ?? [],
+    teams: teamsRes.data ?? [],
+    groupResults,
+    specialResults,
+    players: playersRes.data ?? [],
     scoredGroups,
     scoredSpecials,
   }
@@ -121,21 +130,13 @@ export async function scoreGroupPredictionsAction(groupName: string) {
 
   if (!allPreds) return { error: 'Error al leer predicciones' }
 
-  // Scoring config (hardcoded defaults; can be customized later)
-  const pts = {
-    exactPos: 3,   // exact position in group
-    qualified: 1,  // team qualified but wrong position
-  }
-
-  // Group predictions by user
+  const pts = { exactPos: 3, qualified: 1 }
   const byUser: Record<string, { position: number; team_id: string }[]> = {}
   for (const p of allPreds) {
     if (!byUser[p.user_id]) byUser[p.user_id] = []
     byUser[p.user_id].push({ position: p.position, team_id: p.team_id })
   }
 
-  // Compute points per user per position
-  // For Mundial 2026 group phase: top 2 advance per group
   const qualifiedSet = new Set([resultMap[1], resultMap[2]].filter(Boolean))
 
   let updated = 0
@@ -144,9 +145,9 @@ export async function scoreGroupPredictionsAction(groupName: string) {
       let points = 0
       const official = resultMap[pred.position]
       if (official && official === pred.team_id) {
-        points = pts.exactPos // exact position
+        points = pts.exactPos
       } else if (qualifiedSet.has(pred.team_id) && pred.position <= 2) {
-        points = pts.qualified // team qualified but wrong position
+        points = pts.qualified
       }
 
       await db.from('group_predictions')
@@ -159,12 +160,17 @@ export async function scoreGroupPredictionsAction(groupName: string) {
     }
   }
 
-  // Recalculate user total points (sum of all predictions)
+  // Marcar el grupo como puntuado en group_results
+  const scoredAt = new Date().toISOString()
+  await db.from('group_results')
+    .update({ scored_at: scoredAt })
+    .eq('group_name', groupName)
+
+  // Recalculate user total points
   const { data: allGroupPts } = await db.from('group_predictions').select('user_id, points_earned')
   const { data: allMatchPts } = await db.from('predictions').select('user_id, points_earned')
   const { data: allSpecialPts } = await db.from('special_predictions').select('user_id, points_earned')
 
-  // Sum per user
   const totals: Record<string, number> = {}
   for (const r of [...(allGroupPts ?? []), ...(allMatchPts ?? []), ...(allSpecialPts ?? [])]) {
     totals[r.user_id] = (totals[r.user_id] ?? 0) + (r.points_earned ?? 0)
@@ -185,7 +191,6 @@ export async function scoreSpecialPredictionAction(type: string) {
 
   const db = createServiceRoleClient()
 
-  // Get result
   const { data: result } = await db.from('special_results')
     .select('player_id, team_id')
     .eq('type', type)
@@ -193,7 +198,6 @@ export async function scoreSpecialPredictionAction(type: string) {
 
   if (!result) return { error: 'No hay resultado oficial para este tipo' }
 
-  // Scoring config (hardcoded defaults)
   const pointsPerType: Record<string, number> = {
     top_scorer:      10,
     best_goalkeeper: 8,
@@ -203,7 +207,6 @@ export async function scoreSpecialPredictionAction(type: string) {
   }
   const pts = pointsPerType[type] ?? 5
 
-  // Get all user predictions for this type
   const { data: preds } = await db.from('special_predictions')
     .select('user_id, player_id, team_id')
     .eq('type', type)
@@ -223,6 +226,11 @@ export async function scoreSpecialPredictionAction(type: string) {
 
     scored++
   }
+
+  // Marcar el especial como puntuado
+  await db.from('special_results')
+    .update({ scored_at: new Date().toISOString() })
+    .eq('type', type)
 
   // Recalculate totals
   const { data: allGroupPts } = await db.from('group_predictions').select('user_id, points_earned')
