@@ -84,9 +84,10 @@ export default function PartidosPage() {
     final:        '⭐',
   }
 
-  const prevMatchesRef = useRef<Map<string, any>>(new Map())
-  const predsRef       = useRef<Map<string, any>>(new Map())
-  const userIdRef      = useRef<string | null>(null)
+  const prevMatchesRef  = useRef<Map<string, any>>(new Map())
+  const predsRef        = useRef<Map<string, any>>(new Map())
+  const userIdRef       = useRef<string | null>(null)
+  const autoPhaseSet    = useRef(false)
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1_000)
@@ -97,6 +98,20 @@ export default function PartidosPage() {
   useEffect(() => {
     predsRef.current = new Map(predictions.map((p: any) => [p.match_id, p]))
   }, [predictions])
+
+  // Auto-select the first phase that has upcoming matches
+  useEffect(() => {
+    if (autoPhaseSet.current || matches.length === 0) return
+    const order = ['group', 'round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'third_place', 'final']
+    const t = Date.now()
+    const detected = order.find((s) =>
+      matches.some((m: any) => m.stage === s && m.status !== 'finished' && new Date(m.match_date).getTime() > t)
+    )
+    if (detected) {
+      setActivePhase(detected)
+      autoPhaseSet.current = true
+    }
+  }, [matches])
 
   // Read initial notification permission
   useEffect(() => {

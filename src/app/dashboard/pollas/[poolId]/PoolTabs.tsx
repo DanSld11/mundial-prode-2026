@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Trophy, MessageCircle, Users, Crown, Medal, Award, Gem, ChevronRight } from 'lucide-react'
-import { PoolChat } from './PoolChat'
+import { Trophy, Swords, Users, Crown, Medal, Award, Gem, ChevronRight } from 'lucide-react'
+import { PoolMatchResults } from './PoolMatchResults'
 import { MemberPredictionsModal } from './MemberPredictionsModal'
 
 interface Member {
@@ -20,11 +20,11 @@ interface Props {
 }
 
 export function PoolTabs({ poolId, members, myUserId, prize1, prize2, prize3 }: Props) {
-  const [tab, setTab] = useState<'ranking' | 'chat'>('ranking')
+  const [tab, setTab] = useState<'ranking' | 'resultados'>('ranking')
 
   const tabs = [
-    { key: 'ranking' as const, label: 'Clasificación', icon: Trophy },
-    { key: 'chat'    as const, label: 'Chat',          icon: MessageCircle },
+    { key: 'ranking'     as const, label: 'Clasificación', icon: Trophy  },
+    { key: 'resultados'  as const, label: 'Resultados',    icon: Swords  },
   ]
 
   return (
@@ -138,9 +138,9 @@ export function PoolTabs({ poolId, members, myUserId, prize1, prize2, prize3 }: 
         </div>
       )}
 
-      {/* Chat tab */}
-      {tab === 'chat' && (
-        <PoolChat poolId={poolId} myUserId={myUserId} />
+      {/* Resultados tab */}
+      {tab === 'resultados' && (
+        <PoolMatchResults />
       )}
     </div>
   )
