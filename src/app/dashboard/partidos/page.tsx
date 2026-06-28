@@ -59,10 +59,30 @@ export default function PartidosPage() {
   const [predictions, setPredictions] = useState<any[]>([])
   const [loading, setLoading]         = useState(true)
   const [liveIndicator, setLiveIndicator] = useState(false)
+  const [activePhase, setActivePhase] = useState<string>('group')
   const [activeGroup, setActiveGroup] = useState<string>('todos')
   const [showPast, setShowPast]       = useState(false)
   const [notifPerm, setNotifPerm]     = useState<NotificationPermission | 'unsupported'>('default')
   const [now, setNow] = useState(() => Date.now())
+
+  const KNOCKOUT_STAGES = ['round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'third_place', 'final']
+  const STAGE_LABEL: Record<string, string> = {
+    group: 'Fase de Grupos',
+    round_of_32:  'Dieciseisavos',
+    round_of_16:  'Octavos',
+    quarterfinal: 'Cuartos',
+    semifinal:    'Semifinales',
+    third_place:  '3er Puesto',
+    final:        'Gran Final',
+  }
+  const STAGE_BADGE: Record<string, string> = {
+    round_of_32:  'R32',
+    round_of_16:  'OCT',
+    quarterfinal: 'QF',
+    semifinal:    'SF',
+    third_place:  '3PL',
+    final:        '⭐',
+  }
 
   const prevMatchesRef = useRef<Map<string, any>>(new Map())
   const predsRef       = useRef<Map<string, any>>(new Map())
@@ -180,7 +200,7 @@ export default function PartidosPage() {
       const { data } = await supabase
         .from('matches')
         .select('*, home_team:teams!matches_home_team_id_fkey(name_es,flag_emoji,code), away_team:teams!matches_away_team_id_fkey(name_es,flag_emoji,code)')
-        .eq('stage', 'group')
+        .in('stage', ['group', 'round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'third_place', 'final'])
         .order('match_date', { ascending: true })
       const m = data ?? []
       setMatches(m)
@@ -269,13 +289,24 @@ export default function PartidosPage() {
 
   const predictionsMap = new Map(predictions.map((p: any) => [p.match_id, p]))
 
-  const openMatches     = matches.filter((m: any) => !m.predictions_locked && new Date(m.match_date).getTime() > now)
+  // Phase + group filtering
+  const phaseMatches    = activePhase === 'group'
+    ? matches.filter((m: any) => m.stage === 'group')
+    : matches.filter((m: any) => m.stage === activePhase)
+
+  const openMatches     = phaseMatches.filter((m: any) => !m.predictions_locked && new Date(m.match_date).getTime() > now)
   const completedPreds  = openMatches.filter((m: any) => predictionsMap.has(m.id)).length
   const totalOpen       = openMatches.length
   const progressPct     = totalOpen > 0 ? Math.round((completedPreds / totalOpen) * 100) : 100
 
-  const availableGroups = Array.from(new Set(matches.map((m: any) => m.group_name))).sort()
-  const filteredMatches = activeGroup === 'todos' ? matches : matches.filter((m: any) => m.group_name === activeGroup)
+  const availableGroups = Array.from(new Set(matches.filter((m: any) => m.stage === 'group').map((m: any) => m.group_name))).sort()
+  const filteredMatches = activePhase !== 'group'
+    ? phaseMatches
+    : activeGroup === 'todos' ? phaseMatches : phaseMatches.filter((m: any) => m.group_name === activeGroup)
+
+  // Phases that actually have matches loaded
+  const allStages = ['group', ...KNOCKOUT_STAGES]
+  const activeStages = allStages.filter(s => matches.some((m: any) => m.stage === s))
 
   // Split upcoming (not finished) and past (finished) — upcoming always first
   const upcomingFiltered = filteredMatches.filter((m: any) => m.status !== 'finished')
@@ -291,12 +322,21 @@ export default function PartidosPage() {
     const homeFlag   = match.home_team?.flag_emoji
     const awayFlag   = match.away_team?.flag_emoji
 
+    const isKnockout = match.stage !== 'group'
+    const stageBadge = isKnockout ? (STAGE_BADGE[match.stage] ?? match.stage) : `G${match.group_name}`
+    const locationLabel = match.venue || match.city
+
     return (
       <Card key={match.id} className={`overflow-hidden border shadow-sm transition-shadow hover:shadow-md ${isFinished ? 'opacity-80' : ''}`}>
         <CardContent className="p-3 sm:p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex items-center justify-between gap-2 sm:w-28 sm:justify-start">
-              <Badge variant="secondary" className="w-12 shrink-0 justify-center font-mono text-xs">G{match.group_name}</Badge>
+              <Badge
+                variant="secondary"
+                className={`shrink-0 justify-center font-mono text-xs min-w-[3rem] ${isKnockout ? 'bg-brand-red/10 text-brand-red border-brand-red/20' : ''}`}
+              >
+                {stageBadge}
+              </Badge>
               <span className="text-xs text-muted-foreground sm:hidden">{formatPeruTime(match.match_date)}</span>
             </div>
             <div className="grid flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
@@ -319,7 +359,7 @@ export default function PartidosPage() {
               </div>
             </div>
             <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground sm:w-40 sm:shrink-0 sm:justify-start">
-              <MapPin className="h-3 w-3" />{match.city}
+              <MapPin className="h-3 w-3" />{locationLabel}
             </div>
           </div>
           <div className="mt-3 flex flex-col items-start justify-between gap-2 border-t pt-3 sm:flex-row sm:items-center">
@@ -376,7 +416,7 @@ export default function PartidosPage() {
                 {liveIndicator ? 'Actualizando...' : 'En vivo'}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">Fase de grupos oficial · 11-27 junio 2026 · Hora Perú</p>
+            <p className="text-sm text-muted-foreground">Mundial 2026 · Hora Perú</p>
           </div>
 
           {/* Notification permission button */}
@@ -443,19 +483,38 @@ export default function PartidosPage() {
         </div>
       )}
 
-      {/* Filtros por grupo */}
-      {availableGroups.length > 0 && (
+      {/* Tabs de fase */}
+      {activeStages.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
+          {activeStages.map((stage) => (
+            <button
+              key={stage}
+              onClick={() => { setActivePhase(stage); setActiveGroup('todos') }}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+                activePhase === stage
+                  ? 'bg-brand-red text-white shadow-sm'
+                  : 'border bg-card text-muted-foreground hover:border-brand-red/50 hover:text-foreground'
+              }`}
+            >
+              {STAGE_LABEL[stage] ?? stage}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Filtros por grupo (solo en fase de grupos) */}
+      {activePhase === 'group' && availableGroups.length > 0 && (
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setActiveGroup('todos')}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${activeGroup === 'todos' ? 'bg-brand-red text-white shadow-sm' : 'border bg-card text-muted-foreground hover:border-brand-red/50 hover:text-foreground'}`}
           >
-            Todos
+            Todos los grupos
           </button>
           {availableGroups.map((g) => (
             <button
               key={g}
-              onClick={() => setActiveGroup(g)}
+              onClick={() => setActiveGroup(g as string)}
               className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${activeGroup === g ? 'bg-brand-red text-white shadow-sm' : 'border bg-card text-muted-foreground hover:border-brand-red/50 hover:text-foreground'}`}
             >
               Grupo {g}
