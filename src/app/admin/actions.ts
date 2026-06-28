@@ -288,11 +288,18 @@ async function calculatePointsFallback(
         .eq('id', pred.id)
     }
 
-    // Recalcular total de cada usuario afectado (solo tabla predictions)
+    // Recalcular total de cada usuario sumando las 3 tablas de predicciones
     const userIds = Array.from(new Set(predictions.map((p) => p.user_id)))
     for (const userId of userIds) {
-      const { data: userPreds } = await adminClient.from('predictions').select('points_earned').eq('user_id', userId)
-      const total = (userPreds ?? []).reduce((sum, p) => sum + (p.points_earned ?? 0), 0)
+      const [{ data: matchPts }, { data: groupPts }, { data: specialPts }] = await Promise.all([
+        adminClient.from('predictions').select('points_earned').eq('user_id', userId),
+        adminClient.from('group_predictions').select('points_earned').eq('user_id', userId),
+        adminClient.from('special_predictions').select('points_earned').eq('user_id', userId),
+      ])
+      const total =
+        (matchPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0) +
+        (groupPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0) +
+        (specialPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0)
       await adminClient.from('profiles').update({ total_points: total, updated_at: new Date().toISOString() }).eq('id', userId)
     }
 
@@ -305,8 +312,62 @@ async function calculatePointsFallback(
 // Función exportada para que otros módulos (ej: bracket admin) puedan calcular puntos
 export async function scoreMatchAction(matchId: string, homeScore: number, awayScore: number) {
   const adminClient = createServiceRoleClient()
+
+  // 1. Score predictions table (marcadores + goleador, con multiplicador)
   const err = await calculatePointsFallback(adminClient, matchId, homeScore, awayScore)
   if (err) return { error: err }
+
+  // 2. Score bracket_predictions para este partido eliminatorio
+  const { data: matchData } = await adminClient
+    .from('matches')
+    .select('stage, home_team_id, away_team_id, winner_team_id')
+    .eq('id', matchId)
+    .single()
+
+  if (matchData) {
+    const KNOCKOUT_STAGES = ['round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'third_place', 'final']
+    if (KNOCKOUT_STAGES.includes(matchData.stage)) {
+      const { data: settings } = await adminClient.from('scoring_settings').select('prediction_type, points')
+      const outcomePts = settings?.find((s: any) => s.prediction_type === 'outcome')?.points ?? 1
+      const multiplier = STAGE_MULTIPLIERS[(matchData.stage as keyof typeof STAGE_MULTIPLIERS)] ?? 1
+
+      const winnerId =
+        homeScore > awayScore ? matchData.home_team_id
+        : awayScore > homeScore ? matchData.away_team_id
+        : matchData.winner_team_id ?? null
+
+      const { data: bpreds } = await adminClient
+        .from('bracket_predictions')
+        .select('id, user_id, team_id')
+        .eq('slot_key', matchId)
+
+      const bracketUserIds = new Set<string>()
+      for (const bp of bpreds ?? []) {
+        const pts = winnerId && bp.team_id === winnerId ? outcomePts * multiplier : 0
+        await adminClient.from('bracket_predictions')
+          .update({ points_earned: pts, updated_at: new Date().toISOString() })
+          .eq('id', bp.id)
+        bracketUserIds.add(bp.user_id)
+      }
+
+      // Actualizar total de usuarios afectados por bracket (sumando las 4 tablas)
+      for (const userId of bracketUserIds) {
+        const [{ data: matchPts }, { data: groupPts }, { data: specialPts }, { data: bracketPts }] = await Promise.all([
+          adminClient.from('predictions').select('points_earned').eq('user_id', userId),
+          adminClient.from('group_predictions').select('points_earned').eq('user_id', userId),
+          adminClient.from('special_predictions').select('points_earned').eq('user_id', userId),
+          adminClient.from('bracket_predictions').select('points_earned').eq('user_id', userId),
+        ])
+        const total =
+          (matchPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0) +
+          (groupPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0) +
+          (specialPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0) +
+          (bracketPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0)
+        await adminClient.from('profiles').update({ total_points: total, updated_at: new Date().toISOString() }).eq('id', userId)
+      }
+    }
+  }
+
   revalidatePath('/dashboard/tabla')
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/partidos')
@@ -402,12 +463,55 @@ export async function recalculateAllPointsAction() {
     recalculated += 1
   }
 
-  // Paso 2: recalcular el total de TODOS los usuarios desde cero (evita inconsistencias de orden)
-  const { data: allUsers } = await adminClient.from('profiles').select('id')
-  for (const user of allUsers ?? []) {
-    const { data: userPreds } = await adminClient.from('predictions').select('points_earned').eq('user_id', user.id)
-    const total = (userPreds ?? []).reduce((sum: number, p: any) => sum + (p.points_earned ?? 0), 0)
-    await adminClient.from('profiles').update({ total_points: total, updated_at: new Date().toISOString() }).eq('id', user.id)
+  // Paso 2: score bracket_predictions para todos los partidos eliminatorios finalizados
+  const KNOCKOUT_STAGES = ['round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'third_place', 'final']
+  const { data: knockoutMatches } = await adminClient
+    .from('matches')
+    .select('id, stage, home_score, away_score, home_team_id, away_team_id, winner_team_id')
+    .in('stage', KNOCKOUT_STAGES)
+    .eq('status', 'finished')
+    .not('home_score', 'is', null)
+
+  const { data: scoringSettings } = await adminClient.from('scoring_settings').select('prediction_type, points')
+  const outcomePoints = scoringSettings?.find((s: any) => s.prediction_type === 'outcome')?.points ?? 1
+
+  for (const km of knockoutMatches ?? []) {
+    const multiplier = STAGE_MULTIPLIERS[(km.stage as keyof typeof STAGE_MULTIPLIERS)] ?? 1
+    const winnerId =
+      km.home_score > km.away_score ? km.home_team_id
+      : km.away_score > km.home_score ? km.away_team_id
+      : km.winner_team_id ?? null
+
+    const { data: bpreds } = await adminClient
+      .from('bracket_predictions')
+      .select('id, user_id, team_id')
+      .eq('slot_key', km.id)
+
+    for (const bp of bpreds ?? []) {
+      const pts = winnerId && bp.team_id === winnerId ? outcomePoints * multiplier : 0
+      await adminClient.from('bracket_predictions')
+        .update({ points_earned: pts, updated_at: new Date().toISOString() })
+        .eq('id', bp.id)
+    }
+  }
+
+  // Paso 3: recalcular total de TODOS los usuarios sumando las 4 tablas
+  const { data: allGroupPts } = await adminClient.from('group_predictions').select('user_id, points_earned')
+  const { data: allMatchPts } = await adminClient.from('predictions').select('user_id, points_earned')
+  const { data: allSpecialPts } = await adminClient.from('special_predictions').select('user_id, points_earned')
+  const { data: allBracketPts } = await adminClient.from('bracket_predictions').select('user_id, points_earned')
+
+  const totals: Record<string, number> = {}
+  for (const r of [
+    ...(allMatchPts ?? []),
+    ...(allGroupPts ?? []),
+    ...(allSpecialPts ?? []),
+    ...(allBracketPts ?? []),
+  ]) {
+    totals[(r as any).user_id] = (totals[(r as any).user_id] ?? 0) + ((r as any).points_earned ?? 0)
+  }
+  for (const [userId, total] of Object.entries(totals)) {
+    await adminClient.from('profiles').update({ total_points: total, updated_at: new Date().toISOString() }).eq('id', userId)
   }
 
   revalidatePath('/admin')
