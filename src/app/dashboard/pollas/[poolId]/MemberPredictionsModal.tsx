@@ -111,7 +111,7 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
 
       <Modal
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={() => { setOpen(false); setMatchPreds(null) }}
         title={`Predicciones de ${username}`}
         className="max-h-[85vh] overflow-y-auto"
       >
