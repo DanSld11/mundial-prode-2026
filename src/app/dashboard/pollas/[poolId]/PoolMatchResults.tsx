@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createAnonClient } from '@/lib/auth-client'
 import { Swords, Trophy } from 'lucide-react'
-import { formatPeruDateLabel, formatPeruTime } from '@/lib/peru-time'
+import { formatPeruTime } from '@/lib/peru-time'
+import { TeamFlag } from '@/components/team-flag'
 
 interface GoalScorer {
   player_id: string
@@ -19,6 +20,7 @@ interface FinishedMatch {
   away_score: number
   home_team: { name_es: string; flag_emoji: string; id: string } | null
   away_team: { name_es: string; flag_emoji: string; id: string } | null
+  group_name?: string | null
   scorers: GoalScorer[]
 }
 
@@ -26,7 +28,7 @@ const STAGE_LABEL: Record<string, string> = {
   group:        'Grupo',
   round_of_32:  'Dieciseisavos',
   round_of_16:  'Octavos',
-  quarterfinal: 'Cuartos',
+  quarterfinal: 'Cuartos de Final',
   semifinal:    'Semifinal',
   third_place:  '3er Puesto',
   final:        'Gran Final',
@@ -38,7 +40,8 @@ function timeAgo(dateStr: string): string {
   if (mins < 60) return `hace ${mins}m`
   const hrs = Math.floor(mins / 60)
   if (hrs < 24) return `hace ${hrs}h`
-  return formatPeruDateLabel(dateStr)
+  const days = Math.floor(hrs / 24)
+  return `hace ${days}d`
 }
 
 export function PoolMatchResults() {
@@ -50,13 +53,13 @@ export function PoolMatchResults() {
     const { data: matchData } = await supabase
       .from('matches')
       .select(`
-        id, match_number, stage, match_date, home_score, away_score,
+        id, match_number, stage, match_date, home_score, away_score, group_name,
         home_team:teams!matches_home_team_id_fkey(id, name_es, flag_emoji),
         away_team:teams!matches_away_team_id_fkey(id, name_es, flag_emoji)
       `)
       .eq('status', 'finished')
       .order('match_date', { ascending: false })
-      .limit(20)
+      .limit(30)
 
     if (!matchData) { setLoading(false); return }
 
@@ -96,19 +99,28 @@ export function PoolMatchResults() {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  /* ── Loading skeleton ── */
   if (loading) {
     return (
       <div className="space-y-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="rounded-xl border bg-card p-4 animate-pulse">
-            <div className="h-4 w-32 bg-muted rounded mb-3" />
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-24 bg-muted rounded" />
-              <div className="h-8 w-16 bg-muted rounded" />
-              <div className="h-8 w-24 bg-muted rounded" />
+          <div key={i} className="rounded-2xl border bg-card overflow-hidden animate-pulse">
+            <div className="h-8 bg-muted/50 border-b" />
+            <div className="p-4 space-y-3">
+              <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-10 rounded bg-muted" />
+                  <div className="h-4 w-20 rounded bg-muted" />
+                </div>
+                <div className="h-7 w-16 rounded bg-muted" />
+                <div className="flex items-center gap-2 justify-end">
+                  <div className="h-4 w-20 rounded bg-muted" />
+                  <div className="h-7 w-10 rounded bg-muted" />
+                </div>
+              </div>
             </div>
           </div>
         ))}
@@ -116,12 +128,15 @@ export function PoolMatchResults() {
     )
   }
 
+  /* ── Empty state ── */
   if (matches.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-14 text-center">
         <Swords className="h-9 w-9 text-muted-foreground/30 mb-3" />
         <p className="text-sm font-semibold text-muted-foreground">Aún no hay partidos terminados</p>
-        <p className="text-xs text-muted-foreground/70 mt-1">Los resultados aparecerán aquí en tiempo real.</p>
+        <p className="text-xs text-muted-foreground/70 mt-1">
+          Los resultados aparecerán aquí en tiempo real.
+        </p>
       </div>
     )
   }
@@ -131,76 +146,105 @@ export function PoolMatchResults() {
       {matches.map((match) => {
         const homeWon = match.home_score > match.away_score
         const awayWon = match.away_score > match.home_score
+        const draw    = match.home_score === match.away_score
+
         const homeScorers = match.scorers.filter((s) => s.player?.team_id === match.home_team?.id)
         const awayScorers = match.scorers.filter((s) => s.player?.team_id === match.away_team?.id)
 
+        const stageLabel = match.stage === 'group' && match.group_name
+          ? `Grupo ${match.group_name}`
+          : (STAGE_LABEL[match.stage] ?? match.stage)
+
         return (
-          <div key={match.id} className="rounded-xl border bg-card overflow-hidden shadow-sm">
-            {/* Meta bar */}
-            <div className="flex items-center justify-between px-3 py-2 bg-muted/30 border-b">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  {STAGE_LABEL[match.stage] ?? match.stage}
+          <div key={match.id} className="rounded-2xl border bg-card overflow-hidden shadow-sm">
+
+            {/* ── Meta bar ── */}
+            <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  {stageLabel}
                 </span>
                 {match.stage === 'final' && <Trophy className="h-3 w-3 text-yellow-500" />}
               </div>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[10px] text-muted-foreground tabular-nums">
                 {timeAgo(match.match_date)} · {formatPeruTime(match.match_date)}
               </span>
             </div>
 
-            {/* Score row */}
-            <div className="px-4 py-3">
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                {/* Home */}
-                <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${homeWon ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''}`}>
-                  <span className="text-xl leading-none">{match.home_team?.flag_emoji}</span>
-                  <span className={`text-sm font-bold truncate leading-tight ${homeWon ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>
-                    {match.home_team?.name_es}
+            {/* ── Score row ── */}
+            <div className="px-3 pt-3 pb-2">
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1">
+
+                {/* Home team */}
+                <div className={`flex items-center gap-2 rounded-xl px-2 py-2 ${homeWon ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''}`}>
+                  <TeamFlag
+                    code={match.home_team?.flag_emoji}
+                    label={match.home_team?.name_es}
+                    className="h-5 w-8 shrink-0 shadow-sm"
+                  />
+                  <span className={`text-sm font-bold leading-tight truncate ${
+                    homeWon ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground'
+                  }`}>
+                    {match.home_team?.name_es ?? '—'}
                   </span>
                 </div>
 
                 {/* Score */}
-                <div className="text-center shrink-0 px-2">
-                  <span className="text-2xl font-extrabold tabular-nums leading-none">
+                <div className="flex flex-col items-center shrink-0 px-2">
+                  <span className={`text-2xl font-extrabold tabular-nums leading-none tracking-tight ${
+                    draw ? 'text-muted-foreground' : 'text-foreground'
+                  }`}>
                     {match.home_score}
-                    <span className="text-muted-foreground/40 mx-1">–</span>
+                    <span className="text-muted-foreground/40 mx-1 text-xl">–</span>
                     {match.away_score}
                   </span>
                 </div>
 
-                {/* Away */}
-                <div className={`flex items-center gap-2 justify-end rounded-lg px-2 py-1.5 ${awayWon ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''}`}>
-                  <span className={`text-sm font-bold truncate leading-tight text-right ${awayWon ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>
-                    {match.away_team?.name_es}
+                {/* Away team */}
+                <div className={`flex items-center gap-2 justify-end rounded-xl px-2 py-2 ${awayWon ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''}`}>
+                  <span className={`text-sm font-bold leading-tight truncate text-right ${
+                    awayWon ? 'text-emerald-700 dark:text-emerald-400' : 'text-foreground'
+                  }`}>
+                    {match.away_team?.name_es ?? '—'}
                   </span>
-                  <span className="text-xl leading-none">{match.away_team?.flag_emoji}</span>
+                  <TeamFlag
+                    code={match.away_team?.flag_emoji}
+                    label={match.away_team?.name_es}
+                    className="h-5 w-8 shrink-0 shadow-sm"
+                  />
+                </div>
+
+              </div>
+            </div>
+
+            {/* ── Scorers row ── */}
+            {match.scorers.length > 0 && (
+              <div className="grid grid-cols-[1fr_auto_1fr] gap-1 px-3 pb-3">
+                {/* Home scorers */}
+                <div className="flex flex-wrap items-start gap-x-1 gap-y-0.5">
+                  {homeScorers.map((s) => (
+                    <span key={s.player_id} className="flex items-center gap-0.5 text-[11px] text-muted-foreground">
+                      <span>⚽</span>
+                      <span>{s.player?.name ?? '—'}</span>
+                    </span>
+                  ))}
+                </div>
+
+                {/* Spacer */}
+                <div className="w-px" />
+
+                {/* Away scorers */}
+                <div className="flex flex-wrap items-start justify-end gap-x-1 gap-y-0.5">
+                  {awayScorers.map((s) => (
+                    <span key={s.player_id} className="flex items-center gap-0.5 text-[11px] text-muted-foreground">
+                      <span>{s.player?.name ?? '—'}</span>
+                      <span>⚽</span>
+                    </span>
+                  ))}
                 </div>
               </div>
+            )}
 
-              {/* Scorers */}
-              {match.scorers.length > 0 && (
-                <div className="mt-2 pt-2 border-t flex flex-wrap gap-x-4 gap-y-1">
-                  {homeScorers.length > 0 && (
-                    <div className="flex items-start gap-1 text-[11px] text-muted-foreground">
-                      <span className="shrink-0">⚽</span>
-                      <span>{homeScorers.map((s) => s.player?.name ?? '—').join(', ')}</span>
-                    </div>
-                  )}
-                  {awayScorers.length > 0 && (
-                    <div className="flex items-start gap-1 text-[11px] text-muted-foreground ml-auto text-right">
-                      <span>{awayScorers.map((s) => s.player?.name ?? '—').join(', ')}</span>
-                      <span className="shrink-0">⚽</span>
-                    </div>
-                  )}
-                  {match.scorers.length > 0 && homeScorers.length === 0 && awayScorers.length === 0 && (
-                    <div className="text-[11px] text-muted-foreground">
-                      ⚽ {match.scorers.map((s) => s.player?.name ?? '—').join(', ')}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
         )
       })}
