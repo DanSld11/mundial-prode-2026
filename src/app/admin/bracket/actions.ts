@@ -100,6 +100,107 @@ export async function createKnockoutStructure() {
   return { success: true, created: toInsert.length }
 }
 
+// ── Bracket advancement map ────────────────────────────────────────────
+// Defines which match number the winner of each match advances to, and as which side
+const WINNER_ADVANCES: Record<number, { next: number; side: 'home_team_id' | 'away_team_id' }> = {
+  73:  { next: 89,  side: 'home_team_id' },
+  74:  { next: 89,  side: 'away_team_id' },
+  75:  { next: 90,  side: 'home_team_id' },
+  76:  { next: 90,  side: 'away_team_id' },
+  77:  { next: 91,  side: 'home_team_id' },
+  78:  { next: 91,  side: 'away_team_id' },
+  79:  { next: 92,  side: 'home_team_id' },
+  80:  { next: 92,  side: 'away_team_id' },
+  81:  { next: 93,  side: 'home_team_id' },
+  82:  { next: 93,  side: 'away_team_id' },
+  83:  { next: 94,  side: 'home_team_id' },
+  84:  { next: 94,  side: 'away_team_id' },
+  85:  { next: 95,  side: 'home_team_id' },
+  86:  { next: 95,  side: 'away_team_id' },
+  87:  { next: 96,  side: 'home_team_id' },
+  88:  { next: 96,  side: 'away_team_id' },
+  89:  { next: 97,  side: 'home_team_id' },
+  90:  { next: 97,  side: 'away_team_id' },
+  91:  { next: 98,  side: 'home_team_id' },
+  92:  { next: 98,  side: 'away_team_id' },
+  93:  { next: 99,  side: 'home_team_id' },
+  94:  { next: 99,  side: 'away_team_id' },
+  95:  { next: 100, side: 'home_team_id' },
+  96:  { next: 100, side: 'away_team_id' },
+  97:  { next: 101, side: 'home_team_id' },
+  98:  { next: 101, side: 'away_team_id' },
+  99:  { next: 102, side: 'home_team_id' },
+  100: { next: 102, side: 'away_team_id' },
+  101: { next: 104, side: 'home_team_id' },
+  102: { next: 104, side: 'away_team_id' },
+}
+
+// SF losers go to 3rd place match
+const LOSER_ADVANCES: Record<number, { next: number; side: 'home_team_id' | 'away_team_id' }> = {
+  101: { next: 103, side: 'home_team_id' },
+  102: { next: 103, side: 'away_team_id' },
+}
+
+export async function saveMatchResult(
+  matchId: string,
+  matchNumber: number,
+  homeScore: number,
+  awayScore: number,
+  overrideWinnerId: string | null,
+) {
+  const db = createServiceRoleClient()
+
+  // 1) Read current teams
+  const { data: match, error: fetchErr } = await db
+    .from('matches')
+    .select('home_team_id, away_team_id')
+    .eq('id', matchId)
+    .single()
+
+  if (fetchErr || !match) return { error: 'Partido no encontrado' }
+
+  // 2) Save score and mark as finished
+  const { error: updateErr } = await db.from('matches').update({
+    home_score: homeScore,
+    away_score: awayScore,
+    status: 'finished',
+    predictions_locked: true,
+  }).eq('id', matchId)
+
+  if (updateErr) return { error: updateErr.message }
+
+  // 3) Determine winner
+  let winnerId: string | null = null
+  if (homeScore > awayScore)       winnerId = match.home_team_id
+  else if (awayScore > homeScore)  winnerId = match.away_team_id
+  else                             winnerId = overrideWinnerId  // draw → admin picks
+
+  // 4) Advance winner to next round
+  const winAdv = WINNER_ADVANCES[matchNumber]
+  if (winAdv && winnerId) {
+    const { data: nextMatch } = await db.from('matches')
+      .select('id').eq('match_number', winAdv.next).single()
+    if (nextMatch) {
+      await db.from('matches').update({ [winAdv.side]: winnerId }).eq('id', nextMatch.id)
+    }
+  }
+
+  // 5) Advance loser of SF to 3rd place
+  const loserAdv = LOSER_ADVANCES[matchNumber]
+  if (loserAdv && winnerId) {
+    const loserId = winnerId === match.home_team_id ? match.away_team_id : match.home_team_id
+    const { data: thirdMatch } = await db.from('matches')
+      .select('id').eq('match_number', loserAdv.next).single()
+    if (thirdMatch && loserId) {
+      await db.from('matches').update({ [loserAdv.side]: loserId }).eq('id', thirdMatch.id)
+    }
+  }
+
+  revalidatePath('/admin/bracket')
+  revalidatePath('/dashboard/bracket')
+  return { success: true }
+}
+
 export async function updateKnockoutMatch(
   matchId: string,
   homeTeamId: string | null,

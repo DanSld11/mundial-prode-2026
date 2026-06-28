@@ -1,60 +1,63 @@
-'use client'
-
-import { useEffect, useState, useTransition } from 'react'
 import { getAdminBracketData, createKnockoutStructure } from './actions'
-import BracketAdminClient from './BracketAdminClient'
-import { toast } from 'sonner'
+import BracketAdminTree from './BracketAdminTree'
 import { GitBranch } from 'lucide-react'
+import { revalidatePath } from 'next/cache'
 
-export default function AdminBracketPage() {
-  const [data, setData] = useState<{ matches: any[]; teams: any[] }>({ matches: [], teams: [] })
-  const [loading, setLoading] = useState(true)
-  const [creating, startCreate] = useTransition()
+export const dynamic = 'force-dynamic'
 
-  async function load() {
-    const d = await getAdminBracketData()
-    setData(d)
-    setLoading(false)
+export default async function AdminBracketPage() {
+  const { matches } = await getAdminBracketData()
+
+  async function handleCreate() {
+    'use server'
+    await createKnockoutStructure()
+    revalidatePath('/admin/bracket')
   }
 
-  useEffect(() => { load() }, [])
-
-  function handleCreateStructure() {
-    startCreate(async () => {
-      const res = await createKnockoutStructure()
-      if (res.error) {
-        toast.error(res.error)
-      } else {
-        toast.success(`✅ ${res.created} partidos creados`)
-        await load()
-      }
-    })
-  }
-
-  if (loading) {
-    return <div className="py-20 text-center text-sm text-muted-foreground">Cargando bracket...</div>
-  }
+  const knockoutCount = matches.length
 
   return (
     <div className="space-y-6 pb-10">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-red text-white shadow-sm">
           <GitBranch className="h-5 w-5" />
         </div>
         <div>
-          <h2 className="text-xl font-bold">Bracket Eliminatorio</h2>
+          <h2 className="text-xl font-bold">Llaves Eliminatorias</h2>
           <p className="text-sm text-muted-foreground">
-            Asigná equipos, fechas y estadios para cada partido de la fase eliminatoria.
+            Tocá un partido para ingresar el resultado — el ganador avanza automáticamente.
           </p>
         </div>
       </div>
 
-      <BracketAdminClient
-        matches={data.matches}
-        teams={data.teams}
-        onCreateStructure={handleCreateStructure}
-        creating={creating}
-      />
+      {/* Create structure if missing */}
+      {knockoutCount < 32 && (
+        <div className="rounded-2xl border-2 border-dashed border-brand-red/30 bg-brand-red/5 p-6 text-center space-y-3">
+          <p className="font-semibold text-lg">Estructura del bracket no creada</p>
+          <p className="text-sm text-muted-foreground">
+            Crea los {32 - knockoutCount} partidos eliminatorios primero.
+          </p>
+          <form action={handleCreate}>
+            <button
+              type="submit"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-brand-red px-5 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+            >
+              ⚡ Crear estructura eliminatoria
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Visual bracket tree */}
+      {knockoutCount > 0 && (
+        <div className="rounded-2xl border bg-card p-4 shadow-sm overflow-hidden">
+          <p className="text-xs text-muted-foreground mb-3 text-center lg:hidden">
+            ← Deslizá para ver el bracket completo →
+          </p>
+          <BracketAdminTree matches={matches as any} />
+        </div>
+      )}
     </div>
   )
 }
