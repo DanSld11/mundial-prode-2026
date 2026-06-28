@@ -461,12 +461,12 @@ export async function recalculateAllPointsAction() {
 
   let recalculated = 0
 
-  // Paso 1: recalcular predictions.points_earned para todos los partidos finalizados en paralelo
+  // Paso 1: recalcular predictions.points_earned para cada partido finalizado
   // skipUserTotal=true: omite actualización individual por usuario (Step 3 lo hace en lote al final)
-  await Promise.all((matches ?? []).map((match) =>
-    calculatePointsFallback(adminClient, match.id, match.home_score, match.away_score, true)
-  ))
-  recalculated = matches?.length ?? 0
+  for (const match of matches ?? []) {
+    await calculatePointsFallback(adminClient, match.id, match.home_score, match.away_score, true)
+    recalculated += 1
+  }
 
   // Paso 2: score bracket_predictions para todos los partidos eliminatorios finalizados
   const KNOCKOUT_STAGES = ['round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'third_place', 'final']
@@ -526,6 +526,7 @@ export async function recalculateAllPointsAction() {
   revalidatePath('/dashboard/partidos')
   revalidatePath('/dashboard/predicciones')
   revalidatePath('/dashboard/tabla')
+  revalidatePath('/dashboard/pollas', 'layout')
 
   return { success: true, count: recalculated }
 }
