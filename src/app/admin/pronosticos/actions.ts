@@ -19,18 +19,27 @@ async function assertAdmin() {
 export async function getAdminPronosticosData() {
   const db = createServiceRoleClient()
 
-  const [teamsRes, groupResultsRes, specialResultsRes, playersRes] = await Promise.all([
+  const [teamsRes, groupResultsRes, specialResultsRes, playersRes, scoredGroupsRes, scoredSpecialsRes] = await Promise.all([
     db.from('teams').select('id, name_es, flag_emoji, code, group_name').order('group_name').order('name_es'),
     db.from('group_results').select('group_name, position, team_id'),
     db.from('special_results').select('type, player_id, team_id, locked'),
     db.from('players').select('id, name, team_id, position').order('name').limit(2000),
+    // Grupos que ya fueron puntuados (tienen alguna predicción con points_earned NOT NULL)
+    db.from('group_predictions').select('group_name').not('points_earned', 'is', null),
+    // Especiales que ya fueron puntuados
+    db.from('special_predictions').select('type').not('points_earned', 'is', null),
   ])
+
+  const scoredGroups = [...new Set((scoredGroupsRes.data ?? []).map((r: any) => r.group_name as string))]
+  const scoredSpecials = [...new Set((scoredSpecialsRes.data ?? []).map((r: any) => r.type as string))]
 
   return {
     teams:          teamsRes.data          ?? [],
     groupResults:   groupResultsRes.data   ?? [],
     specialResults: specialResultsRes.data ?? [],
     players:        playersRes.data        ?? [],
+    scoredGroups,
+    scoredSpecials,
   }
 }
 
