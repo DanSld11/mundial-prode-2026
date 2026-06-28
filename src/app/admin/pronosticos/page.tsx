@@ -149,18 +149,18 @@ function AdminGroupCard({
             </span>
           )}
         </div>
-        {isScored ? (
-          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Ya puntuado</span>
-        ) : (
-          <button
-            onClick={async () => { setScoring(true); await onScore(); setScoring(false) }}
-            disabled={scoring || Object.keys(sel).length === 0}
-            className="flex items-center gap-1 text-xs font-bold bg-brand-red text-white px-2.5 py-1 rounded-lg hover:opacity-90 disabled:opacity-40 transition"
-          >
-            {scoring ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-            Puntuar
-          </button>
-        )}
+        <button
+          onClick={async () => { setScoring(true); await onScore(); setScoring(false) }}
+          disabled={scoring || Object.keys(sel).length === 0}
+          className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg hover:opacity-90 disabled:opacity-40 transition ${
+            isScored
+              ? 'bg-muted text-muted-foreground border border-border'
+              : 'bg-brand-red text-white'
+          }`}
+        >
+          {scoring ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+          {isScored ? 'Re-puntuar' : 'Puntuar'}
+        </button>
       </div>
       <div className="divide-y">
         {[1, 2, 3].map(pos => (
@@ -238,18 +238,18 @@ function AdminSpecialCard({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {isScored ? (
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Ya puntuado</span>
-          ) : (
-            <button
-              onClick={async () => { setScoring(true); await onScore(); setScoring(false) }}
-              disabled={scoring || (!playerId && !teamId)}
-              className="flex items-center gap-1 text-xs font-bold bg-brand-red text-white px-2.5 py-1 rounded-lg hover:opacity-90 disabled:opacity-40 transition"
-            >
-              {scoring ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-              Puntuar
-            </button>
-          )}
+          <button
+            onClick={async () => { setScoring(true); await onScore(); setScoring(false) }}
+            disabled={scoring || (!playerId && !teamId)}
+            className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg hover:opacity-90 disabled:opacity-40 transition ${
+              isScored
+                ? 'bg-muted text-muted-foreground border border-border'
+                : 'bg-brand-red text-white'
+            }`}
+          >
+            {scoring ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+            {isScored ? 'Re-puntuar' : 'Puntuar'}
+          </button>
         </div>
       </div>
       <div className="px-4 py-4 space-y-3">
