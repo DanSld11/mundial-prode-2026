@@ -124,6 +124,95 @@ export async function updateKnockoutMatch(
   return { success: true }
 }
 
+/**
+ * Auto-seed Round of 32 from group results.
+ * Pairing: each group winner vs runner-up from adjacent group (cross-group).
+ * Matches 85-88 reserved for best 3rd-place teams (assigned manually).
+ *
+ * FIFA 2026 pairings (match_number → home_group_pos × away_group_pos):
+ *  73: 1A vs 2B  |  79: 1G vs 2H
+ *  74: 1B vs 2A  |  80: 1H vs 2G
+ *  75: 1C vs 2D  |  81: 1I vs 2J
+ *  76: 1D vs 2C  |  82: 1J vs 2I
+ *  77: 1E vs 2F  |  83: 1K vs 2L
+ *  78: 1F vs 2E  |  84: 1L vs 2K
+ *  85-88: 3rd-place slots (set manually in admin)
+ */
+const R32_SEEDING: { match_number: number; home: [string, number]; away: [string, number] }[] = [
+  { match_number: 73, home: ['A', 1], away: ['B', 2] },
+  { match_number: 74, home: ['B', 1], away: ['A', 2] },
+  { match_number: 75, home: ['C', 1], away: ['D', 2] },
+  { match_number: 76, home: ['D', 1], away: ['C', 2] },
+  { match_number: 77, home: ['E', 1], away: ['F', 2] },
+  { match_number: 78, home: ['F', 1], away: ['E', 2] },
+  { match_number: 79, home: ['G', 1], away: ['H', 2] },
+  { match_number: 80, home: ['H', 1], away: ['G', 2] },
+  { match_number: 81, home: ['I', 1], away: ['J', 2] },
+  { match_number: 82, home: ['J', 1], away: ['I', 2] },
+  { match_number: 83, home: ['K', 1], away: ['L', 2] },
+  { match_number: 84, home: ['L', 1], away: ['K', 2] },
+]
+
+export async function autoSeedR32Action() {
+  const db = createServiceRoleClient()
+
+  // Read all group_results (positions 1 and 2)
+  const { data: groupResults, error: grErr } = await db.from('group_results')
+    .select('group_name, position, team_id')
+    .in('position', [1, 2])
+
+  if (grErr) return { error: grErr.message }
+  if (!groupResults || groupResults.length === 0)
+    return { error: 'No hay resultados de grupos cargados aún.' }
+
+  // Build lookup: group_name + position → team_id
+  const lookup = new Map<string, string>()
+  for (const r of groupResults) {
+    lookup.set(`${r.group_name}:${r.position}`, r.team_id)
+  }
+
+  // Get existing R32 matches to obtain their IDs
+  const matchNumbers = R32_SEEDING.map((s) => s.match_number)
+  const { data: r32Matches, error: matchErr } = await db.from('matches')
+    .select('id, match_number')
+    .in('match_number', matchNumbers)
+
+  if (matchErr) return { error: matchErr.message }
+  if (!r32Matches || r32Matches.length === 0)
+    return { error: 'Los partidos de Ronda de 32 no existen. Creá la estructura primero.' }
+
+  const matchById = new Map(r32Matches.map((m: any) => [m.match_number, m.id]))
+
+  let seeded = 0
+  let skipped = 0
+  const errors: string[] = []
+
+  for (const slot of R32_SEEDING) {
+    const matchId = matchById.get(slot.match_number)
+    if (!matchId) { skipped++; continue }
+
+    const homeTeamId = lookup.get(`${slot.home[0]}:${slot.home[1]}`)
+    const awayTeamId = lookup.get(`${slot.away[0]}:${slot.away[1]}`)
+
+    if (!homeTeamId || !awayTeamId) {
+      skipped++
+      continue
+    }
+
+    const { error } = await db.from('matches')
+      .update({ home_team_id: homeTeamId, away_team_id: awayTeamId })
+      .eq('id', matchId)
+
+    if (error) errors.push(`Partido ${slot.match_number}: ${error.message}`)
+    else seeded++
+  }
+
+  revalidatePath('/admin/bracket')
+  revalidatePath('/dashboard/bracket')
+
+  return { success: true, seeded, skipped, errors }
+}
+
 export async function lockKnockoutStage(stage: string, locked: boolean) {
   const db = createServiceRoleClient()
 

@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { updateKnockoutMatch, lockKnockoutStage } from './actions'
+import { updateKnockoutMatch, lockKnockoutStage, autoSeedR32Action } from './actions'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Lock, Unlock, Save, CheckCircle2, Loader2 } from 'lucide-react'
+import { Lock, Unlock, Save, CheckCircle2, Loader2, Wand2 } from 'lucide-react'
 
 interface Team {
   id: string
@@ -262,7 +262,20 @@ export default function BracketAdminClient({
   onCreateStructure: () => void
   creating: boolean
 }) {
+  const [seeding, startSeed] = useTransition()
   const stagesWithMatches = STAGE_ORDER.filter((s) => initialMatches.some((m) => m.stage === s))
+
+  function handleAutoSeed() {
+    startSeed(async () => {
+      const res = await autoSeedR32Action()
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        toast.success(`✅ ${res.seeded} partidos R32 poblados${res.skipped ? ` (${res.skipped} sin resultados de grupos)` : ''}`)
+        if (res.errors && res.errors.length > 0) toast.error(res.errors.join(', '))
+      }
+    })
+  }
 
   return (
     <div className="space-y-8">
@@ -281,6 +294,28 @@ export default function BracketAdminClient({
           >
             {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             {creating ? 'Creando...' : '⚡ Crear estructura eliminatoria'}
+          </Button>
+        </div>
+      )}
+
+      {/* Auto-seed R32 */}
+      {initialMatches.some((m) => m.stage === 'round_of_32') && (
+        <div className="rounded-xl border bg-muted/20 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <p className="font-semibold text-sm">Auto-poblar Ronda de 32</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Asigna equipos desde los resultados de grupos (1A vs 2B, 1B vs 2A, etc.). Los 4 slots para 3ros se asignan manualmente.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAutoSeed}
+            disabled={seeding}
+            className="shrink-0 gap-1.5 border-violet-500 text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-950/30"
+          >
+            {seeding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+            {seeding ? 'Poblando...' : 'Auto-poblar desde grupos'}
           </Button>
         </div>
       )}
