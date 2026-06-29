@@ -567,6 +567,12 @@ export async function recalculateAllPointsAction() {
       const total = (outcomeBase + scorerPts + exactPts) * multiplier + underdogBonus
       predsToUpdate.push({
         id: pred.id,
+        user_id: pred.user_id,
+        match_id: pred.match_id,
+        predicted_outcome: pred.predicted_outcome,
+        predicted_scorer_id: pred.predicted_scorer_id,
+        predicted_home_score: pred.predicted_home_score,
+        predicted_away_score: pred.predicted_away_score,
         outcome_points: outcomeBase * multiplier + underdogBonus,
         scorer_points: scorerPts * multiplier,
         exact_score_points: exactPts * multiplier,
@@ -608,7 +614,7 @@ export async function recalculateAllPointsAction() {
         : km.winner_team_id ?? null
       for (const bp of bpredsBySlot.get(km.id) ?? []) {
         const bpts = winnerId && bp.team_id === winnerId ? pts.outcome * multiplier : 0
-        bpredsToUpdate.push({ id: bp.id, points_earned: bpts, updated_at: now })
+        bpredsToUpdate.push({ id: bp.id, user_id: bp.user_id, team_id: bp.team_id, slot_key: bp.slot_key, points_earned: bpts, updated_at: now })
       }
     }
     for (let i = 0; i < bpredsToUpdate.length; i += CHUNK) {
