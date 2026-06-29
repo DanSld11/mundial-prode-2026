@@ -127,7 +127,8 @@ function MatchCard({ match, isFinal = false }: { match: Match | undefined; isFin
   }
 
   const finished = match.status === 'finished'
-  const hasTeams = !!(match.home_team && match.away_team)
+  const hasHome  = !!match.home_team
+  const hasAway  = !!match.away_team
   const homeWon  = finished && (match.home_score ?? -1) > (match.away_score ?? -1)
   const awayWon  = finished && (match.away_score ?? -1) > (match.home_score ?? -1)
 
@@ -151,7 +152,7 @@ function MatchCard({ match, isFinal = false }: { match: Match | undefined; isFin
           homeWon ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''
         }`}
       >
-        {hasTeams ? (
+        {hasHome ? (
           <>
             <TeamFlag
               code={match.home_team!.flag_emoji}
@@ -187,7 +188,7 @@ function MatchCard({ match, isFinal = false }: { match: Match | undefined; isFin
           awayWon ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''
         }`}
       >
-        {hasTeams ? (
+        {hasAway ? (
           <>
             <TeamFlag
               code={match.away_team!.flag_emoji}

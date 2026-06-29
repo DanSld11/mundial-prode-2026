@@ -254,6 +254,8 @@ function AdminMatchCard({
   const homeWon  = finished && (match.home_score ?? -1) > (match.away_score ?? -1)
   const awayWon  = finished && (match.away_score ?? -1) > (match.home_score ?? -1)
   const canEdit  = hasTeams
+  const hasHome  = !!match.home_team
+  const hasAway  = !!match.away_team
 
   return (
     <div
@@ -276,7 +278,7 @@ function AdminMatchCard({
 
       {/* Home row */}
       <div className={`flex flex-1 items-center gap-1.5 px-2 min-w-0 ${homeWon ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''}`}>
-        {hasTeams ? (
+        {hasHome ? (
           <>
             <TeamFlag code={match.home_team!.flag_emoji} label={match.home_team!.name_es} className="h-4 w-6 shrink-0" />
             <span className={`flex-1 truncate text-[11px] font-semibold ${homeWon ? 'text-emerald-700 dark:text-emerald-400' : ''}`}>
@@ -291,7 +293,7 @@ function AdminMatchCard({
 
       {/* Away row */}
       <div className={`flex flex-1 items-center gap-1.5 px-2 min-w-0 ${awayWon ? 'bg-emerald-50 dark:bg-emerald-950/20' : ''}`}>
-        {hasTeams ? (
+        {hasAway ? (
           <>
             <TeamFlag code={match.away_team!.flag_emoji} label={match.away_team!.name_es} className="h-4 w-6 shrink-0" />
             <span className={`flex-1 truncate text-[11px] font-semibold ${awayWon ? 'text-emerald-700 dark:text-emerald-400' : ''}`}>
