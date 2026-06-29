@@ -1,5 +1,6 @@
-import { getAdminBracketData, createKnockoutStructure, propagateWinnersAction } from './actions'
+import { getAdminBracketData, createKnockoutStructure } from './actions'
 import BracketAdminTree from './BracketAdminTree'
+import PropagateButton from './PropagateButton'
 import { GitBranch } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
 
@@ -14,11 +15,6 @@ export default async function AdminBracketPage() {
     revalidatePath('/admin/bracket')
   }
 
-  async function handlePropagate() {
-    'use server'
-    await propagateWinnersAction()
-    revalidatePath('/admin/bracket')
-  }
 
   const knockoutCount = matches.length
 
@@ -56,16 +52,7 @@ export default async function AdminBracketPage() {
       )}
 
       {/* Propagate winners */}
-      {knockoutCount > 0 && (
-        <form action={handlePropagate}>
-          <button
-            type="submit"
-            className="inline-flex h-9 items-center gap-2 rounded-xl border border-blue-300 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 px-4 text-sm font-semibold text-blue-700 dark:text-blue-300 hover:bg-blue-100 transition-colors"
-          >
-            🔄 Propagar ganadores
-          </button>
-        </form>
-      )}
+      {knockoutCount > 0 && <PropagateButton />}
 
       {/* Visual bracket tree */}
       {knockoutCount > 0 && (
