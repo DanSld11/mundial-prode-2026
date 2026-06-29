@@ -104,22 +104,23 @@ export async function createKnockoutStructure() {
 // ── Bracket advancement map ────────────────────────────────────────────
 // Defines which match number the winner of each match advances to, and as which side
 const WINNER_ADVANCES: Record<number, { next: number; side: 'home_team_id' | 'away_team_id' }> = {
-  73:  { next: 89,  side: 'home_team_id' },
-  74:  { next: 89,  side: 'away_team_id' },
-  75:  { next: 90,  side: 'home_team_id' },
-  76:  { next: 90,  side: 'away_team_id' },
-  77:  { next: 91,  side: 'home_team_id' },
-  78:  { next: 91,  side: 'away_team_id' },
-  79:  { next: 92,  side: 'home_team_id' },
-  80:  { next: 92,  side: 'away_team_id' },
-  81:  { next: 93,  side: 'home_team_id' },
-  82:  { next: 93,  side: 'away_team_id' },
-  83:  { next: 94,  side: 'home_team_id' },
-  84:  { next: 94,  side: 'away_team_id' },
-  85:  { next: 95,  side: 'home_team_id' },
-  86:  { next: 95,  side: 'away_team_id' },
-  87:  { next: 96,  side: 'home_team_id' },
-  88:  { next: 96,  side: 'away_team_id' },
+  // R32 → R16 (según llave oficial WC 2026)
+  73:  { next: 89,  side: 'home_team_id' }, // RSA vs CAN → R16-1
+  76:  { next: 89,  side: 'away_team_id' }, // NED vs MAR → R16-1
+  75:  { next: 90,  side: 'home_team_id' }, // GER vs PAR → R16-2
+  78:  { next: 90,  side: 'away_team_id' }, // FRA vs SWE → R16-2
+  81:  { next: 91,  side: 'home_team_id' }, // BEL vs SEN → R16-3
+  82:  { next: 91,  side: 'away_team_id' }, // USA vs BIH → R16-3
+  83:  { next: 92,  side: 'home_team_id' }, // ESP vs AUT → R16-4
+  84:  { next: 92,  side: 'away_team_id' }, // POR vs CRO → R16-4
+  74:  { next: 93,  side: 'home_team_id' }, // BRA vs JPN → R16-5
+  77:  { next: 93,  side: 'away_team_id' }, // CIV vs NOR → R16-5
+  79:  { next: 94,  side: 'home_team_id' }, // MEX vs ECU → R16-6
+  80:  { next: 94,  side: 'away_team_id' }, // ENG vs COD → R16-6
+  85:  { next: 95,  side: 'home_team_id' }, // SUI vs ALG → R16-7
+  88:  { next: 95,  side: 'away_team_id' }, // COL vs GHA → R16-7
+  86:  { next: 96,  side: 'home_team_id' }, // AUS vs EGY → R16-8
+  87:  { next: 96,  side: 'away_team_id' }, // ARG vs CPV → R16-8
   89:  { next: 97,  side: 'home_team_id' },
   90:  { next: 97,  side: 'away_team_id' },
   91:  { next: 98,  side: 'home_team_id' },
