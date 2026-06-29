@@ -150,12 +150,12 @@ export default function RulesPage() {
             <div className="space-y-2">
               {[
                 { fase: 'Fase de Grupos', mult: '×1', color: 'text-muted-foreground', bg: 'bg-muted/40' },
-                { fase: 'Ronda de 32', mult: '×1.5', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50/60 dark:bg-blue-950/20' },
-                { fase: 'Octavos de Final', mult: '×1.5', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50/60 dark:bg-blue-950/20' },
-                { fase: 'Cuartos de Final', mult: '×2', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50/60 dark:bg-emerald-950/20' },
-                { fase: 'Semifinal', mult: '×2.5', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50/60 dark:bg-orange-950/20' },
-                { fase: 'Tercer Puesto', mult: '×2.5', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50/60 dark:bg-orange-950/20' },
-                { fase: 'Final', mult: '×3', color: 'text-brand-red', bg: 'bg-red-50/60 dark:bg-red-950/20' },
+                { fase: 'Ronda de 32', mult: '×2', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50/60 dark:bg-blue-950/20' },
+                { fase: 'Octavos de Final', mult: '×2', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50/60 dark:bg-blue-950/20' },
+                { fase: 'Cuartos de Final', mult: '×3', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50/60 dark:bg-emerald-950/20' },
+                { fase: 'Semifinal', mult: '×4', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50/60 dark:bg-orange-950/20' },
+                { fase: 'Tercer Puesto', mult: '×4', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50/60 dark:bg-orange-950/20' },
+                { fase: 'Final', mult: '×5', color: 'text-brand-red', bg: 'bg-red-50/60 dark:bg-red-950/20' },
               ].map(({ fase, mult, color, bg }) => (
                 <div key={fase} className={`flex items-center justify-between px-3 py-2 rounded-xl border border-border/40 ${bg}`}>
                   <span className="text-sm font-medium">{fase}</span>

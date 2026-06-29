@@ -210,7 +210,7 @@ export async function updateMatchResultAction(formData: FormData) {
 
 // Lógica de cálculo de puntos con multiplicador por fase y bono batacazo.
 // Aplica a predicciones hechas desde el módulo Partidos (tabla predictions).
-// Para eliminatorias el multiplicador es 1.5×; para final es 3×; etc.
+// Multiplicadores por fase: grupos×1, R32×2, R16×2, QF×3, SF×4, 3°×4, Final×5
 // skipUserTotal=true cuando se llama en bucle masivo (recalculateAll), para evitar
 // N×M queries redundantes — el llamador actualiza totales al final en lote.
 async function calculatePointsFallback(
