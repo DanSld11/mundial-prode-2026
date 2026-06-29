@@ -1,12 +1,14 @@
 'use client'
 
 import { useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { propagateWinnersAction } from './actions'
 import { toast } from 'sonner'
 import { RefreshCw } from 'lucide-react'
 
 export default function PropagateButton() {
   const [pending, startTransition] = useTransition()
+  const router = useRouter()
 
   function handleClick() {
     startTransition(async () => {
@@ -15,6 +17,7 @@ export default function PropagateButton() {
         toast.error(res.error as string)
       } else {
         toast.success(`Ganadores propagados (${res.propagated} partidos actualizados)`)
+        router.refresh()
       }
     })
   }
