@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { seedTeamsAction, seedMatchesAction, seedPlayersAction, recalculateAllPointsAction, resetTournamentAction } from './actions'
+import { seedTeamsAction, seedMatchesAction, seedPlayersAction, recalculateAllPointsAction, resetTournamentAction, debugScoreMatchByNumberAction } from './actions'
 import { createAnonClient } from '@/lib/auth-client'
 import { formatPeruLongDateTime } from '@/lib/peru-time'
 import { Trophy, RefreshCw, Users, ShieldCheck, Database, CalendarDays, Coins, Activity, TrendingUp, BookOpen, Trash2, AlertTriangle, Bell, Send, GitBranch } from 'lucide-react'
@@ -25,6 +25,9 @@ export default function AdminPage() {
   const [notifBody, setNotifBody] = useState('')
   const [loadingBroadcast, setLoadingBroadcast] = useState(false)
   const [loadingTestNotif, setLoadingTestNotif] = useState(false)
+  const [debugMatchNum, setDebugMatchNum] = useState('73')
+  const [loadingDebug, setLoadingDebug] = useState(false)
+  const [debugResult, setDebugResult] = useState<any>(null)
 
   useEffect(() => {
     const supabase = createAnonClient()
@@ -67,6 +70,18 @@ export default function AdminPage() {
     if (result.error) toast.error(result.error)
     else toast.success(`Puntos recalculados en ${result.count ?? 0} partidos finalizados`)
     setLoadingRecalc(false)
+  }
+
+  async function debugMatch() {
+    setLoadingDebug(true)
+    setDebugResult(null)
+    const num = parseInt(debugMatchNum)
+    if (isNaN(num)) { toast.error('Número de partido inválido'); setLoadingDebug(false); return }
+    const result = await debugScoreMatchByNumberAction(num)
+    setDebugResult(result)
+    if ((result as any).error) toast.error((result as any).error)
+    else toast.success('Diagnóstico completado')
+    setLoadingDebug(false)
   }
 
   async function sendTestNotification() {
@@ -403,6 +418,29 @@ export default function AdminPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Diagnóstico de partido */}
+      <div className="rounded-2xl border border-amber-400/40 bg-amber-50/30 dark:bg-amber-950/10 p-5 space-y-3">
+        <p className="text-sm font-bold text-amber-700 dark:text-amber-400">🔬 Diagnóstico de partido (dev)</p>
+        <p className="text-xs text-muted-foreground">Puntúa un partido específico por número y muestra qué encontró en la DB. Útil si "Recalcular" no funciona para un partido específico.</p>
+        <div className="flex gap-2 flex-wrap">
+          <input
+            type="number"
+            value={debugMatchNum}
+            onChange={(e) => setDebugMatchNum(e.target.value)}
+            className="w-20 rounded-lg border bg-background px-3 py-1.5 text-sm font-mono"
+            placeholder="Nro"
+          />
+          <Button size="sm" onClick={debugMatch} disabled={loadingDebug} className="bg-amber-500 hover:bg-amber-600 text-white">
+            {loadingDebug ? 'Diagnosticando...' : 'Diagnosticar y puntuar'}
+          </Button>
+        </div>
+        {debugResult && (
+          <pre className="text-xs bg-black/80 text-green-400 rounded-xl p-4 overflow-auto max-h-64 whitespace-pre-wrap">
+            {JSON.stringify(debugResult, null, 2)}
+          </pre>
+        )}
       </div>
 
       {/* Reset zona de peligro */}

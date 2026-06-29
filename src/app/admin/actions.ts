@@ -314,6 +314,45 @@ async function calculatePointsFallback(
   }
 }
 
+// Diagnóstico: puntúa un partido por su número y devuelve info detallada de qué encontró.
+// Usar desde admin para debuggear casos donde "Recalcular Puntos" no funciona para un partido.
+export async function debugScoreMatchByNumberAction(matchNumber: number) {
+  const adminClient = createServiceRoleClient()
+
+  const { data: match } = await adminClient
+    .from('matches')
+    .select('id, match_number, status, home_score, away_score, stage')
+    .eq('match_number', matchNumber)
+    .maybeSingle()
+
+  if (!match) return { error: `Partido #${matchNumber} no encontrado en la base de datos` }
+  if (match.status !== 'finished') return { error: `Partido #${matchNumber} aún no está finalizado (status: ${match.status})` }
+  if (match.home_score == null || match.away_score == null) return { error: `Partido #${matchNumber} no tiene marcador cargado` }
+
+  const { data: preds } = await adminClient
+    .from('predictions')
+    .select('id, user_id, predicted_outcome, predicted_home_score, predicted_away_score, predicted_scorer_id, points_earned')
+    .eq('match_id', match.id)
+
+  const predCount = preds?.length ?? 0
+
+  // Ejecutar scoring
+  const err = await calculatePointsFallback(adminClient, match.id, match.home_score, match.away_score, false)
+
+  // Leer puntos actualizados
+  const { data: predsAfter } = await adminClient
+    .from('predictions')
+    .select('id, user_id, points_earned')
+    .eq('match_id', match.id)
+
+  return {
+    match: { id: match.id, number: match.match_number, status: match.status, score: `${match.home_score}-${match.away_score}`, stage: match.stage },
+    predictionsFound: predCount,
+    scoringError: err ?? null,
+    pointsAfter: (predsAfter ?? []).map(p => ({ userId: (p as any).user_id.slice(0, 8), pts: (p as any).points_earned })),
+  }
+}
+
 // Función exportada para que otros módulos (ej: bracket admin) puedan calcular puntos
 export async function scoreMatchAction(matchId: string, homeScore: number, awayScore: number) {
   const adminClient = createServiceRoleClient()
