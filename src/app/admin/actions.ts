@@ -348,6 +348,14 @@ export async function debugScoreMatchByNumberAction(matchNumber: number) {
   return {
     match: { id: match.id, number: match.match_number, status: match.status, score: `${match.home_score}-${match.away_score}`, stage: match.stage },
     predictionsFound: predCount,
+    predsBefore: (preds ?? []).map(p => ({
+      userId: (p as any).user_id.slice(0, 8),
+      outcome: (p as any).predicted_outcome,
+      home: (p as any).predicted_home_score,
+      away: (p as any).predicted_away_score,
+      scorer: (p as any).predicted_scorer_id ? '✓' : null,
+      ptsWas: (p as any).points_earned,
+    })),
     scoringError: err ?? null,
     pointsAfter: (predsAfter ?? []).map(p => ({ userId: (p as any).user_id.slice(0, 8), pts: (p as any).points_earned })),
   }
