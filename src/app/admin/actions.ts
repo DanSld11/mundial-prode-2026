@@ -583,10 +583,21 @@ export async function recalculateAllPointsAction() {
     }
   }
 
-  // 5. Upsert en lotes (evita límite de payload)
-  const CHUNK = 200
-  for (let i = 0; i < predsToUpdate.length; i += CHUNK) {
-    await adminClient.from('predictions').upsert(predsToUpdate.slice(i, i + CHUNK), { onConflict: 'id' })
+  // 5. Update en lotes paralelos (más confiable que upsert — evita problemas de NOT NULL)
+  const PAR = 50
+  for (let i = 0; i < predsToUpdate.length; i += PAR) {
+    await Promise.all(
+      predsToUpdate.slice(i, i + PAR).map((p: any) =>
+        adminClient.from('predictions').update({
+          outcome_points: p.outcome_points,
+          scorer_points: p.scorer_points,
+          exact_score_points: p.exact_score_points,
+          points_earned: p.points_earned,
+          is_exact_score: p.is_exact_score,
+          updated_at: p.updated_at,
+        }).eq('id', p.id)
+      )
+    )
   }
 
   // 6. Score bracket_predictions para partidos eliminatorios
@@ -617,8 +628,15 @@ export async function recalculateAllPointsAction() {
         bpredsToUpdate.push({ id: bp.id, user_id: bp.user_id, team_id: bp.team_id, slot_key: bp.slot_key, points_earned: bpts, updated_at: now })
       }
     }
-    for (let i = 0; i < bpredsToUpdate.length; i += CHUNK) {
-      await adminClient.from('bracket_predictions').upsert(bpredsToUpdate.slice(i, i + CHUNK), { onConflict: 'id' })
+    for (let i = 0; i < bpredsToUpdate.length; i += PAR) {
+      await Promise.all(
+        bpredsToUpdate.slice(i, i + PAR).map((bp: any) =>
+          adminClient.from('bracket_predictions').update({
+            points_earned: bp.points_earned,
+            updated_at: bp.updated_at,
+          }).eq('id', bp.id)
+        )
+      )
     }
   }
 
