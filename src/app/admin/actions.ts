@@ -394,8 +394,8 @@ export async function scoreMatchAction(matchId: string, homeScore: number, awayS
         bracketUserIds.add(bp.user_id)
       }
 
-      // Actualizar total de usuarios afectados por bracket (sumando las 4 tablas)
-      for (const userId of bracketUserIds) {
+      // Actualizar total de usuarios afectados por bracket (sumando las 4 tablas, en paralelo)
+      await Promise.all(Array.from(bracketUserIds).map(async (userId) => {
         const [{ data: matchPts }, { data: groupPts }, { data: specialPts }, { data: bracketPts }] = await Promise.all([
           adminClient.from('predictions').select('points_earned').eq('user_id', userId),
           adminClient.from('group_predictions').select('points_earned').eq('user_id', userId),
@@ -408,7 +408,7 @@ export async function scoreMatchAction(matchId: string, homeScore: number, awayS
           (specialPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0) +
           (bracketPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0)
         await adminClient.from('profiles').update({ total_points: total, updated_at: new Date().toISOString() }).eq('id', userId)
-      }
+      }))
     }
   }
 
@@ -487,77 +487,153 @@ export async function recalculateAllPointsAction() {
     return { error: e.message }
   }
 
+  // 1. Todos los partidos finalizados de una sola query
   const { data: matches, error } = await adminClient
     .from('matches')
-    .select('id, home_score, away_score')
+    .select('id, home_score, away_score, stage, home_team_id, away_team_id, winner_team_id')
     .eq('status', 'finished')
     .not('home_score', 'is', null)
     .not('away_score', 'is', null)
 
-  if (error) {
-    return { error: error.message }
+  if (error) return { error: error.message }
+  if (!matches?.length) return { success: true, count: 0 }
+
+  // 2. Settings de puntuación una sola vez
+  const { data: settingsData } = await adminClient.from('scoring_settings').select('prediction_type, points')
+  const pts = {
+    outcome: settingsData?.find((s: any) => s.prediction_type === 'outcome')?.points ?? 1,
+    scorer: settingsData?.find((s: any) => s.prediction_type === 'scorer')?.points ?? 2,
+    exact_score: settingsData?.find((s: any) => s.prediction_type === 'exact_score')?.points ?? 3,
   }
 
-  let recalculated = 0
+  const matchIds = matches.map((m) => m.id)
+  const now = new Date().toISOString()
 
-  // Paso 1: recalcular predictions.points_earned para cada partido finalizado
-  // skipUserTotal=true: omite actualización individual por usuario (Step 3 lo hace en lote al final)
-  for (const match of matches ?? []) {
-    await calculatePointsFallback(adminClient, match.id, match.home_score, match.away_score, true)
-    recalculated += 1
+  // 3. Todas las predicciones + goleadores de todos los partidos de una sola query cada una
+  const [{ data: allPreds }, { data: allScorers }] = await Promise.all([
+    adminClient.from('predictions')
+      .select('id, user_id, match_id, predicted_outcome, predicted_scorer_id, predicted_home_score, predicted_away_score')
+      .in('match_id', matchIds)
+      .limit(50000),
+    adminClient.from('match_goal_scorers')
+      .select('match_id, player_id')
+      .in('match_id', matchIds)
+      .limit(10000),
+  ])
+
+  // Indexar datos
+  const matchMap = new Map(matches.map((m) => [m.id, m]))
+  const scorersByMatch = new Map<string, Set<string>>()
+  for (const s of allScorers ?? []) {
+    if (!scorersByMatch.has(s.match_id)) scorersByMatch.set(s.match_id, new Set())
+    scorersByMatch.get(s.match_id)!.add(s.player_id)
+  }
+  const predsByMatch = new Map<string, any[]>()
+  for (const p of allPreds ?? []) {
+    if (!predsByMatch.has(p.match_id)) predsByMatch.set(p.match_id, [])
+    predsByMatch.get(p.match_id)!.push(p)
   }
 
-  // Paso 2: score bracket_predictions para todos los partidos eliminatorios finalizados
-  const KNOCKOUT_STAGES = ['round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'third_place', 'final']
-  const { data: knockoutMatches } = await adminClient
-    .from('matches')
-    .select('id, stage, home_score, away_score, home_team_id, away_team_id, winner_team_id')
-    .in('stage', KNOCKOUT_STAGES)
-    .eq('status', 'finished')
-    .not('home_score', 'is', null)
+  function inferOutcome(pred: any): string | null {
+    if (pred.predicted_outcome) return pred.predicted_outcome
+    if (pred.predicted_home_score != null && pred.predicted_away_score != null) {
+      if (pred.predicted_home_score > pred.predicted_away_score) return 'home'
+      if (pred.predicted_away_score > pred.predicted_home_score) return 'away'
+      return 'draw'
+    }
+    return null
+  }
 
-  const { data: scoringSettings } = await adminClient.from('scoring_settings').select('prediction_type, points')
-  const outcomePoints = scoringSettings?.find((s: any) => s.prediction_type === 'outcome')?.points ?? 1
+  // 4. Calcular puntos de TODAS las predicciones en JS (sin queries adicionales)
+  const predsToUpdate: any[] = []
+  for (const [matchId, matchPreds] of predsByMatch) {
+    const match = matchMap.get(matchId)
+    if (!match) continue
+    const { home_score: hs, away_score: as_, stage } = match
+    const multiplier = STAGE_MULTIPLIERS[(stage ?? 'group') as keyof typeof STAGE_MULTIPLIERS] ?? 1
+    const actualOutcome = hs > as_ ? 'home' : as_ > hs ? 'away' : 'draw'
+    const scorerSet = scorersByMatch.get(matchId) ?? new Set()
+    // Batacazo: ≤20% acertaron → +2 pts
+    const correctCount = matchPreds.filter((p) => inferOutcome(p) === actualOutcome).length
+    const isUnderdog = correctCount > 0 && correctCount / matchPreds.length <= 0.20
 
-  for (const km of knockoutMatches ?? []) {
-    const multiplier = STAGE_MULTIPLIERS[(km.stage as keyof typeof STAGE_MULTIPLIERS)] ?? 1
-    const winnerId =
-      km.home_score > km.away_score ? km.home_team_id
-      : km.away_score > km.home_score ? km.away_team_id
-      : km.winner_team_id ?? null
-
-    const { data: bpreds } = await adminClient
-      .from('bracket_predictions')
-      .select('id, user_id, team_id')
-      .eq('slot_key', km.id)
-
-    for (const bp of bpreds ?? []) {
-      const pts = winnerId && bp.team_id === winnerId ? outcomePoints * multiplier : 0
-      await adminClient.from('bracket_predictions')
-        .update({ points_earned: pts, updated_at: new Date().toISOString() })
-        .eq('id', bp.id)
+    for (const pred of matchPreds) {
+      const eff = inferOutcome(pred)
+      const correct = eff === actualOutcome
+      const outcomeBase = correct ? pts.outcome : 0
+      const underdogBonus = correct && isUnderdog ? 2 : 0
+      const scorerPts = pred.predicted_scorer_id && scorerSet.has(pred.predicted_scorer_id) ? pts.scorer : 0
+      const exactPts = pred.predicted_home_score === hs && pred.predicted_away_score === as_ ? pts.exact_score : 0
+      const total = (outcomeBase + scorerPts + exactPts) * multiplier + underdogBonus
+      predsToUpdate.push({
+        id: pred.id,
+        outcome_points: outcomeBase * multiplier + underdogBonus,
+        scorer_points: scorerPts * multiplier,
+        exact_score_points: exactPts * multiplier,
+        points_earned: total,
+        is_exact_score: exactPts > 0,
+        updated_at: now,
+      })
     }
   }
 
-  // Paso 3: recalcular total de TODOS los usuarios sumando las 4 tablas
-  // Límite explícito para evitar truncado por defecto de Supabase (1000 filas)
-  const { data: allGroupPts } = await adminClient.from('group_predictions').select('user_id, points_earned').limit(50000)
-  const { data: allMatchPts } = await adminClient.from('predictions').select('user_id, points_earned').limit(50000)
-  const { data: allSpecialPts } = await adminClient.from('special_predictions').select('user_id, points_earned').limit(50000)
-  const { data: allBracketPts } = await adminClient.from('bracket_predictions').select('user_id, points_earned').limit(50000)
+  // 5. Upsert en lotes (evita límite de payload)
+  const CHUNK = 200
+  for (let i = 0; i < predsToUpdate.length; i += CHUNK) {
+    await adminClient.from('predictions').upsert(predsToUpdate.slice(i, i + CHUNK), { onConflict: 'id' })
+  }
+
+  // 6. Score bracket_predictions para partidos eliminatorios
+  const KNOCKOUT_STAGES = ['round_of_32', 'round_of_16', 'quarterfinal', 'semifinal', 'third_place', 'final']
+  const knockoutMatches = matches.filter((m) => KNOCKOUT_STAGES.includes(m.stage))
+  if (knockoutMatches.length > 0) {
+    const { data: allBpreds } = await adminClient
+      .from('bracket_predictions')
+      .select('id, user_id, team_id, slot_key')
+      .in('slot_key', knockoutMatches.map((m) => m.id))
+      .limit(50000)
+
+    const bpredsBySlot = new Map<string, any[]>()
+    for (const bp of allBpreds ?? []) {
+      if (!bpredsBySlot.has(bp.slot_key)) bpredsBySlot.set(bp.slot_key, [])
+      bpredsBySlot.get(bp.slot_key)!.push(bp)
+    }
+
+    const bpredsToUpdate: any[] = []
+    for (const km of knockoutMatches) {
+      const multiplier = STAGE_MULTIPLIERS[(km.stage as keyof typeof STAGE_MULTIPLIERS)] ?? 1
+      const winnerId =
+        km.home_score > km.away_score ? km.home_team_id
+        : km.away_score > km.home_score ? km.away_team_id
+        : km.winner_team_id ?? null
+      for (const bp of bpredsBySlot.get(km.id) ?? []) {
+        const bpts = winnerId && bp.team_id === winnerId ? pts.outcome * multiplier : 0
+        bpredsToUpdate.push({ id: bp.id, points_earned: bpts, updated_at: now })
+      }
+    }
+    for (let i = 0; i < bpredsToUpdate.length; i += CHUNK) {
+      await adminClient.from('bracket_predictions').upsert(bpredsToUpdate.slice(i, i + CHUNK), { onConflict: 'id' })
+    }
+  }
+
+  // 7. Sumar totales por usuario desde las 4 tablas y actualizar perfiles en paralelo
+  const [{ data: mPts }, { data: gPts }, { data: sPts }, { data: bPts }] = await Promise.all([
+    adminClient.from('predictions').select('user_id, points_earned').limit(50000),
+    adminClient.from('group_predictions').select('user_id, points_earned').limit(50000),
+    adminClient.from('special_predictions').select('user_id, points_earned').limit(50000),
+    adminClient.from('bracket_predictions').select('user_id, points_earned').limit(50000),
+  ])
 
   const totals: Record<string, number> = {}
-  for (const r of [
-    ...(allMatchPts ?? []),
-    ...(allGroupPts ?? []),
-    ...(allSpecialPts ?? []),
-    ...(allBracketPts ?? []),
-  ]) {
-    totals[(r as any).user_id] = (totals[(r as any).user_id] ?? 0) + ((r as any).points_earned ?? 0)
+  for (const r of [...(mPts ?? []), ...(gPts ?? []), ...(sPts ?? []), ...(bPts ?? [])]) {
+    const uid = (r as any).user_id
+    totals[uid] = (totals[uid] ?? 0) + ((r as any).points_earned ?? 0)
   }
-  for (const [userId, total] of Object.entries(totals)) {
-    await adminClient.from('profiles').update({ total_points: total, updated_at: new Date().toISOString() }).eq('id', userId)
-  }
+  await Promise.all(
+    Object.entries(totals).map(([userId, total]) =>
+      adminClient.from('profiles').update({ total_points: total, updated_at: now }).eq('id', userId)
+    )
+  )
 
   revalidatePath('/admin')
   revalidatePath('/admin/partidos')
@@ -567,5 +643,5 @@ export async function recalculateAllPointsAction() {
   revalidatePath('/dashboard/tabla')
   revalidatePath('/dashboard/pollas', 'layout')
 
-  return { success: true, count: recalculated }
+  return { success: true, count: matches.length }
 }
