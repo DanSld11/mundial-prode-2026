@@ -324,6 +324,48 @@ export async function autoSeedR32Action() {
   return { success: true, seeded, skipped, errors }
 }
 
+export async function propagateWinnersAction() {
+  const db = createServiceRoleClient()
+
+  const { data: finished } = await db.from('matches')
+    .select('id, match_number, home_team_id, away_team_id, home_score, away_score, winner_team_id')
+    .eq('status', 'finished')
+    .in('stage', ['round_of_32', 'round_of_16', 'quarterfinal', 'semifinal'])
+
+  if (!finished || finished.length === 0) return { success: true, propagated: 0 }
+
+  let propagated = 0
+
+  for (const match of finished) {
+    const winnerId = match.winner_team_id
+    if (!winnerId) continue
+
+    const winAdv = WINNER_ADVANCES[match.match_number]
+    if (winAdv) {
+      const { data: nextMatch } = await db.from('matches')
+        .select('id').eq('match_number', winAdv.next).single()
+      if (nextMatch) {
+        await db.from('matches').update({ [winAdv.side]: winnerId }).eq('id', nextMatch.id)
+        propagated++
+      }
+    }
+
+    const loserAdv = LOSER_ADVANCES[match.match_number]
+    if (loserAdv && winnerId) {
+      const loserId = winnerId === match.home_team_id ? match.away_team_id : match.home_team_id
+      const { data: thirdMatch } = await db.from('matches')
+        .select('id').eq('match_number', loserAdv.next).single()
+      if (thirdMatch && loserId) {
+        await db.from('matches').update({ [loserAdv.side]: loserId }).eq('id', thirdMatch.id)
+      }
+    }
+  }
+
+  revalidatePath('/admin/bracket')
+  revalidatePath('/dashboard/bracket')
+  return { success: true, propagated }
+}
+
 export async function lockKnockoutStage(stage: string, locked: boolean) {
   const db = createServiceRoleClient()
 
