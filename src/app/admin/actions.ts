@@ -292,19 +292,21 @@ async function calculatePointsFallback(
     }
 
     if (!skipUserTotal) {
-      // Recalcular total de cada usuario sumando las 3 tablas de predicciones
+      // Recalcular total de cada usuario sumando las 3 tablas de predicciones + ajustes manuales
       const userIds = Array.from(new Set(predictions.map((p) => p.user_id)))
       for (const userId of userIds) {
-        const [{ data: matchPts }, { data: groupPts }, { data: specialPts }] = await Promise.all([
+        const [{ data: matchPts }, { data: groupPts }, { data: specialPts }, { data: adjPts }] = await Promise.all([
           adminClient.from('predictions').select('points_earned').eq('user_id', userId),
           adminClient.from('group_predictions').select('points_earned').eq('user_id', userId),
           adminClient.from('special_predictions').select('points_earned').eq('user_id', userId),
+          adminClient.from('user_notifications').select('points_change').eq('user_id', userId).eq('type', 'point_adjustment'),
         ])
         const total =
           (matchPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0) +
           (groupPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0) +
-          (specialPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0)
-        await adminClient.from('profiles').update({ total_points: total, updated_at: new Date().toISOString() }).eq('id', userId)
+          (specialPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0) +
+          (adjPts ?? []).reduce((s, p) => s + ((p as any).points_change ?? 0), 0)
+        await adminClient.from('profiles').update({ total_points: Math.max(0, total), updated_at: new Date().toISOString() }).eq('id', userId)
       }
     }
 
@@ -402,20 +404,22 @@ export async function scoreMatchAction(matchId: string, homeScore: number, awayS
         bracketUserIds.add(bp.user_id)
       }
 
-      // Actualizar total de usuarios afectados por bracket (sumando las 4 tablas, en paralelo)
+      // Actualizar total de usuarios afectados por bracket (sumando las 4 tablas + ajustes manuales, en paralelo)
       await Promise.all(Array.from(bracketUserIds).map(async (userId) => {
-        const [{ data: matchPts }, { data: groupPts }, { data: specialPts }, { data: bracketPts }] = await Promise.all([
+        const [{ data: matchPts }, { data: groupPts }, { data: specialPts }, { data: bracketPts }, { data: adjPts }] = await Promise.all([
           adminClient.from('predictions').select('points_earned').eq('user_id', userId),
           adminClient.from('group_predictions').select('points_earned').eq('user_id', userId),
           adminClient.from('special_predictions').select('points_earned').eq('user_id', userId),
           adminClient.from('bracket_predictions').select('points_earned').eq('user_id', userId),
+          adminClient.from('user_notifications').select('points_change').eq('user_id', userId).eq('type', 'point_adjustment'),
         ])
         const total =
           (matchPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0) +
           (groupPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0) +
           (specialPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0) +
-          (bracketPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0)
-        await adminClient.from('profiles').update({ total_points: total, updated_at: new Date().toISOString() }).eq('id', userId)
+          (bracketPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0) +
+          (adjPts ?? []).reduce((s, p) => s + ((p as any).points_change ?? 0), 0)
+        await adminClient.from('profiles').update({ total_points: Math.max(0, total), updated_at: new Date().toISOString() }).eq('id', userId)
       }))
     }
   }
