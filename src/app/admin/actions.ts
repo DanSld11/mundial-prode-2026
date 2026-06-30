@@ -648,12 +648,13 @@ export async function recalculateAllPointsAction() {
     }
   }
 
-  // 7. Sumar totales por usuario desde las 4 tablas y actualizar perfiles en paralelo
-  const [{ data: mPts }, { data: gPts }, { data: sPts }, { data: bPts }] = await Promise.all([
+  // 7. Sumar totales por usuario desde las 4 tablas + ajustes manuales y actualizar perfiles
+  const [{ data: mPts }, { data: gPts }, { data: sPts }, { data: bPts }, { data: adjPts }] = await Promise.all([
     adminClient.from('predictions').select('user_id, points_earned').limit(50000),
     adminClient.from('group_predictions').select('user_id, points_earned').limit(50000),
     adminClient.from('special_predictions').select('user_id, points_earned').limit(50000),
     adminClient.from('bracket_predictions').select('user_id, points_earned').limit(50000),
+    adminClient.from('user_notifications').select('user_id, points_change').eq('type', 'point_adjustment').limit(10000),
   ])
 
   const totals: Record<string, number> = {}
@@ -661,9 +662,14 @@ export async function recalculateAllPointsAction() {
     const uid = (r as any).user_id
     totals[uid] = (totals[uid] ?? 0) + ((r as any).points_earned ?? 0)
   }
+  // Incluir ajustes manuales de admin
+  for (const r of adjPts ?? []) {
+    const uid = (r as any).user_id
+    totals[uid] = (totals[uid] ?? 0) + ((r as any).points_change ?? 0)
+  }
   await Promise.all(
     Object.entries(totals).map(([userId, total]) =>
-      adminClient.from('profiles').update({ total_points: total, updated_at: now }).eq('id', userId)
+      adminClient.from('profiles').update({ total_points: Math.max(0, total), updated_at: now }).eq('id', userId)
     )
   )
 
