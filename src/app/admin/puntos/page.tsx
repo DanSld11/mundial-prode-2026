@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { getAdminPuntosData, adjustUserPointsAction } from './actions'
+import { getAdminPuntosData, adjustUserPointsAction, deleteAdjustmentAction, clearAllAdjustmentsAction } from './actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import { Coins, Loader2, Plus, Minus, Clock } from 'lucide-react'
+import { Coins, Loader2, Plus, Minus, Clock, Trash2 } from 'lucide-react'
 import { formatPeruLongDateTime } from '@/lib/peru-time'
 
 export default function AdminPuntosPage() {
@@ -137,10 +137,28 @@ export default function AdminPuntosPage() {
 
       {/* History */}
       <div className="space-y-3">
-        <h3 className="font-semibold flex items-center gap-2 text-sm">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          Últimos ajustes
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold flex items-center gap-2 text-sm">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            Últimos ajustes
+          </h3>
+          {adjustments.length > 0 && (
+            <button
+              onClick={() => {
+                if (!confirm('¿Borrar TODOS los ajustes manuales?')) return
+                startTransition(async () => {
+                  const res = await clearAllAdjustmentsAction()
+                  if (res.error) toast.error(res.error)
+                  else { toast.success('Todos los ajustes eliminados'); await load() }
+                })
+              }}
+              className="flex items-center gap-1.5 rounded-lg border border-red-300 bg-red-50 dark:bg-red-950/20 px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Borrar todos
+            </button>
+          )}
+        </div>
         {loading ? (
           <div className="text-sm text-muted-foreground py-4">Cargando...</div>
         ) : adjustments.length === 0 ? (
@@ -159,6 +177,17 @@ export default function AdminPuntosPage() {
                   <p className="text-xs text-muted-foreground truncate">{a.message}</p>
                 </div>
                 <span className="text-[10px] text-muted-foreground shrink-0">{formatPeruLongDateTime(a.created_at)}</span>
+                <button
+                  onClick={() => startTransition(async () => {
+                    const res = await deleteAdjustmentAction(a.id)
+                    if (res.error) toast.error(res.error)
+                    else { toast.success('Ajuste eliminado'); await load() }
+                  })}
+                  className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                  title="Eliminar ajuste"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
             ))}
           </div>

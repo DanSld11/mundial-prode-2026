@@ -54,3 +54,19 @@ export async function adjustUserPointsAction(
   revalidatePath('/admin/puntos')
   return { success: true, username: profile.username, change: actualChange, newTotal: newPoints }
 }
+
+export async function deleteAdjustmentAction(id: string) {
+  const db = createServiceRoleClient()
+  const { error } = await db.from('user_notifications').delete().eq('id', id).eq('type', 'point_adjustment')
+  if (error) return { error: error.message }
+  revalidatePath('/admin/puntos')
+  return { success: true }
+}
+
+export async function clearAllAdjustmentsAction() {
+  const db = createServiceRoleClient()
+  const { error } = await db.from('user_notifications').delete().eq('type', 'point_adjustment')
+  if (error) return { error: error.message }
+  revalidatePath('/admin/puntos')
+  return { success: true }
+}
