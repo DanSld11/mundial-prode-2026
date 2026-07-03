@@ -23,27 +23,27 @@ const KNOCKOUT_TEMPLATE = [
   { match_number: 86,  stage: 'round_of_32', match_date: '2026-07-07T16:00:00-05:00', label: 'R32-N' },
   { match_number: 87,  stage: 'round_of_32', match_date: '2026-07-07T19:00:00-05:00', label: 'R32-O' },
   { match_number: 88,  stage: 'round_of_32', match_date: '2026-07-07T22:00:00-05:00', label: 'R32-P' },
-  // Round of 16 — 8 partidos
-  { match_number: 89,  stage: 'round_of_16', match_date: '2026-07-11T13:00:00-05:00', label: 'R16-1' },
-  { match_number: 90,  stage: 'round_of_16', match_date: '2026-07-11T19:00:00-05:00', label: 'R16-2' },
-  { match_number: 91,  stage: 'round_of_16', match_date: '2026-07-12T13:00:00-05:00', label: 'R16-3' },
-  { match_number: 92,  stage: 'round_of_16', match_date: '2026-07-12T19:00:00-05:00', label: 'R16-4' },
-  { match_number: 93,  stage: 'round_of_16', match_date: '2026-07-13T13:00:00-05:00', label: 'R16-5' },
-  { match_number: 94,  stage: 'round_of_16', match_date: '2026-07-13T19:00:00-05:00', label: 'R16-6' },
-  { match_number: 95,  stage: 'round_of_16', match_date: '2026-07-14T13:00:00-05:00', label: 'R16-7' },
-  { match_number: 96,  stage: 'round_of_16', match_date: '2026-07-14T19:00:00-05:00', label: 'R16-8' },
+  // Round of 16 — 8 partidos (calendario oficial FIFA, hora Lima UTC-5)
+  { match_number: 89,  stage: 'round_of_16', match_date: '2026-07-04T16:00:00-05:00', label: 'R16-1' },
+  { match_number: 90,  stage: 'round_of_16', match_date: '2026-07-04T12:00:00-05:00', label: 'R16-2' },
+  { match_number: 91,  stage: 'round_of_16', match_date: '2026-07-05T15:00:00-05:00', label: 'R16-3' },
+  { match_number: 92,  stage: 'round_of_16', match_date: '2026-07-05T19:00:00-05:00', label: 'R16-4' },
+  { match_number: 93,  stage: 'round_of_16', match_date: '2026-07-06T14:00:00-05:00', label: 'R16-5' },
+  { match_number: 94,  stage: 'round_of_16', match_date: '2026-07-06T19:00:00-05:00', label: 'R16-6' },
+  { match_number: 95,  stage: 'round_of_16', match_date: '2026-07-07T11:00:00-05:00', label: 'R16-7' },
+  { match_number: 96,  stage: 'round_of_16', match_date: '2026-07-07T15:00:00-05:00', label: 'R16-8' },
   // Cuartos de Final — 4 partidos
-  { match_number: 97,  stage: 'quarterfinal', match_date: '2026-07-18T13:00:00-05:00', label: 'QF-1' },
-  { match_number: 98,  stage: 'quarterfinal', match_date: '2026-07-18T19:00:00-05:00', label: 'QF-2' },
-  { match_number: 99,  stage: 'quarterfinal', match_date: '2026-07-19T13:00:00-05:00', label: 'QF-3' },
-  { match_number: 100, stage: 'quarterfinal', match_date: '2026-07-19T19:00:00-05:00', label: 'QF-4' },
+  { match_number: 97,  stage: 'quarterfinal', match_date: '2026-07-09T15:00:00-05:00', label: 'QF-1' },
+  { match_number: 98,  stage: 'quarterfinal', match_date: '2026-07-10T14:00:00-05:00', label: 'QF-2' },
+  { match_number: 99,  stage: 'quarterfinal', match_date: '2026-07-11T16:00:00-05:00', label: 'QF-3' },
+  { match_number: 100, stage: 'quarterfinal', match_date: '2026-07-11T20:00:00-05:00', label: 'QF-4' },
   // Semifinales — 2 partidos
-  { match_number: 101, stage: 'semifinal',    match_date: '2026-07-22T19:00:00-05:00', label: 'SF-1' },
-  { match_number: 102, stage: 'semifinal',    match_date: '2026-07-23T19:00:00-05:00', label: 'SF-2' },
+  { match_number: 101, stage: 'semifinal',    match_date: '2026-07-14T14:00:00-05:00', label: 'SF-1' },
+  { match_number: 102, stage: 'semifinal',    match_date: '2026-07-15T14:00:00-05:00', label: 'SF-2' },
   // Tercer Puesto
-  { match_number: 103, stage: 'third_place',  match_date: '2026-07-25T13:00:00-05:00', label: '3PL' },
+  { match_number: 103, stage: 'third_place',  match_date: '2026-07-18T16:00:00-05:00', label: '3PL' },
   // Gran Final
-  { match_number: 104, stage: 'final',        match_date: '2026-07-26T14:00:00-05:00', label: 'FINAL' },
+  { match_number: 104, stage: 'final',        match_date: '2026-07-19T14:00:00-05:00', label: 'FINAL' },
 ]
 
 export async function getAdminBracketData() {
