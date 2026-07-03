@@ -301,7 +301,7 @@ export async function getMemberPredictionsAction(poolId: string, targetUserId: s
     db.from('teams').select('id, name_es, flag_emoji, code'),
     db.from('bracket_predictions').select('points_earned').eq('user_id', targetUserId),
     db.from('special_predictions').select('points_earned').eq('user_id', targetUserId),
-    db.from('user_notifications').select('points_change').eq('user_id', targetUserId).eq('type', 'point_adjustment'),
+    db.from('user_notifications').select('points_change, message, created_at').eq('user_id', targetUserId).eq('type', 'point_adjustment').order('created_at', { ascending: false }),
     db.from('ruleta_spins').select('points_change').eq('user_id', targetUserId),
     db.from('profiles').select('total_points').eq('id', targetUserId).maybeSingle(),
   ])
@@ -327,6 +327,11 @@ export async function getMemberPredictionsAction(poolId: string, targetUserId: s
     llaves: sumEarned(bracketData.data as any[]),
     ruleta: sumChange(spinData.data as any[]),
     ajustes: sumChange(adjData.data as any[]),
+    // Detalle de cada ajuste manual con su motivo
+    ajustesDetalle: (adjData.data ?? []).map((a: any) => ({
+      points: a.points_change ?? 0,
+      motivo: a.message ?? '',
+    })),
     total: profileData.data?.total_points ?? 0,
   }
 

@@ -66,6 +66,7 @@ interface Breakdown {
   llaves: number
   ruleta: number
   ajustes: number
+  ajustesDetalle: { points: number; motivo: string }[]
   total: number
 }
 
@@ -110,8 +111,8 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
     { label: '⭐ Especiales', value: breakdown.especiales },
     { label: '🏆 Llaves', value: breakdown.llaves },
     { label: '🎰 Ruleta', value: breakdown.ruleta },
-    { label: '🛠️ Ajustes admin', value: breakdown.ajustes },
   ].filter(r => r.value !== 0) : []
+  const ajustesDetalle = (breakdown?.ajustesDetalle ?? []).filter(a => a.points !== 0)
 
   // Build group scoring summary
   const scoredGroups = scoredGroupNames.map(gName => {
@@ -172,7 +173,7 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
             </div>
 
             {/* Desglose de puntos por fuente */}
-            {breakdown && breakdownRows.length > 0 && (
+            {breakdown && (breakdownRows.length > 0 || ajustesDetalle.length > 0) && (
               <div className="rounded-xl border bg-muted/20 overflow-hidden">
                 <div className="px-3 py-2 border-b bg-muted/30">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Desglose de puntos</p>
@@ -183,6 +184,17 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
                       <span className="font-medium">{label}</span>
                       <span className={`font-extrabold tabular-nums ${value > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
                         {fmtPts(value)}
+                      </span>
+                    </div>
+                  ))}
+                  {ajustesDetalle.map((a, i) => (
+                    <div key={`adj-${i}`} className="flex items-center justify-between gap-2 px-3 py-1.5 text-xs">
+                      <span className="font-medium shrink-0">🛠️ Ajuste admin</span>
+                      <span className="flex-1 truncate text-right text-[11px] text-muted-foreground italic" title={a.motivo}>
+                        {a.motivo}
+                      </span>
+                      <span className={`shrink-0 font-extrabold tabular-nums ${a.points > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                        {fmtPts(a.points)}
                       </span>
                     </div>
                   ))}
