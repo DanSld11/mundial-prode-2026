@@ -13,9 +13,10 @@ export async function getAdminRuletaData() {
     db.from('ruleta_access').select('user_id, enabled'),
     db.from('ruleta_spins').select('id, user_id, result_label, result_type, points_change, coins_spent, created_at, profiles!ruleta_spins_user_id_fkey(username)')
       .order('created_at', { ascending: false }).limit(30),
-    // Giro gratis usado esta semana por cada usuario
+    // Giro gratis usado esta semana por cada usuario (excluye los reseteados por admin)
     db.from('ruleta_spins').select('user_id, created_at')
       .eq('is_free_retry', false).eq('coins_spent', 0)
+      .eq('weekly_reset', false)
       .gte('created_at', oneWeekAgo)
       .order('created_at', { ascending: false }),
   ])
@@ -41,11 +42,14 @@ export async function getAdminRuletaData() {
 export async function resetUserWeeklySpinAction(userId: string) {
   const db = createServiceRoleClient()
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  // Marcar (no borrar) los giros gratis de la semana: el usuario recupera su
+  // giro semanal pero el historial de points_change queda intacto para los totales.
   await db.from('ruleta_spins')
-    .delete()
+    .update({ weekly_reset: true })
     .eq('user_id', userId)
     .eq('is_free_retry', false)
     .eq('coins_spent', 0)
+    .eq('weekly_reset', false)
     .gte('created_at', oneWeekAgo)
   revalidatePath('/admin/ruleta')
   return { success: true }

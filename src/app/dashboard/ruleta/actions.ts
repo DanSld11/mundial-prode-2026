@@ -34,6 +34,7 @@ async function getWeeklyFreeSpinStatus(db: ReturnType<typeof createServiceRoleCl
     .eq('user_id', uid)
     .eq('is_free_retry', false)
     .eq('coins_spent', 0)
+    .eq('weekly_reset', false)
     .gte('created_at', oneWeekAgo)
     .limit(1)
 

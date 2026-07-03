@@ -279,7 +279,7 @@ export async function getMemberPredictionsAction(poolId: string, targetUserId: s
 
   if (!targetMembership) return null
 
-  const [matchData, groupData, groupResultsData, teamsData] = await Promise.all([
+  const [matchData, groupData, groupResultsData, teamsData, bracketData, specialData, adjData, spinData, profileData] = await Promise.all([
     db.from('predictions')
       .select(`
         id, predicted_home_score, predicted_away_score, predicted_outcome,
@@ -299,6 +299,11 @@ export async function getMemberPredictionsAction(poolId: string, targetUserId: s
       .eq('user_id', targetUserId),
     db.from('group_results').select('group_name, position, team_id, scored_at'),
     db.from('teams').select('id, name_es, flag_emoji, code'),
+    db.from('bracket_predictions').select('points_earned').eq('user_id', targetUserId),
+    db.from('special_predictions').select('points_earned').eq('user_id', targetUserId),
+    db.from('user_notifications').select('points_change').eq('user_id', targetUserId).eq('type', 'point_adjustment'),
+    db.from('ruleta_spins').select('points_change').eq('user_id', targetUserId),
+    db.from('profiles').select('total_points').eq('id', targetUserId).maybeSingle(),
   ])
 
   const matchPreds = (matchData.data ?? []).filter((p: any) => {
@@ -311,11 +316,26 @@ export async function getMemberPredictionsAction(poolId: string, targetUserId: s
     (groupResultsData.data ?? []).filter((r: any) => r.scored_at != null).map((r: any) => r.group_name)
   )
 
+  // Desglose de puntos por fuente (debe cuadrar con profiles.total_points)
+  const sumEarned = (rows: any[] | null) => (rows ?? []).reduce((s, r) => s + (r.points_earned ?? 0), 0)
+  const sumChange = (rows: any[] | null) => (rows ?? []).reduce((s, r) => s + (r.points_change ?? 0), 0)
+
+  const breakdown = {
+    partidos: sumEarned(matchData.data as any[]),
+    grupos: sumEarned(groupData.data as any[]),
+    especiales: sumEarned(specialData.data as any[]),
+    llaves: sumEarned(bracketData.data as any[]),
+    ruleta: sumChange(spinData.data as any[]),
+    ajustes: sumChange(adjData.data as any[]),
+    total: profileData.data?.total_points ?? 0,
+  }
+
   return {
     matchPreds,
     groupPreds: groupData.data ?? [],
     groupResults: groupResultsData.data ?? [],
     teams: teamsData.data ?? [],
     scoredGroupNames: [...scoredGroupNames],
+    breakdown,
   }
 }

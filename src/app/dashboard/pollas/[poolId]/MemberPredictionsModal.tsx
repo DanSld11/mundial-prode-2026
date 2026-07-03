@@ -59,6 +59,16 @@ interface TeamInfo {
 
 const POS_LABELS: Record<number, string> = { 1: '1°', 2: '2°', 3: '3°' }
 
+interface Breakdown {
+  partidos: number
+  grupos: number
+  especiales: number
+  llaves: number
+  ruleta: number
+  ajustes: number
+  total: number
+}
+
 export function MemberPredictionsModal({ poolId, memberId, username, children }: Props) {
   const [open, setOpen] = useState(false)
   const [matchPreds, setMatchPreds] = useState<MatchPred[] | null>(null)
@@ -66,6 +76,7 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
   const [groupResults, setGroupResults] = useState<GroupResult[]>([])
   const [teams, setTeams] = useState<TeamInfo[]>([])
   const [scoredGroupNames, setScoredGroupNames] = useState<string[]>([])
+  const [breakdown, setBreakdown] = useState<Breakdown | null>(null)
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState<'partidos' | 'grupos'>('partidos')
 
@@ -80,6 +91,7 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
       setGroupResults(data.groupResults ?? [])
       setTeams(data.teams ?? [])
       setScoredGroupNames(data.scoredGroupNames ?? [])
+      setBreakdown(data.breakdown ?? null)
     } else {
       setMatchPreds([])
     }
@@ -89,7 +101,17 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
   const totalMatchPts  = matchPreds?.reduce((s, p) => s + (p.points_earned ?? 0), 0) ?? 0
   const exactCount     = matchPreds?.filter((p) => p.is_exact_score).length ?? 0
   const totalGroupPts  = groupPreds.filter(p => scoredGroupNames.includes(p.group_name)).reduce((s, p) => s + (p.points_earned ?? 0), 0)
-  const totalPts       = totalMatchPts + totalGroupPts
+  const totalPts       = breakdown?.total ?? (totalMatchPts + totalGroupPts)
+
+  const fmtPts = (n: number) => (n > 0 ? `+${n}` : `${n}`)
+  const breakdownRows = breakdown ? [
+    { label: '⚽ Partidos', value: breakdown.partidos },
+    { label: '👥 Grupos', value: breakdown.grupos },
+    { label: '⭐ Especiales', value: breakdown.especiales },
+    { label: '🏆 Llaves', value: breakdown.llaves },
+    { label: '🎰 Ruleta', value: breakdown.ruleta },
+    { label: '🛠️ Ajustes admin', value: breakdown.ajustes },
+  ].filter(r => r.value !== 0) : []
 
   // Build group scoring summary
   const scoredGroups = scoredGroupNames.map(gName => {
@@ -148,6 +170,29 @@ export function MemberPredictionsModal({ poolId, memberId, username, children }:
                 <p className="text-[10px] text-muted-foreground">grupos</p>
               </div>
             </div>
+
+            {/* Desglose de puntos por fuente */}
+            {breakdown && breakdownRows.length > 0 && (
+              <div className="rounded-xl border bg-muted/20 overflow-hidden">
+                <div className="px-3 py-2 border-b bg-muted/30">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Desglose de puntos</p>
+                </div>
+                <div className="divide-y divide-border/60">
+                  {breakdownRows.map(({ label, value }) => (
+                    <div key={label} className="flex items-center justify-between px-3 py-1.5 text-xs">
+                      <span className="font-medium">{label}</span>
+                      <span className={`font-extrabold tabular-nums ${value > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                        {fmtPts(value)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between px-3 py-2 text-xs bg-muted/30">
+                    <span className="font-bold">Total</span>
+                    <span className="font-extrabold tabular-nums">{breakdown.total} pts</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Tabs */}
             <div className="flex gap-1 rounded-xl border bg-muted/40 p-1">

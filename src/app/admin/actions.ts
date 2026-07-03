@@ -7,6 +7,7 @@ import { SEED_PLAYERS } from '@/lib/seed-players'
 import { revalidatePath } from 'next/cache'
 import type { Team } from '@/types'
 import { STAGE_MULTIPLIERS } from '@/types'
+import { recomputeUserTotals } from '@/lib/user-totals'
 
 export async function seedTeamsAction() {
   const supabase = await createServerSupabaseClient()
@@ -292,24 +293,9 @@ async function calculatePointsFallback(
     }
 
     if (!skipUserTotal) {
-      // Recalcular total de cada usuario sumando predicciones + ajustes manuales + ruleta
+      // Recalcular total de cada usuario afectado (todas las fuentes, helper único)
       const userIds = Array.from(new Set(predictions.map((p) => p.user_id)))
-      for (const userId of userIds) {
-        const [{ data: matchPts }, { data: groupPts }, { data: specialPts }, { data: adjPts }, { data: spinPts }] = await Promise.all([
-          adminClient.from('predictions').select('points_earned').eq('user_id', userId),
-          adminClient.from('group_predictions').select('points_earned').eq('user_id', userId),
-          adminClient.from('special_predictions').select('points_earned').eq('user_id', userId),
-          adminClient.from('user_notifications').select('points_change').eq('user_id', userId).eq('type', 'point_adjustment'),
-          adminClient.from('ruleta_spins').select('points_change').eq('user_id', userId),
-        ])
-        const total =
-          (matchPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0) +
-          (groupPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0) +
-          (specialPts ?? []).reduce((s, p) => s + (p.points_earned ?? 0), 0) +
-          (adjPts ?? []).reduce((s, p) => s + ((p as any).points_change ?? 0), 0) +
-          (spinPts ?? []).reduce((s, p) => s + ((p as any).points_change ?? 0), 0)
-        await adminClient.from('profiles').update({ total_points: Math.max(0, total), updated_at: new Date().toISOString() }).eq('id', userId)
-      }
+      await recomputeUserTotals(adminClient, userIds)
     }
 
     return null
@@ -406,25 +392,8 @@ export async function scoreMatchAction(matchId: string, homeScore: number, awayS
         bracketUserIds.add(bp.user_id)
       }
 
-      // Actualizar total de usuarios afectados por bracket (4 tablas + ajustes manuales + ruleta, en paralelo)
-      await Promise.all(Array.from(bracketUserIds).map(async (userId) => {
-        const [{ data: matchPts }, { data: groupPts }, { data: specialPts }, { data: bracketPts }, { data: adjPts }, { data: spinPts }] = await Promise.all([
-          adminClient.from('predictions').select('points_earned').eq('user_id', userId),
-          adminClient.from('group_predictions').select('points_earned').eq('user_id', userId),
-          adminClient.from('special_predictions').select('points_earned').eq('user_id', userId),
-          adminClient.from('bracket_predictions').select('points_earned').eq('user_id', userId),
-          adminClient.from('user_notifications').select('points_change').eq('user_id', userId).eq('type', 'point_adjustment'),
-          adminClient.from('ruleta_spins').select('points_change').eq('user_id', userId),
-        ])
-        const total =
-          (matchPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0) +
-          (groupPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0) +
-          (specialPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0) +
-          (bracketPts ?? []).reduce((s, p) => s + ((p as any).points_earned ?? 0), 0) +
-          (adjPts ?? []).reduce((s, p) => s + ((p as any).points_change ?? 0), 0) +
-          (spinPts ?? []).reduce((s, p) => s + ((p as any).points_change ?? 0), 0)
-        await adminClient.from('profiles').update({ total_points: Math.max(0, total), updated_at: new Date().toISOString() }).eq('id', userId)
-      }))
+      // Actualizar total de usuarios afectados por bracket (todas las fuentes, helper único)
+      await recomputeUserTotals(adminClient, Array.from(bracketUserIds))
     }
   }
 
@@ -656,31 +625,8 @@ export async function recalculateAllPointsAction() {
     }
   }
 
-  // 7. Sumar totales por usuario desde las 4 tablas + ajustes manuales + ruleta y actualizar perfiles
-  const [{ data: mPts }, { data: gPts }, { data: sPts }, { data: bPts }, { data: adjPts }, { data: spinPts }] = await Promise.all([
-    adminClient.from('predictions').select('user_id, points_earned').limit(50000),
-    adminClient.from('group_predictions').select('user_id, points_earned').limit(50000),
-    adminClient.from('special_predictions').select('user_id, points_earned').limit(50000),
-    adminClient.from('bracket_predictions').select('user_id, points_earned').limit(50000),
-    adminClient.from('user_notifications').select('user_id, points_change').eq('type', 'point_adjustment').limit(10000),
-    adminClient.from('ruleta_spins').select('user_id, points_change').limit(10000),
-  ])
-
-  const totals: Record<string, number> = {}
-  for (const r of [...(mPts ?? []), ...(gPts ?? []), ...(sPts ?? []), ...(bPts ?? [])]) {
-    const uid = (r as any).user_id
-    totals[uid] = (totals[uid] ?? 0) + ((r as any).points_earned ?? 0)
-  }
-  // Incluir ajustes manuales de admin y puntos de ruleta
-  for (const r of [...(adjPts ?? []), ...(spinPts ?? [])]) {
-    const uid = (r as any).user_id
-    totals[uid] = (totals[uid] ?? 0) + ((r as any).points_change ?? 0)
-  }
-  await Promise.all(
-    Object.entries(totals).map(([userId, total]) =>
-      adminClient.from('profiles').update({ total_points: Math.max(0, total), updated_at: now }).eq('id', userId)
-    )
-  )
+  // 7. Recalcular totales de TODOS los usuarios (todas las fuentes, helper único)
+  await recomputeUserTotals(adminClient)
 
   revalidatePath('/admin')
   revalidatePath('/admin/partidos')
