@@ -23,15 +23,15 @@ const KNOCKOUT_TEMPLATE = [
   { match_number: 86,  stage: 'round_of_32', match_date: '2026-07-07T16:00:00-05:00', label: 'R32-N' },
   { match_number: 87,  stage: 'round_of_32', match_date: '2026-07-07T19:00:00-05:00', label: 'R32-O' },
   { match_number: 88,  stage: 'round_of_32', match_date: '2026-07-07T22:00:00-05:00', label: 'R32-P' },
-  // Round of 16 — 8 partidos (calendario oficial FIFA, hora Lima UTC-5)
-  { match_number: 89,  stage: 'round_of_16', match_date: '2026-07-04T16:00:00-05:00', label: 'R16-1' },
-  { match_number: 90,  stage: 'round_of_16', match_date: '2026-07-04T12:00:00-05:00', label: 'R16-2' },
-  { match_number: 91,  stage: 'round_of_16', match_date: '2026-07-05T15:00:00-05:00', label: 'R16-3' },
-  { match_number: 92,  stage: 'round_of_16', match_date: '2026-07-05T19:00:00-05:00', label: 'R16-4' },
-  { match_number: 93,  stage: 'round_of_16', match_date: '2026-07-06T14:00:00-05:00', label: 'R16-5' },
-  { match_number: 94,  stage: 'round_of_16', match_date: '2026-07-06T19:00:00-05:00', label: 'R16-6' },
-  { match_number: 95,  stage: 'round_of_16', match_date: '2026-07-07T11:00:00-05:00', label: 'R16-7' },
-  { match_number: 96,  stage: 'round_of_16', match_date: '2026-07-07T15:00:00-05:00', label: 'R16-8' },
+  // Round of 16 — 8 partidos (horarios por cruce real, hora Lima UTC-5)
+  { match_number: 89,  stage: 'round_of_16', match_date: '2026-07-04T12:00:00-05:00', label: 'R16-1' }, // Houston
+  { match_number: 90,  stage: 'round_of_16', match_date: '2026-07-04T16:00:00-05:00', label: 'R16-2' }, // Filadelfia
+  { match_number: 91,  stage: 'round_of_16', match_date: '2026-07-06T16:00:00-05:00', label: 'R16-3' }, // Seattle
+  { match_number: 92,  stage: 'round_of_16', match_date: '2026-07-06T14:00:00-05:00', label: 'R16-4' }, // Dallas
+  { match_number: 93,  stage: 'round_of_16', match_date: '2026-07-05T15:00:00-05:00', label: 'R16-5' }, // NY/NJ
+  { match_number: 94,  stage: 'round_of_16', match_date: '2026-07-05T19:00:00-05:00', label: 'R16-6' }, // CDMX
+  { match_number: 95,  stage: 'round_of_16', match_date: '2026-07-07T15:00:00-05:00', label: 'R16-7' }, // Vancouver
+  { match_number: 96,  stage: 'round_of_16', match_date: '2026-07-07T11:00:00-05:00', label: 'R16-8' }, // Atlanta
   // Cuartos de Final — 4 partidos
   { match_number: 97,  stage: 'quarterfinal', match_date: '2026-07-09T15:00:00-05:00', label: 'QF-1' },
   { match_number: 98,  stage: 'quarterfinal', match_date: '2026-07-10T14:00:00-05:00', label: 'QF-2' },

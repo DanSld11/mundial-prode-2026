@@ -4,15 +4,15 @@
 -- Ejecutar en Supabase SQL Editor (o ya aplicado vía script)
 -- =========================================================
 
--- Octavos de Final (4-7 julio)
-UPDATE public.matches SET match_date = '2026-07-04T21:00:00+00:00', venue = 'Lincoln Financial Field', city = 'Filadelfia'              WHERE match_number = 89;
-UPDATE public.matches SET match_date = '2026-07-04T17:00:00+00:00', venue = 'NRG Stadium',             city = 'Houston'                 WHERE match_number = 90;
-UPDATE public.matches SET match_date = '2026-07-05T20:00:00+00:00', venue = 'MetLife Stadium',         city = 'Nueva York / Nueva Jersey' WHERE match_number = 91;
-UPDATE public.matches SET match_date = '2026-07-06T00:00:00+00:00', venue = 'Estadio Azteca',          city = 'Ciudad de México'        WHERE match_number = 92;
-UPDATE public.matches SET match_date = '2026-07-06T19:00:00+00:00', venue = 'AT&T Stadium',            city = 'Dallas'                  WHERE match_number = 93;
-UPDATE public.matches SET match_date = '2026-07-07T00:00:00+00:00', venue = 'Lumen Field',             city = 'Seattle'                 WHERE match_number = 94;
-UPDATE public.matches SET match_date = '2026-07-07T16:00:00+00:00', venue = 'Mercedes-Benz Stadium',   city = 'Atlanta'                 WHERE match_number = 95;
-UPDATE public.matches SET match_date = '2026-07-07T20:00:00+00:00', venue = 'BC Place',                city = 'Vancouver'               WHERE match_number = 96;
+-- Octavos de Final (4-7 julio) — horarios asignados por CRUCE real, no por numeración FIFA
+UPDATE public.matches SET match_date = '2026-07-04T17:00:00+00:00', venue = 'NRG Stadium',             city = 'Houston'                 WHERE match_number = 89;  -- CAN vs MAR
+UPDATE public.matches SET match_date = '2026-07-04T21:00:00+00:00', venue = 'Lincoln Financial Field', city = 'Filadelfia'              WHERE match_number = 90;  -- FRA vs PAR
+UPDATE public.matches SET match_date = '2026-07-06T21:00:00+00:00', venue = 'Lumen Field',             city = 'Seattle'                 WHERE match_number = 91;  -- USA vs BEL
+UPDATE public.matches SET match_date = '2026-07-06T19:00:00+00:00', venue = 'AT&T Stadium',            city = 'Dallas'                  WHERE match_number = 92;  -- ESP vs POR
+UPDATE public.matches SET match_date = '2026-07-05T20:00:00+00:00', venue = 'MetLife Stadium',         city = 'Nueva York / Nueva Jersey' WHERE match_number = 93; -- BRA vs NOR
+UPDATE public.matches SET match_date = '2026-07-06T00:00:00+00:00', venue = 'Estadio Azteca',          city = 'Ciudad de México'        WHERE match_number = 94;  -- MEX vs ENG
+UPDATE public.matches SET match_date = '2026-07-07T20:00:00+00:00', venue = 'BC Place',                city = 'Vancouver'               WHERE match_number = 95;  -- SUI vs COL
+UPDATE public.matches SET match_date = '2026-07-07T16:00:00+00:00', venue = 'Mercedes-Benz Stadium',   city = 'Atlanta'                 WHERE match_number = 96;  -- ARG vs EGY
 
 -- Cuartos de Final (9-11 julio)
 UPDATE public.matches SET match_date = '2026-07-09T20:00:00+00:00', venue = 'Gillette Stadium',        city = 'Boston'                  WHERE match_number = 97;
