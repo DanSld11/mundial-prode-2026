@@ -7,7 +7,7 @@
 -- Octavos de Final (4-7 julio) — horarios asignados por CRUCE real, no por numeración FIFA
 UPDATE public.matches SET match_date = '2026-07-04T17:00:00+00:00', venue = 'NRG Stadium',             city = 'Houston'                 WHERE match_number = 89;  -- CAN vs MAR
 UPDATE public.matches SET match_date = '2026-07-04T21:00:00+00:00', venue = 'Lincoln Financial Field', city = 'Filadelfia'              WHERE match_number = 90;  -- FRA vs PAR
-UPDATE public.matches SET match_date = '2026-07-06T21:00:00+00:00', venue = 'Lumen Field',             city = 'Seattle'                 WHERE match_number = 91;  -- USA vs BEL
+UPDATE public.matches SET match_date = '2026-07-07T00:00:00+00:00', venue = 'Lumen Field',             city = 'Seattle'                 WHERE match_number = 91;  -- USA vs BEL (8pm ET)
 UPDATE public.matches SET match_date = '2026-07-06T19:00:00+00:00', venue = 'AT&T Stadium',            city = 'Dallas'                  WHERE match_number = 92;  -- ESP vs POR
 UPDATE public.matches SET match_date = '2026-07-05T20:00:00+00:00', venue = 'MetLife Stadium',         city = 'Nueva York / Nueva Jersey' WHERE match_number = 93; -- BRA vs NOR
 UPDATE public.matches SET match_date = '2026-07-06T00:00:00+00:00', venue = 'Estadio Azteca',          city = 'Ciudad de México'        WHERE match_number = 94;  -- MEX vs ENG

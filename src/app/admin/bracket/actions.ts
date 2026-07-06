@@ -26,7 +26,7 @@ const KNOCKOUT_TEMPLATE = [
   // Round of 16 — 8 partidos (horarios por cruce real, hora Lima UTC-5)
   { match_number: 89,  stage: 'round_of_16', match_date: '2026-07-04T12:00:00-05:00', label: 'R16-1' }, // Houston
   { match_number: 90,  stage: 'round_of_16', match_date: '2026-07-04T16:00:00-05:00', label: 'R16-2' }, // Filadelfia
-  { match_number: 91,  stage: 'round_of_16', match_date: '2026-07-06T16:00:00-05:00', label: 'R16-3' }, // Seattle
+  { match_number: 91,  stage: 'round_of_16', match_date: '2026-07-06T19:00:00-05:00', label: 'R16-3' }, // Seattle
   { match_number: 92,  stage: 'round_of_16', match_date: '2026-07-06T14:00:00-05:00', label: 'R16-4' }, // Dallas
   { match_number: 93,  stage: 'round_of_16', match_date: '2026-07-05T15:00:00-05:00', label: 'R16-5' }, // NY/NJ
   { match_number: 94,  stage: 'round_of_16', match_date: '2026-07-05T19:00:00-05:00', label: 'R16-6' }, // CDMX
