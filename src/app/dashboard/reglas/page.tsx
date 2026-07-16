@@ -210,6 +210,33 @@ export default function RulesPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Cláusula del Desarrollador 😄 */}
+        <Card className="rounded-3xl border-dashed border-2 border-yellow-500/40 bg-gradient-to-br from-yellow-50/50 to-amber-50/30 dark:from-yellow-950/20 dark:to-amber-950/10 shadow-lg relative overflow-hidden md:col-span-2">
+          <CardHeader className="border-b border-yellow-500/20">
+            <CardTitle className="flex items-center gap-3 text-lg">
+              <span className="p-2 bg-background/50 rounded-xl border border-yellow-500/30">
+                <span className="text-lg leading-none">👨‍💻</span>
+              </span>
+              Cláusula del Desarrollador
+              <span className="ml-auto text-[10px] font-bold uppercase tracking-widest text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/40 rounded-full px-2.5 py-1">Artículo 27, inciso F</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-3">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-background/60 border border-yellow-500/20">
+              <div>
+                <p className="font-bold">Bono &quot;Yo construí todo esto&quot; 🏗️</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Al finalizar el torneo, el administrador recibirá puntos por haber creado el sistema, aguantar los reclamos de todos y recalcular puntos a las 2 de la mañana. No es negociable. Está en el reglamento (este mismo).
+                </p>
+              </div>
+              <span className="font-extrabold text-yellow-600 dark:text-yellow-400 text-xl shrink-0 ml-4">+20 pts</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground italic text-center">
+              * Cualquier queja sobre esta regla será atendida por el mismo administrador que la escribió. Suerte con eso. 😌
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
