@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Trophy, Swords, Users, Crown, Medal, Award, Gem, ChevronRight } from 'lucide-react'
+import { Trophy, Swords, Crown, Medal, Award, Gem, ChevronRight } from 'lucide-react'
 import { PoolMatchResults } from './PoolMatchResults'
 import { MemberPredictionsModal } from './MemberPredictionsModal'
 
@@ -17,6 +17,16 @@ interface Props {
   prize1: number
   prize2: number
   prize3: number
+}
+
+function getPuestoFrase(idx: number, total: number): string {
+  if (idx === 0) return '👑 El Profeta del grupo'
+  if (idx === 1) return '🥈 Respirándole en la nuca'
+  if (idx === 2) return '🥉 Colgado del podio'
+  if (total > 3 && idx === total - 1) return '🔦 El farolito: alumbra desde el fondo'
+  if (total > 4 && idx === total - 2) return '😬 Zona de vergüenza'
+  const medio = ['⚔️ En tierra de nadie', '📈 Remontando (dice él)', '🎢 Sobreviviendo al torneo', '🧭 Buscando el rumbo']
+  return medio[idx % medio.length]
 }
 
 export function PoolTabs({ poolId, members, myUserId, prize1, prize2, prize3 }: Props) {
@@ -65,6 +75,9 @@ export function PoolTabs({ poolId, members, myUserId, prize1, prize2, prize3 }: 
                 const prizeCoins = idx === 0 ? prize1 : idx === 1 ? prize2 : idx === 2 ? prize3 : 0
                 const initial   = member.profile?.username?.charAt(0).toUpperCase() ?? '?'
                 const username  = member.profile?.username ?? '—'
+                const leaderPts = members[0]?.profile?.total_points ?? 0
+                const gap       = leaderPts - points
+                const frase     = getPuestoFrase(idx, members.length)
 
                 return (
                   <MemberPredictionsModal
@@ -104,18 +117,15 @@ export function PoolTabs({ poolId, members, myUserId, prize1, prize2, prize3 }: 
                           {username}
                           {isMe && <span className="ml-1.5 text-[10px] font-normal text-muted-foreground">(vos)</span>}
                         </p>
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                          {prizeCoins > 0 ? (
-                            <>
-                              <Gem className="h-2.5 w-2.5 text-yellow-500" />
-                              Premio est.: <span className="font-semibold text-foreground">{prizeCoins.toLocaleString()}</span>
-                            </>
-                          ) : (
-                            <span className="flex items-center gap-0.5 text-brand-red/70">
-                              <Users className="h-2.5 w-2.5" /> Ver predicciones
-                            </span>
-                          )}
+                        <p className="text-[10px] text-muted-foreground mt-0.5 truncate italic">
+                          {frase}
                         </p>
+                        {prizeCoins > 0 && (
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Gem className="h-2.5 w-2.5 text-yellow-500" />
+                            Premio est.: <span className="font-semibold text-foreground">{prizeCoins.toLocaleString()}</span>
+                          </p>
+                        )}
                       </div>
 
                       {/* Puntos */}
@@ -123,6 +133,11 @@ export function PoolTabs({ poolId, members, myUserId, prize1, prize2, prize3 }: 
                         <div className="text-right">
                           <p className="text-base font-extrabold tabular-nums">{points.toLocaleString()}</p>
                           <p className="text-[10px] text-muted-foreground">pts</p>
+                          {idx > 0 && gap > 0 && (
+                            <p className="text-[9px] font-bold text-orange-500 dark:text-orange-400 tabular-nums whitespace-nowrap">
+                              −{gap} vs líder
+                            </p>
+                          )}
                         </div>
                         <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
                       </div>
