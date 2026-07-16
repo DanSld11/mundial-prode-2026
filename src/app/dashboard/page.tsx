@@ -10,6 +10,7 @@ import { formatPeruShortDateTime } from '@/lib/peru-time'
 import { getAccessToken, createAnonClient, createAuthedClient, getCurrentUserId } from '@/lib/auth-client'
 import { ActivityFeed } from '@/components/activity-feed'
 import { NotificationBanner } from '@/components/NotificationBanner'
+import { UltimaChanceBanner } from './UltimaChanceBanner'
 
 const quickLinks = [
   { href: '/dashboard/grupos',      title: 'Grupos',          description: 'Ver las 48 selecciones',  icon: Users },
@@ -256,6 +257,9 @@ export default function DashboardPage() {
       {/* Notification banners (point adjustments, etc.) */}
       <NotificationBanner />
 
+      {/* Última chance: distancia al líder antes de los últimos partidos */}
+      <UltimaChanceBanner />
+
       {/* Countdown */}
       <WorldCupCountdown />
 
@@ -404,6 +408,22 @@ export default function DashboardPage() {
           </div>
         </Link>
       )}
+
+      {/* Resumen del torneo (Wrapped) */}
+      <Link href="/dashboard/resumen" className="group block overflow-hidden rounded-2xl border shadow-sm transition hover:shadow-md"
+        style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #4c1d95 55%, #be185d 100%)' }}>
+        <div className="flex items-center gap-4 px-5 py-4 text-white">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 backdrop-blur text-2xl">
+            🎁
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-white/50">Nuevo</p>
+            <p className="mt-0.5 font-bebas text-lg tracking-wide">Tu Resumen del Torneo</p>
+            <p className="text-xs text-white/60">Tus stats, tu mejor partido y tu equipo de confianza — para capturar y compartir</p>
+          </div>
+          <ArrowRight className="h-5 w-5 shrink-0 text-white/40 transition group-hover:translate-x-1 group-hover:text-white" />
+        </div>
+      </Link>
 
       {/* Pronósticos callout */}
       <Link href="/dashboard/pronosticos" className="group block overflow-hidden rounded-2xl border bg-gradient-to-r from-brand-gold/10 to-brand-red/10 p-4 shadow-sm transition hover:shadow-md sm:p-5">
