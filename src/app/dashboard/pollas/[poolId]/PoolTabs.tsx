@@ -20,7 +20,7 @@ interface Props {
 }
 
 function getPuestoFrase(idx: number, total: number): string {
-  if (idx === 0) return '👑 El Profeta del grupo'
+  if (idx === 0) return '🚀 De farolito a Profeta: ¡remontada histórica!'
   if (idx === 1) return '🥈 Respirándole en la nuca'
   if (idx === 2) return '🥉 Colgado del podio'
   if (total > 3 && idx === total - 1) return '🔦 El farolito: alumbra desde el fondo'
@@ -116,9 +116,9 @@ export function PoolTabs({ poolId, members, myUserId, prize1, prize2, prize3 }: 
                         <p className={`text-sm font-semibold leading-tight truncate ${isMe ? 'text-brand-red' : 'text-foreground'}`}>
                           {username}
                           {isMe && <span className="ml-1.5 text-[10px] font-normal text-muted-foreground">(vos)</span>}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5 truncate italic">
-                          {frase}
+                          <span className={`ml-2 text-xs font-bold ${idx === 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-muted-foreground'}`}>
+                            {frase}
+                          </span>
                         </p>
                         {prizeCoins > 0 && (
                           <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
